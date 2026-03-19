@@ -1,0 +1,128 @@
+[
+  {
+    "income": 100000,
+    "type": "wages",
+    "fed_tax": 13170.0,
+    "ca_tax": 4981.8017578125,
+    "eff_fed_rate": 0.1317,
+    "eff_ca_rate": 0.049818017578125,
+    "ca_fed_ratio": 0.37826892618166286
+  },
+  {
+    "income": 100000,
+    "type": "ltcg",
+    "fed_tax": 5167.5,
+    "ca_tax": 4981.8017578125,
+    "eff_fed_rate": 0.051675,
+    "eff_ca_rate": 0.049818017578125,
+    "ca_fed_ratio": 0.9640642008345428
+  },
+  {
+    "income": 500000,
+    "type": "wages",
+    "fed_tax": 129629.25,
+    "ca_tax": 43905.4375,
+    "eff_fed_rate": 0.2592585,
+    "eff_ca_rate": 0.087810875,
+    "ca_fed_ratio": 0.3387000811930949
+  },
+  {
+    "income": 500000,
+    "type": "ltcg",
+    "fed_tax": 93380.0,
+    "ca_tax": 43905.4375,
+    "eff_fed_rate": 0.18676,
+    "eff_ca_rate": 0.087810875,
+    "ca_fed_ratio": 0.4701803116298993
+  },
+  {
+    "income": 1000000,
+    "type": "wages",
+    "fed_tax": 320000.25,
+    "ca_tax": 102800.46875,
+    "eff_fed_rate": 0.32000025,
+    "eff_ca_rate": 0.10280046875,
+    "ca_fed_ratio": 0.32125121386623917
+  },
+  {
+    "income": 1000000,
+    "type": "ltcg",
+    "fed_tax": 230400.0,
+    "ca_tax": 102800.46875,
+    "eff_fed_rate": 0.2304,
+    "eff_ca_rate": 0.10280046875,
+    "ca_fed_ratio": 0.4461825900607639
+  },
+  {
+    "income": 5000000,
+    "type": "wages",
+    "fed_tax": 1800000.25,
+    "ca_tax": 635143.4375,
+    "eff_fed_rate": 0.36000005,
+    "eff_ca_rate": 0.1270286875,
+    "ca_fed_ratio": 0.35285741626980327
+  },
+  {
+    "income": 5000000,
+    "type": "ltcg",
+    "fed_tax": 1182400.0,
+    "ca_tax": 635143.4375,
+    "eff_fed_rate": 0.23648,
+    "eff_ca_rate": 0.1270286875,
+    "ca_fed_ratio": 0.537164612229364
+  },
+  {
+    "income": 10000000,
+    "type": "wages",
+    "fed_tax": 3650000.25,
+    "ca_tax": 1300643.5,
+    "eff_fed_rate": 0.365000025,
+    "eff_ca_rate": 0.13006435,
+    "ca_fed_ratio": 0.3563406605246123
+  },
+  {
+    "income": 10000000,
+    "type": "ltcg",
+    "fed_tax": 2372400.0,
+    "ca_tax": 1300643.5,
+    "eff_fed_rate": 0.23724,
+    "eff_ca_rate": 0.13006435,
+    "ca_fed_ratio": 0.5482395464508515
+  },
+  {
+    "income": 50000000,
+    "type": "wages",
+    "fed_tax": 18450000.0,
+    "ca_tax": 6624643.5,
+    "eff_fed_rate": 0.369,
+    "eff_ca_rate": 0.13249287,
+    "ca_fed_ratio": 0.3590592682926829
+  },
+  {
+    "income": 50000000,
+    "type": "ltcg",
+    "fed_tax": 11892400.0,
+    "ca_tax": 6624643.5,
+    "eff_fed_rate": 0.237848,
+    "eff_ca_rate": 0.13249287,
+    "ca_fed_ratio": 0.5570484931552925
+  },
+  {
+    "income": 100000000,
+    "type": "wages",
+    "fed_tax": 36950000.0,
+    "ca_tax": 13279644.0,
+    "eff_fed_rate": 0.3695,
+    "eff_ca_rate": 0.13279644,
+    "ca_fed_ratio": 0.35939496617050065
+  },
+  {
+    "income": 100000000,
+    "type": "ltcg",
+    "fed_tax": 23792400.0,
+    "ca_tax": 13279644.0,
+    "eff_fed_rate": 0.237924,
+    "eff_ca_rate": 0.13279644,
+    "ca_fed_ratio": 0.5581464669390226
+  }
+]
