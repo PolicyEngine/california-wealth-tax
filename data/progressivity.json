@@ -1,12 +1,12 @@
 {
-  "gini_actual": 0.6129800855726566,
-  "gini_no_fed_rates": 0.6459529519997508,
-  "gini_no_state": 0.6265584315705355,
-  "fed_gini_reduction": 0.03297286642709418,
-  "state_gini_reduction": 0.013578345997878882,
-  "fed_revenue_billions": 779.336157008208,
-  "state_revenue_billions": 268.6545386350349,
-  "fed_gini_per_trillion": 0.04230891397837058,
-  "state_gini_per_trillion": 0.050542030917724266,
-  "progressivity_ratio": 1.1945953267333373
+  "gini_actual": 0.6131971024167255,
+  "gini_no_fed_rates": 0.6462871728430003,
+  "gini_no_state": 0.6256062683416608,
+  "fed_gini_reduction": 0.033090070426274765,
+  "state_gini_reduction": 0.01240916592493524,
+  "fed_revenue_billions": 266.70682290480926,
+  "state_revenue_billions": 90.16944284523596,
+  "fed_gini_per_trillion": 0.12406908104516319,
+  "state_gini_per_trillion": 0.13762052346529352,
+  "progressivity_ratio": 1.109224976166281
 }

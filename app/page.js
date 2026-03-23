@@ -1,43 +1,53 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
-import WaterfallChart from "@/app/components/WaterfallChart";
-import EffectiveRatesChart from "@/app/components/EffectiveRatesChart";
-import TaxSharesTable from "@/app/components/TaxSharesTable";
 import Slider from "@/app/components/Slider";
-
-import taxShares from "@/data/tax_shares.json";
-import effectiveRates from "@/data/effective_rates.json";
-import progressivity from "@/data/progressivity.json";
+import {
+  buildScenarioHref,
+  parseActiveTab,
+  parseScenarioParams,
+} from "@/lib/scenarioUrl";
 
 const TABS = [
   { id: "calculator", label: "Fiscal impact calculator" },
   { id: "ltcg", label: "Capital gains analysis" },
 ];
+const DEFAULT_TAB = TABS[0].id;
+const TAB_IDS = TABS.map((tab) => tab.id);
 
 const PRESETS = {
   saez: {
-    label: "Saez et al.",
-    avoidanceRate: 0.1,
-    departureRate: 0,
-    annualIncomeTaxB: 2.9,
-    horizonYears: Infinity,
-    discountRate: 0.03,
-    returnRate: 0,
+    label: "Saez headline",
+    description: "Calibrated to Saez et al.'s roughly $100B static score.",
+    params: {
+      baselineWealthTaxB: 109.5,
+      avoidanceRate: 0.1,
+      departureRate: 0,
+      annualIncomeTaxB: 2.9,
+      horizonYears: Infinity,
+      discountRate: 0.03,
+      returnRate: 0,
+    },
   },
   rauh: {
-    label: "Rauh et al.",
-    avoidanceRate: 0.15,
-    departureRate: 0.3,
-    annualIncomeTaxB: 4.3,
-    horizonYears: Infinity,
-    discountRate: 0.03,
-    returnRate: 0,
+    label: "Rauh headline",
+    description: "Calibrated to Rauh et al.'s ~$40B revenue and -$24.7B net score.",
+    params: {
+      baselineWealthTaxB: 67.2,
+      avoidanceRate: 0.15,
+      departureRate: 0.3,
+      annualIncomeTaxB: 6.47,
+      horizonYears: Infinity,
+      discountRate: 0.03,
+      returnRate: 0,
+    },
   },
 };
 
 const DEFAULT_PARAMS = {
+  baselineWealthTaxB: 94.2,
   avoidanceRate: 0.15,
   departureRate: 0.15,
   annualIncomeTaxB: 4.3,
@@ -46,18 +56,88 @@ const DEFAULT_PARAMS = {
   returnRate: 0.25,
 };
 
+function ChartLoading() {
+  return (
+    <div className="h-[300px] rounded-lg border border-[var(--gray-200)] bg-[var(--gray-50)] animate-pulse" />
+  );
+}
+
+function SectionLoading() {
+  return (
+    <div className="space-y-4">
+      <div className="h-6 w-72 rounded bg-[var(--gray-100)] animate-pulse" />
+      <div className="h-20 rounded bg-[var(--gray-50)] animate-pulse" />
+      <ChartLoading />
+    </div>
+  );
+}
+
+const WaterfallChart = dynamic(() => import("@/app/components/WaterfallChart"), {
+  loading: () => <ChartLoading />,
+});
+
+const LTCGTab = dynamic(() => import("@/app/components/LTCGTab"), {
+  loading: () => <SectionLoading />,
+});
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("calculator");
+  const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [params, setParams] = useState(DEFAULT_PARAMS);
+  const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("idle");
 
   const result = useMemo(() => calculateFiscalImpact(params), [params]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setActiveTab(parseActiveTab(searchParams, TAB_IDS, DEFAULT_TAB));
+    setParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
+    setHasSyncedUrlState(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasSyncedUrlState) {
+      return;
+    }
+
+    const nextHref = buildScenarioHref(
+      window.location.pathname,
+      activeTab,
+      DEFAULT_TAB,
+      params,
+      DEFAULT_PARAMS
+    );
+    const currentHref = `${window.location.pathname}${window.location.search}`;
+
+    if (nextHref !== currentHref) {
+      window.history.replaceState(null, "", nextHref);
+    }
+  }, [activeTab, hasSyncedUrlState, params]);
+
+  useEffect(() => {
+    if (copyStatus === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setCopyStatus("idle"), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [copyStatus]);
 
   function update(key, value) {
     setParams((prev) => ({ ...prev, [key]: value }));
   }
 
   function applyPreset(key) {
-    setParams(PRESETS[key]);
+    setParams({ ...PRESETS[key].params });
+  }
+
+  async function copyScenarioLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopyStatus("Copied link");
+    } catch {
+      setCopyStatus("Copy failed");
+    }
   }
 
   return (
@@ -99,6 +179,8 @@ export default function Home() {
             result={result}
             update={update}
             applyPreset={applyPreset}
+            copyScenarioLink={copyScenarioLink}
+            copyStatus={copyStatus}
           />
         )}
         {activeTab === "ltcg" && <LTCGTab />}
@@ -107,33 +189,64 @@ export default function Home() {
   );
 }
 
-function CalculatorTab({ params, result, update, applyPreset }) {
+function CalculatorTab({
+  params,
+  result,
+  update,
+  applyPreset,
+  copyScenarioLink,
+  copyStatus,
+}) {
   return (
     <>
       <p className="text-[var(--gray-600)] mb-6">
-        Explore how different assumptions about avoidance, migration, and income
-        tax loss affect the net fiscal impact of California&apos;s proposed 5%
-        billionaire wealth tax. Baseline wealth tax base is $94.2B (Rauh et al.
-        corrected estimate).
+        Explore how different assumptions about baseline revenue, avoidance,
+        migration, and income tax loss affect the net fiscal impact of
+        California&apos;s proposed 5% billionaire wealth tax. The default baseline
+        gross score is $94.2B (Rauh et al.&apos;s corrected estimate).
       </p>
 
       {/* Preset buttons */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-2">
         {Object.entries(PRESETS).map(([key, preset]) => (
           <button
             key={key}
             onClick={() => applyPreset(key)}
             className="px-4 py-2 rounded-md border border-[var(--gray-300)] text-sm font-medium hover:bg-[var(--gray-100)] transition-colors"
+            title={preset.description}
           >
-            {preset.label} assumptions
+            {preset.label}
           </button>
         ))}
+        <button
+          onClick={copyScenarioLink}
+          className="px-4 py-2 rounded-md border border-[var(--teal-200)] text-sm font-medium text-[var(--teal-700)] hover:bg-[var(--teal-50)] transition-colors"
+        >
+          {copyStatus === "idle" ? "Copy scenario link" : copyStatus}
+        </button>
       </div>
+      <p className="text-xs text-[var(--gray-500)] mb-6">
+        These presets are calibrated to each paper&apos;s headline estimate within
+        this simplified calculator. They are not full replications of the
+        underlying methodologies, and the URL updates as you edit so you can
+        share a scenario directly.
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Controls */}
         <div className="space-y-5">
           <h2 className="text-lg font-semibold">Assumptions</h2>
+
+          <Slider
+            label="Baseline wealth tax score"
+            value={params.baselineWealthTaxB}
+            onChange={(v) => update("baselineWealthTaxB", v)}
+            min={20}
+            max={140}
+            step={0.5}
+            format={(v) => `$${v.toFixed(1)}B`}
+            description="Gross one-time revenue before avoidance and departures"
+          />
 
           <Slider
             label="Avoidance rate"
@@ -165,7 +278,7 @@ function CalculatorTab({ params, result, update, applyPreset }) {
             max={0.8}
             step={0.05}
             format={(v) => `${(v * 100).toFixed(0)}%`}
-            description="Fraction of departees who return within 5 years"
+            description="Fraction of departees who resume CA residence within 5 years"
           />
 
           <Slider
@@ -189,7 +302,7 @@ function CalculatorTab({ params, result, update, applyPreset }) {
             max={100}
             step={5}
             format={(v) => (v >= 100 ? "Perpetuity" : `${v} years`)}
-            description="How long departing billionaires stay away"
+            description="How long non-returning departees stay away"
           />
 
           <Slider
@@ -229,9 +342,21 @@ function CalculatorTab({ params, result, update, applyPreset }) {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Annual income tax lost</span>
+              <span>Initial annual income tax lost</span>
               <span className="font-medium">
                 ${result.annualIncomeTaxLost.toFixed(1)}B/yr
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>PV of permanent income tax loss</span>
+              <span className="font-medium">
+                ${result.pvPermanentIncomeTaxLoss.toFixed(1)}B
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>PV of return-migration loss</span>
+              <span className="font-medium">
+                ${result.pvTemporaryIncomeTaxLoss.toFixed(1)}B
               </span>
             </div>
             <div className="flex justify-between">
@@ -244,109 +369,5 @@ function CalculatorTab({ params, result, update, applyPreset }) {
         </div>
       </div>
     </>
-  );
-}
-
-function LTCGTab() {
-  const ratio5m = taxShares.shares.find(
-    (s) => s.threshold === 5_000_000
-  )?.ratio;
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold mb-2">
-          Why federal income tax shares understate CA billionaire contributions
-        </h2>
-        <p className="text-[var(--gray-600)] mb-4">
-          California taxes long-term capital gains as ordinary income (up to
-          13.3%), while the federal code gives LTCG a preferential rate (max
-          23.8% vs 37% for wages). Since billionaire income is
-          disproportionately LTCG, scaling a federal-derived ratio to CA
-          understates their contribution. Saez et al. cite ~2.5% of CA income
-          tax receipts as the billionaire share, derived from federal data. Our
-          analysis suggests the true figure is closer to 3.5%.
-        </p>
-      </div>
-
-      {/* CA/Fed ratio chart */}
-      <div>
-        <h3 className="text-base font-semibold mb-3">
-          CA tax / federal tax ratio by income type
-        </h3>
-        <p className="text-sm text-[var(--gray-600)] mb-3">
-          At $100M income, a wage earner pays 36% as much CA tax as federal tax.
-          A capital gains earner pays 56% — because CA doesn&apos;t discount
-          LTCG.
-        </p>
-        <EffectiveRatesChart data={effectiveRates} />
-      </div>
-
-      {/* Tax shares table */}
-      <div>
-        <h3 className="text-base font-semibold mb-3">
-          Tax share by AGI threshold (CA filers, 2026)
-        </h3>
-        <p className="text-sm text-[var(--gray-600)] mb-3">
-          Among CA filers with AGI above $5M, they pay{" "}
-          {ratio5m ? `${ratio5m.toFixed(2)}x` : "more"} as much of CA state
-          income tax as they do of federal income tax.
-        </p>
-        <TaxSharesTable data={taxShares} />
-      </div>
-
-      {/* Progressivity */}
-      <div>
-        <h3 className="text-base font-semibold mb-3">
-          Is CA&apos;s income tax more progressive than federal?
-        </h3>
-        <p className="text-sm text-[var(--gray-600)]">
-          Measuring progressivity as Gini reduction per dollar of revenue
-          (stripping out refundable tax credits like EITC and CTC), CA&apos;s
-          rate structure is{" "}
-          <span className="font-semibold">
-            {progressivity.progressivity_ratio.toFixed(2)}x
-          </span>{" "}
-          as progressive as the federal rate structure per dollar collected. The
-          federal system achieves{" "}
-          {progressivity.fed_gini_per_trillion.toFixed(4)} Gini points of
-          reduction per $1T of revenue, while CA achieves{" "}
-          {progressivity.state_gini_per_trillion.toFixed(4)}.
-        </p>
-      </div>
-
-      {/* Sources */}
-      <div className="border-t border-[var(--gray-300)] pt-4">
-        <h3 className="text-sm font-semibold text-[var(--gray-700)] mb-2">
-          Sources and methodology
-        </h3>
-        <ul className="text-xs text-[var(--gray-600)] space-y-1">
-          <li>
-            Tax shares computed using PolicyEngine&apos;s CA-calibrated enhanced
-            CPS microsimulation (2026 tax year).
-          </li>
-          <li>
-            Effective rates from individual PolicyEngine household simulations
-            (single filer, CA, 2026).
-          </li>
-          <li>
-            Progressivity measured as change in Gini coefficient when each tax
-            is removed, normalized by revenue. Federal refundable credits (EITC,
-            CTC) excluded to isolate rate structure progressivity.
-          </li>
-          <li>
-            Replication notebook:{" "}
-            <a
-              href="https://gist.github.com/MaxGhenis/bbae835f25e3d07ce57b5e16b7ff170a"
-              className="text-[var(--teal-600)] hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub Gist
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
   );
 }

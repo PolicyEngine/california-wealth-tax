@@ -15,19 +15,21 @@ Two recent reports estimate dramatically different fiscal impacts:
 
 [Hoopes (2026)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6428578) provides a 7-page methodological comparison of the two reports.
 
-This tool lets users explore how different assumptions drive the gap between these estimates.
+This tool lets users explore how different assumptions drive the gap between these estimates. The preset buttons are calibrated to each paper's headline estimate within a simplified slider model; they are not full replications of the underlying methodologies.
 
 ## Features
 
 ### Fiscal impact calculator
-- Sliders for avoidance rate, departure rate, return migration, income tax estimates, horizon (finite vs perpetuity), and discount rate
-- Preset buttons for Saez et al. and Rauh et al. assumptions
+- Sliders for baseline wealth tax revenue, avoidance rate, departure rate, return migration, income tax estimates, horizon (finite vs perpetuity), and discount rate
+- Shareable scenario URLs that update as assumptions change
+- Separate display of permanent vs temporary income-tax-loss present value
+- Paper-calibrated preset buttons for the Saez et al. and Rauh et al. headline estimates
 - Waterfall chart showing sequential adjustments from baseline to net fiscal impact
 
 ### Capital gains analysis
 - **CA/Fed tax ratio by income type**: Shows that CA taxes LTCG at the same rate as wages (13.3%), while the federal code gives LTCG a preferential rate (23.8% vs 37%). This means billionaires contribute relatively more to CA state income tax than federal-derived ratios suggest.
 - **Tax shares by AGI threshold**: Among CA filers with AGI above $5M, they pay 8.9% of CA state income tax but only 6.6% of federal — a ratio of 1.34x.
-- **Progressivity comparison**: CA's rate structure is 1.19x as progressive as the federal rate structure per dollar of revenue (excluding refundable tax credits).
+- **Progressivity comparison**: CA's rate structure is 1.11x as progressive as the federal rate structure per dollar of revenue (excluding federal and state refundable tax credits).
 
 ## Data sources
 

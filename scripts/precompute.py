@@ -18,6 +18,11 @@ OUTPUT_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
+def weighted_positive_sum(series):
+    clipped = series.clip(lower=0)
+    return float((clipped.values * clipped.weights).sum())
+
+
 def compute_tax_shares():
     """Compute federal vs CA state income tax shares by AGI threshold."""
     sim = Microsimulation(
@@ -118,10 +123,14 @@ def compute_progressivity():
     fed_tax_before = sim.calc(
         "income_tax_before_refundable_credits", period=2026, map_to="person"
     )
-    state_tax = sim.calc("state_income_tax", period=2026, map_to="person")
+    state_tax_before = sim.calc(
+        "state_income_tax_before_refundable_credits",
+        period=2026,
+        map_to="person",
+    )
 
     no_fed_rates = (hh_net + fed_tax_before).clip(lower=0)
-    no_state = (hh_net + state_tax).clip(lower=0)
+    no_state = (hh_net + state_tax_before).clip(lower=0)
     actual = hh_net.clip(lower=0)
 
     gini_actual = float(actual.gini())
@@ -131,8 +140,14 @@ def compute_progressivity():
     fed_impact = gini_no_fed - gini_actual
     state_impact = gini_no_state - gini_actual
 
-    fed_rev = float(fed_tax_before.clip(lower=0).sum())
-    state_rev = float(state_tax.clip(lower=0).sum())
+    fed_tax_before_tax_unit = sim.calc(
+        "income_tax_before_refundable_credits", period=2026
+    )
+    state_tax_before_tax_unit = sim.calc(
+        "state_income_tax_before_refundable_credits", period=2026
+    )
+    fed_rev = weighted_positive_sum(fed_tax_before_tax_unit)
+    state_rev = weighted_positive_sum(state_tax_before_tax_unit)
 
     return {
         "gini_actual": gini_actual,
