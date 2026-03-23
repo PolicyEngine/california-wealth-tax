@@ -10,32 +10,11 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
+import { formatBillions } from "@/lib/format";
+import { buildWaterfallData } from "@/lib/waterfall";
 
 export default function WaterfallChart({ waterfall }) {
-  // Build waterfall data with invisible base bars
-  let running = 0;
-  const data = waterfall.map((step) => {
-    const base = running;
-    running += step.value;
-    return {
-      label: step.label,
-      value: step.value,
-      base: step.value >= 0 ? base : base + step.value,
-      height: Math.abs(step.value),
-      total: running,
-    };
-  });
-
-  // Add net total bar
-  const net = data[data.length - 1].total;
-  data.push({
-    label: "Net impact",
-    value: net,
-    base: 0,
-    height: Math.abs(net),
-    total: net,
-    isTotal: true,
-  });
+  const data = buildWaterfallData(waterfall);
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -49,23 +28,24 @@ export default function WaterfallChart({ waterfall }) {
           height={60}
         />
         <YAxis
-          tickFormatter={(v) => `$${v}B`}
+          tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
           tick={{ fontSize: 11 }}
         />
         <Tooltip
-          formatter={(value, name) => {
+          formatter={(_, name, item) => {
             if (name === "base") return null;
-            return [`$${value.toFixed(1)}B`, ""];
+            return [formatBillions(item.payload.value), ""];
           }}
         />
         <ReferenceLine y={0} stroke="var(--gray-400)" />
         {/* Invisible base */}
         <Bar dataKey="base" stackId="waterfall" fill="transparent" />
         {/* Visible bar */}
-        <Bar dataKey="height" stackId="waterfall" radius={[4, 4, 0, 0]}>
+        <Bar dataKey="height" stackId="waterfall">
           {data.map((entry, index) => (
             <Cell
               key={index}
+              radius={entry.isNegative ? [0, 0, 4, 4] : [4, 4, 0, 0]}
               fill={
                 entry.isTotal
                   ? entry.total >= 0

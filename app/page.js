@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
+import { formatBillions } from "@/lib/format";
 import Slider from "@/app/components/Slider";
 import {
   buildScenarioHref,
@@ -328,8 +329,7 @@ function CalculatorTab({
                 : "text-[var(--red-600)]"
             }`}
           >
-            {result.netFiscalImpact >= 0 ? "+" : ""}$
-            {Math.abs(result.netFiscalImpact).toFixed(1)}B
+            {formatBillions(result.netFiscalImpact, { showPlus: true })}
           </div>
 
           <WaterfallChart waterfall={result.waterfall} />
