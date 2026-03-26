@@ -387,6 +387,29 @@ export default function Home() {
               {micro.movers.length > 0 && (
               <AssumptionSection title="Income tax loss from departures">
                 <Slider
+                  label="Annual return rate"
+                  value={params.annualReturnRate}
+                  onChange={(nextValue) =>
+                    update("annualReturnRate", nextValue)
+                  }
+                  min={0}
+                  max={0.5}
+                  step={0.01}
+                  format={(value) => formatPercent(value)}
+                  description=""
+                  quickPicks={[
+                    { label: "0%", value: 0 },
+                    { label: "5%", value: 0.05 },
+                    { label: "15%", value: 0.15 },
+                  ]}
+                  minLabel="0%"
+                  maxLabel="50%"
+                  inputSuffix="%"
+                  toInputValue={(value) => toPercentInputValue(value)}
+                  fromInputValue={(rawValue) => Number(rawValue) / 100}
+                />
+
+                <Slider
                   label="Annual CA-taxable income / taxed wealth"
                   value={params.incomeYieldRate}
                   onChange={(nextValue) => update("incomeYieldRate", nextValue)}
