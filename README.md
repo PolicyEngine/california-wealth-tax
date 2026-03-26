@@ -1,103 +1,115 @@
 # California wealth tax fiscal impact calculator
 
-Interactive tool analyzing the fiscal impacts of California's proposed 2026 Billionaire Tax Act (Initiative 25-0024) — a one-time 5% tax on net worth exceeding $1 billion.
+Interactive tool analyzing the fiscal impact of California's proposed 2026
+Billionaire Tax Act (Initiative 25-0024), a one-time 5% tax on net worth above
+$1 billion.
 
 **Live app**: https://california-wealth-tax.vercel.app
 
-## Background
+## Scope
 
-Two recent reports estimate dramatically different fiscal impacts:
+This repo is intentionally narrow. It models the fiscal impact of the wealth
+tax under user-set assumptions about:
 
-| Report | Revenue estimate | Net fiscal impact | Methodology |
-|--------|-----------------|-------------------|-------------|
-| [Galle, Gamage, Saez & Shanske (2026)](https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf) | ~$100B | ~$100B (no income tax offset) | Forbes wealth × 5% × 90% compliance |
-| [Rauh, Jaros, Kearney, Doran & Cosso (2026)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778) | ~$40B | -$24.7B (net cost) | Person-by-person tax base, migration modeling, income tax NPV |
+- baseline one-time wealth tax revenue
+- avoidance
+- departures
+- annual return hazard for remaining movers
+- annual California-taxable income as a share of taxed wealth
+- time horizon and discounting
 
-[Hoopes (2026)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6428578) provides a 7-page methodological comparison of the two reports.
+California income tax is not entered directly. The app derives it from
+PolicyEngine's `ca_income_tax` calculation using a precomputed lookup at
+billionaire-scale income levels.
 
-This tool lets users explore how different assumptions drive the gap between these estimates. The preset buttons are calibrated to each paper's headline estimate within a simplified slider model; they are not full replications of the underlying methodologies.
+The preset buttons are calibrated to the headline figures in:
+
+- [Galle, Gamage, Saez & Shanske (2026)](https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf)
+- [Rauh, Jaros, Kearney, Doran & Cosso (2026)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778)
+
+They are simplified calibrations, not full replications of either paper.
+
+### Preset calibration notes
+
+- **Saez headline**: the backed-out parameter is the gross one-time score. The
+  app sets it to `$109.5B` so that, after a `10%` avoidance assumption,
+  collected wealth-tax revenue is about `$98.6B`, close to the paper's roughly
+  `$100B` static headline.
+- **Rauh headline**: the backed-out parameter is the annual taxable-income
+  yield on wealth. The app sets it to `3.6%` so that, given a `$67.2B` gross
+  score, `15%` avoidance, `30%` departures, zero return migration, a `3%`
+  discount rate, and a perpetuity horizon, the simplified model lands at about
+  `-$24.7B`.
+- In both presets, other values like the discounting setup, return path, and
+  the mapping from annual taxable income to California income tax come from
+  this app's simplified model layer, not from a full paper replication.
 
 ## Features
 
-### Fiscal impact calculator
-- Sliders for baseline wealth tax revenue, avoidance rate, departure rate, return migration, income tax estimates, horizon (finite vs perpetuity), and discount rate
-- Shareable scenario URLs that update as assumptions change
-- Separate display of permanent vs temporary income-tax-loss present value
-- Paper-calibrated preset buttons for the Saez et al. and Rauh et al. headline estimates
-- Waterfall chart showing sequential adjustments from baseline to net fiscal impact
+- One-page fiscal impact calculator
+- Shareable scenario URLs
+- Annual return-hazard migration model
+- Income-to-wealth assumption instead of a free dollar income input
+- Year-by-year cash-flow chart alongside the discounted summary
+- Waterfall chart from baseline revenue to net fiscal impact
+- PolicyEngine-backed California income-tax lookup
 
-### Capital gains analysis
-- **CA/Fed tax ratio by income type**: Shows that CA taxes LTCG at the same rate as wages (13.3%), while the federal code gives LTCG a preferential rate (23.8% vs 37%). This means billionaires contribute relatively more to CA state income tax than federal-derived ratios suggest.
-- **Tax shares by AGI threshold**: Among CA filers with AGI above $5M, they pay 8.9% of CA state income tax but only 6.6% of federal — a ratio of 1.34x.
-- **Progressivity comparison**: CA's rate structure is 1.11x as progressive as the federal rate structure per dollar of revenue (excluding federal and state refundable tax credits).
+## Data
 
-## Data sources
+### Precomputed from PolicyEngine
 
-### Precomputed from PolicyEngine microsimulation
-- `data/tax_shares.json` — Federal vs CA state income tax shares by AGI threshold (CA-calibrated enhanced CPS, 2026)
-- `data/effective_rates.json` — Effective tax rates for wages vs LTCG at various income levels
-- `data/progressivity.json` — Gini-based progressivity metrics
+- `data/income_tax_lookup.json` — California income tax at billionaire-scale
+  annual incomes, used to map derived annual taxable income to annual CA income
+  tax
 
-Replication notebook: https://gist.github.com/MaxGhenis/bbae835f25e3d07ce57b5e16b7ff170a
+### External references
 
-### External data and code
-- **Rauh et al. replication code**: https://github.com/bjaros20/wealth_tax (MIT license)
-  - `NPV_data/Raw_Data_Collection.xlsx` — 214 CA billionaires with Forbes net worth, residency, departure status, real estate valuations
-  - `NPV_data/monte_carlo_sim.R` — Pareto fit to FTB data + Monte Carlo for income tax estimates
-  - `NPV_data/NPV_dist.R` — 100K-draw NPV simulation
-- **Forbes real-time billionaires API**: https://github.com/komed3/rtb-api (MIT license)
-- **CA FTB data**: Published filer counts and tax liability by AGI bracket (Table B-4A)
+- **Rauh et al. replication code**: https://github.com/bjaros20/wealth_tax
+- **Forbes real-time billionaires API**: https://github.com/komed3/rtb-api
 - **PolicyEngine US model**: https://github.com/PolicyEngine/policyengine-us
-
-### Key academic references
-- Scheuer & Slemrod (2021). "Taxing Our Wealth." *Journal of Economic Perspectives* 35(1): 207-30.
-- Balkir, Saez, Yagan & Zucman (2025). "How Much Tax Do US Billionaires Pay?" NBER WP 34170.
-- Rauh & Shyu (2019). "Behavioral Responses to State Income Taxation of High Earners." SSRN 3461513.
-- Galle, Gamage & Shanske (2025). "Money Moves: Taxing the Wealthy at the State Level." *California Law Review*.
 
 ## Architecture
 
-```
+```text
 app/
-├── page.js              # Main page with tab navigation
+├── page.js                 # Main calculator page
 ├── components/
-│   ├── Slider.js        # Reusable slider input
-│   ├── WaterfallChart.js # Recharts waterfall
-│   ├── EffectiveRatesChart.js  # CA/Fed ratio line chart
-│   └── TaxSharesTable.js      # Tax share comparison table
-├── globals.css          # PE design tokens + Tailwind
-└── layout.js            # Metadata + fonts
+│   ├── Slider.js           # Reusable slider + exact input
+│   └── WaterfallChart.js   # Recharts waterfall
+├── globals.css             # PE-flavored design tokens + Tailwind
+└── layout.js               # Metadata + fonts
 
 lib/
-└── calculator.js        # Pure JS fiscal impact calculator (no API calls)
+├── calculator.js           # Pure JS fiscal impact model
+├── incomeTaxLookup.js      # Maps annual taxable income to CA income tax
+├── scenarioUrl.js          # URL parsing/serialization for shared scenarios
+└── waterfall.js            # Waterfall chart presentation helpers
 
 scripts/
-└── precompute.py        # Generates static JSON from PolicyEngine microsimulation
-
-data/                    # Precomputed JSON (committed, not generated at build time)
+└── precompute.py           # Generates the income-tax lookup from PolicyEngine
 ```
 
-The app is fully static — all PolicyEngine computations are precomputed into JSON files. The calculator tab uses pure client-side JavaScript. No API calls at runtime.
+The app is fully static. All PolicyEngine-dependent values are precomputed into
+JSON and loaded client-side. There are no runtime API calls.
 
 ## Development
 
 ```bash
-bun install
-bun run dev        # http://localhost:3000
-bun run build      # Production build
+npm install
+npm run dev
+npm run build
 ```
 
-### Regenerating precomputed data
+### Regenerating the income-tax lookup
 
-Requires `policyengine-us` installed (uses the `.venv` from the policyengine-us repo):
+Requires `policyengine-us` installed:
 
 ```bash
 cd ~/PolicyEngine/policyengine-us
 .venv/bin/python ~/PolicyEngine/california-wealth-tax/scripts/precompute.py
 ```
 
-## Related PolicyEngine work
+## Related work
 
-- [Marginal tax rates in California's proposed billionaire tax](https://policyengine.org/us/research/california-billionaire-tax-marginal-rates) (Oct 2025) — Phase-in creates 50-60% marginal rates in the $1.0-1.1B range
-- [Warren's wealth tax would raise less than she claims](https://maxghenis.com/blog/warrens-wealth-tax-would-raise-less-than-she-claim/) (2019) — Saez/Zucman miscalculated avoidance response
-- PolicyEngine US data issue [#613](https://github.com/PolicyEngine/policyengine-us-data/issues/613) — Integrating Forbes 400 into microsimulation model
+- [State tax progressivity explorer](../state-tax-progressivity) — separate repo
+  for cross-state rate structure and progressivity analysis
