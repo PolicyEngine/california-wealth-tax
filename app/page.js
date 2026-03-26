@@ -80,7 +80,7 @@ const PRESETS = {
       excludeRealEstate: true,
       avoidanceRate: 0.15,
       annualReturnRate: 0,
-      incomeYieldRate: 0.036,
+      incomeYieldRate: 0.023,
       growthRate: 0,
       horizonYears: Infinity,
       discountRate: 0.03,
