@@ -1,0 +1,210 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - heading "California wealth tax fiscal impact calculator" [level=1] [ref=e5]
+        - paragraph [ref=e6]: Analyzing the proposed 5% one-time tax on billionaire wealth
+    - generic [ref=e8]:
+      - button "Fiscal impact calculator" [ref=e9] [cursor=pointer]
+      - button "Capital gains analysis" [ref=e10] [cursor=pointer]
+    - main [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - paragraph [ref=e14]: Fiscal impact calculator
+          - heading "Tune the model one assumption at a time." [level=2] [ref=e15]
+          - paragraph [ref=e16]: Use the quick picks for common scenarios or type exact values when you want precision. The default baseline gross score is $94.2B (Rauh et al.'s corrected estimate), and the results panel stays in view as you adjust the model.
+        - generic [ref=e17]:
+          - button "Saez headline" [ref=e18] [cursor=pointer]
+          - button "Rauh headline" [ref=e19] [cursor=pointer]
+          - button "Copy scenario link" [ref=e20] [cursor=pointer]
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - heading "Assumptions" [level=3] [ref=e24]
+              - paragraph [ref=e25]: "Each section controls one part of the score: the starting tax base, how the base changes under behavior, and how much California income tax disappears when people leave."
+            - generic [ref=e26]:
+              - generic [ref=e27]:
+                - heading "Tax base" [level=4] [ref=e28]
+                - paragraph [ref=e29]: Start with the gross one-time wealth tax score before households react.
+              - generic [ref=e31]:
+                - generic [ref=e32]:
+                  - generic [ref=e33]:
+                    - text: Baseline wealth tax score
+                    - paragraph [ref=e34]: Gross one-time revenue before avoidance and departures.
+                  - generic [ref=e35]: $94.2B
+                - generic [ref=e36]:
+                  - button "$67.2B" [ref=e37] [cursor=pointer]
+                  - button "$94.2B" [ref=e38] [cursor=pointer]
+                  - button "$109.5B" [ref=e39] [cursor=pointer]
+                - generic [ref=e40]:
+                  - slider "Baseline wealth tax score" [ref=e41] [cursor=pointer]: "94"
+                  - generic [ref=e42]:
+                    - generic [ref=e43]: $20B
+                    - generic [ref=e44]: $140B
+                - generic [ref=e45]:
+                  - generic [ref=e46]: Exact value
+                  - generic [ref=e47]:
+                    - spinbutton [ref=e48]: "94.2"
+                    - generic [ref=e49]: B
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - heading "Behavior" [level=4] [ref=e52]
+                - paragraph [ref=e53]: Model how much of the base disappears through avoidance and migration.
+              - generic [ref=e54]:
+                - generic [ref=e55]:
+                  - generic [ref=e56]:
+                    - generic [ref=e57]:
+                      - text: Avoidance rate
+                      - paragraph [ref=e58]: Fraction of the wealth tax base lost to avoidance or evasion.
+                    - generic [ref=e59]: 15%
+                  - generic [ref=e60]:
+                    - button "5%" [ref=e61] [cursor=pointer]
+                    - button "15%" [ref=e62] [cursor=pointer]
+                    - button "30%" [ref=e63] [cursor=pointer]
+                  - generic [ref=e64]:
+                    - slider "Avoidance rate" [ref=e65] [cursor=pointer]: "0.15"
+                    - generic [ref=e66]:
+                      - generic [ref=e67]: 0%
+                      - generic [ref=e68]: 50%
+                  - generic [ref=e69]:
+                    - generic [ref=e70]: Exact value
+                    - generic [ref=e71]:
+                      - spinbutton [ref=e72]: "15"
+                      - generic [ref=e73]: "%"
+                - generic [ref=e74]:
+                  - generic [ref=e75]:
+                    - generic [ref=e76]:
+                      - text: Departure rate
+                      - paragraph [ref=e77]: Fraction of billionaires who leave California to avoid the tax.
+                    - generic [ref=e78]: 15%
+                  - generic [ref=e79]:
+                    - button "0%" [ref=e80] [cursor=pointer]
+                    - button "15%" [ref=e81] [cursor=pointer]
+                    - button "30%" [ref=e82] [cursor=pointer]
+                  - generic [ref=e83]:
+                    - slider "Departure rate" [ref=e84] [cursor=pointer]: "0.15"
+                    - generic [ref=e85]:
+                      - generic [ref=e86]: 0%
+                      - generic [ref=e87]: 60%
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: Exact value
+                    - generic [ref=e90]:
+                      - spinbutton [ref=e91]: "15"
+                      - generic [ref=e92]: "%"
+                - generic [ref=e93]:
+                  - generic [ref=e94]:
+                    - generic [ref=e95]:
+                      - text: Return migration rate
+                      - paragraph [ref=e96]: Fraction of departees who return to California within five years.
+                    - generic [ref=e97]: 25%
+                  - generic [ref=e98]:
+                    - button "0%" [ref=e99] [cursor=pointer]
+                    - button "25%" [ref=e100] [cursor=pointer]
+                    - button "50%" [ref=e101] [cursor=pointer]
+                  - generic [ref=e102]:
+                    - slider "Return migration rate" [ref=e103] [cursor=pointer]: "0.25"
+                    - generic [ref=e104]:
+                      - generic [ref=e105]: 0%
+                      - generic [ref=e106]: 80%
+                  - generic [ref=e107]:
+                    - generic [ref=e108]: Exact value
+                    - generic [ref=e109]:
+                      - spinbutton [ref=e110]: "25"
+                      - generic [ref=e111]: "%"
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - heading "Income tax offset" [level=4] [ref=e114]
+                - paragraph [ref=e115]: Price the California income tax lost when departing billionaires stop filing here.
+              - generic [ref=e116]:
+                - generic [ref=e117]:
+                  - generic [ref=e118]:
+                    - generic [ref=e119]:
+                      - text: Annual billionaire income tax
+                      - paragraph [ref=e120]: Annual California income tax paid by billionaire households while resident.
+                    - generic [ref=e121]: $4.3B
+                  - generic [ref=e122]:
+                    - button "$2.9B" [ref=e123] [cursor=pointer]
+                    - button "$4.3B" [ref=e124] [cursor=pointer]
+                    - button "$6.5B" [ref=e125] [cursor=pointer]
+                  - generic [ref=e126]:
+                    - slider "Annual billionaire income tax" [ref=e127] [cursor=pointer]: "4.3"
+                    - generic [ref=e128]:
+                      - generic [ref=e129]: $1B
+                      - generic [ref=e130]: $8B
+                  - generic [ref=e131]:
+                    - generic [ref=e132]: Exact value
+                    - generic [ref=e133]:
+                      - spinbutton [ref=e134]: "4.3"
+                      - generic [ref=e135]: B
+                - generic [ref=e136]:
+                  - generic [ref=e137]:
+                    - generic [ref=e138]:
+                      - text: Income tax horizon
+                      - paragraph [ref=e139]: How long non-returning departees stay away before California stops losing their income tax.
+                    - generic [ref=e140]: 30 years
+                  - generic [ref=e141]:
+                    - button "10y" [ref=e142] [cursor=pointer]
+                    - button "30y" [ref=e143] [cursor=pointer]
+                    - button "Perpetuity" [ref=e144] [cursor=pointer]
+                  - generic [ref=e145]:
+                    - slider "Income tax horizon" [ref=e146] [cursor=pointer]: "30"
+                    - generic [ref=e147]:
+                      - generic [ref=e148]: 5 years
+                      - generic [ref=e149]: Perpetuity
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - generic [ref=e152]:
+                      - text: Real discount rate
+                      - paragraph [ref=e153]: Discount rate applied to future income tax losses.
+                    - generic [ref=e154]: 3.0%
+                  - generic [ref=e155]:
+                    - button "2%" [ref=e156] [cursor=pointer]
+                    - button "3%" [ref=e157] [cursor=pointer]
+                    - button "5%" [ref=e158] [cursor=pointer]
+                  - generic [ref=e159]:
+                    - slider "Real discount rate" [ref=e160] [cursor=pointer]: "0.03"
+                    - generic [ref=e161]:
+                      - generic [ref=e162]: 1%
+                      - generic [ref=e163]: 7%
+                  - generic [ref=e164]:
+                    - generic [ref=e165]: Exact value
+                    - generic [ref=e166]:
+                      - spinbutton [ref=e167]: "3.0"
+                      - generic [ref=e168]: "%"
+          - complementary [ref=e169]:
+            - paragraph [ref=e170]: Live estimate
+            - heading "Net fiscal impact" [level=3] [ref=e171]
+            - paragraph [ref=e172]: Static wealth-tax revenue minus the present value of income tax lost when billionaire households leave California.
+            - generic [ref=e173]: +$57.8B
+            - application [ref=e195]:
+              - generic [ref=e234]:
+                - generic [ref=e235]:
+                  - generic [ref=e237]: Baseline
+                  - generic [ref=e239]: Avoidance
+                  - generic [ref=e241]: Departures (wealth tax)
+                  - generic [ref=e243]: Income tax loss (PV)
+                  - generic [ref=e245]: Net impact
+                - generic [ref=e246]:
+                  - generic [ref=e248]: $0B
+                  - generic [ref=e250]: $25B
+                  - generic [ref=e252]: $50B
+                  - generic [ref=e254]: $75B
+                  - generic [ref=e256]: $100B
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: Wealth tax collected
+                - generic [ref=e179]: $68.1B
+              - generic [ref=e180]:
+                - generic [ref=e181]: Initial annual income tax lost
+                - generic [ref=e182]: $0.6B/yr
+              - generic [ref=e183]:
+                - generic [ref=e184]: PV of permanent loss
+                - generic [ref=e185]: $9.5B
+              - generic [ref=e186]:
+                - generic [ref=e187]: PV of five-year return loss
+                - generic [ref=e188]: $0.7B
+              - generic [ref=e189]:
+                - generic [ref=e190]: PV of lost income tax
+                - generic [ref=e191]: $10.2B
+  - alert [ref=e192]
+  - generic [ref=e257]: $0B

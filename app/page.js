@@ -233,22 +233,7 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--teal-700)]">
-              Fiscal impact calculator
-            </p>
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
-              Explore how each assumption changes the bottom line.
-            </h2>
-            <p className="text-base leading-7 text-[var(--gray-600)]">
-              Enter a gross revenue estimate and the model backs out the taxable
-              wealth base. You set income as a share of that wealth — the app
-              then uses PolicyEngine to calculate California income tax, so you
-              don&apos;t have to guess dollar figures directly.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 border-b border-[var(--gray-200)] pb-6">
+          <div className="flex flex-wrap items-center gap-3 pb-2">
             {Object.entries(PRESETS).map(([key, preset]) => (
               <span key={key} className="inline-flex items-center gap-1.5">
                 <button
@@ -283,96 +268,8 @@ export default function Home() {
             </button>
           </div>
 
-          <section className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 text-sm leading-6 text-[var(--gray-600)] shadow-[0_30px_80px_-48px_rgba(40,94,97,0.35)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal-700)]">
-              Preset calibration notes
-            </p>
-            <div className="mt-3 grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
-                <p className="font-semibold text-[var(--gray-700)]">
-                  <a
-                    href={PRESETS.saez.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
-                  >
-                    Galle, Gamage, Saez &amp; Shanske (2026)
-                  </a>
-                </p>
-                <p>
-                  A static revenue estimate with no behavioral response. The
-                  gross score is{" "}
-                  {formatBillions(PRESETS.saez.params.baselineWealthTaxB)}; after{" "}
-                  {formatPercent(PRESETS.saez.params.avoidanceRate)} avoidance
-                  the tax collects about{" "}
-                  {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
-                  close to the paper&apos;s roughly $100B headline. No
-                  departures and no income-tax dynamics.
-                </p>
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  Other values filled by this app:{" "}
-                  {formatPercent(PRESETS.saez.params.incomeYieldRate, 1)} annual
-                  income / wealth,{" "}
-                  {formatBillions(PRESET_DETAILS.saez.annualTaxableIncomeB)}/yr
-                  taxable income,{" "}
-                  {formatBillions(PRESET_DETAILS.saez.annualIncomeTaxB)}/yr CA
-                  income tax,{" "}
-                  {formatPercent(PRESETS.saez.params.discountRate, 1)} discount
-                  rate, perpetuity horizon.
-                </p>
-              </div>
-
-              <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
-                <p className="font-semibold text-[var(--gray-700)]">
-                  <a
-                    href={PRESETS.rauh.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
-                  >
-                    Rauh, Jaros, Kearney, Doran &amp; Cosso (2026)
-                  </a>
-                </p>
-                <p>
-                  Accounts for a smaller tax base (
-                  {formatBillions(PRESETS.rauh.params.baselineWealthTaxB)} gross
-                  score), {formatPercent(PRESETS.rauh.params.avoidanceRate)}{" "}
-                  avoidance, and{" "}
-                  {formatPercent(PRESETS.rauh.params.departureRate)} departures.
-                  When future income-tax losses are included, the net fiscal
-                  impact is about{" "}
-                  {formatBillions(PRESET_DETAILS.rauh.result.netFiscalImpact)}.
-                </p>
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  This app fits their headline by setting income / wealth yield
-                  to {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)},
-                  implying{" "}
-                  {formatBillions(PRESET_DETAILS.rauh.taxableWealthBaseB)} of
-                  taxed wealth,{" "}
-                  {formatBillions(PRESET_DETAILS.rauh.annualTaxableIncomeB)}/yr
-                  taxable income, and{" "}
-                  {formatBillions(PRESET_DETAILS.rauh.annualIncomeTaxB)}/yr CA
-                  income tax. Zero return migration,{" "}
-                  {formatPercent(PRESETS.rauh.params.discountRate, 1)} discount
-                  rate, perpetuity horizon.
-                </p>
-              </div>
-            </div>
-          </section>
-
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
-                  Assumptions
-                </h3>
-                <p className="text-sm leading-6 text-[var(--gray-600)]">
-                  Three groups of inputs: the starting tax base, behavioral
-                  responses (avoidance and migration), and the income-tax cost
-                  of departures. Return migration is modeled as an annual
-                  hazard, not a fixed five-year bucket.
-                </p>
-              </div>
 
               <AssumptionSection
                 title="Tax base"
@@ -670,6 +567,90 @@ export default function Home() {
             </p>
           )}
         </section>
+
+        <details className="group border-t border-[var(--gray-200)] pt-6">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
+            Calibration notes
+          </summary>
+          <div className="mt-4 grid grid-cols-1 gap-4 text-sm leading-6 text-[var(--gray-600)] xl:grid-cols-2">
+            <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
+              <p className="font-semibold text-[var(--gray-700)]">
+                <a
+                  href={PRESETS.saez.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
+                >
+                  Galle, Gamage, Saez &amp; Shanske (2026)
+                </a>
+              </p>
+              <p>
+                A static revenue estimate with no behavioral response. The
+                gross score is{" "}
+                {formatBillions(PRESETS.saez.params.baselineWealthTaxB)}; after{" "}
+                {formatPercent(PRESETS.saez.params.avoidanceRate)} avoidance
+                the tax collects about{" "}
+                {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
+                close to the paper&apos;s roughly $100B headline. No
+                departures and no income-tax dynamics.
+              </p>
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Other values filled by this app:{" "}
+                {formatPercent(PRESETS.saez.params.incomeYieldRate, 1)} annual
+                income / wealth,{" "}
+                {formatBillions(PRESET_DETAILS.saez.annualTaxableIncomeB)}/yr
+                taxable income,{" "}
+                {formatBillions(PRESET_DETAILS.saez.annualIncomeTaxB)}/yr CA
+                income tax,{" "}
+                {formatPercent(PRESETS.saez.params.discountRate, 1)} discount
+                rate, perpetuity horizon.
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
+              <p className="font-semibold text-[var(--gray-700)]">
+                <a
+                  href={PRESETS.rauh.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
+                >
+                  Rauh, Jaros, Kearney, Doran &amp; Cosso (2026)
+                </a>
+              </p>
+              <p>
+                Accounts for a smaller tax base (
+                {formatBillions(PRESETS.rauh.params.baselineWealthTaxB)} gross
+                score), {formatPercent(PRESETS.rauh.params.avoidanceRate)}{" "}
+                avoidance, and{" "}
+                {formatPercent(PRESETS.rauh.params.departureRate)} departures.
+                When future income-tax losses are included, the net fiscal
+                impact is about{" "}
+                {formatBillions(PRESET_DETAILS.rauh.result.netFiscalImpact)}.
+              </p>
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                This app fits their headline by setting income / wealth yield
+                to {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)},
+                implying{" "}
+                {formatBillions(PRESET_DETAILS.rauh.taxableWealthBaseB)} of
+                taxed wealth,{" "}
+                {formatBillions(PRESET_DETAILS.rauh.annualTaxableIncomeB)}/yr
+                taxable income, and{" "}
+                {formatBillions(PRESET_DETAILS.rauh.annualIncomeTaxB)}/yr CA
+                income tax. Zero return migration,{" "}
+                {formatPercent(PRESETS.rauh.params.discountRate, 1)} discount
+                rate, perpetuity horizon.
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
+            Both presets are simplified calibrations, not full replications.
+            Income tax is derived from PolicyEngine&apos;s{" "}
+            <code className="text-xs">ca_income_tax</code> variable via a
+            precomputed lookup at billionaire-scale income levels.
+          </p>
+        </details>
       </main>
     </div>
   );
