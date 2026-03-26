@@ -19,6 +19,22 @@ import incomeTaxLookup from "@/data/income_tax_lookup.json";
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
 
+// From Rauh et al. replication data (Raw_Data_Collection.xlsx)
+const WEALTH_BASE_OPTIONS = {
+  all: {
+    label: "All Forbes CA billionaires",
+    wealthB: 2149.6,
+    realEstateB: 4.74,
+    description: "214 billionaires, Oct 2025 Forbes snapshot",
+  },
+  afterDepartures: {
+    label: "After known departures",
+    wealthB: 1343.2,
+    realEstateB: 4.21,
+    description: "205 billionaires who stayed through Dec 31, 2025",
+  },
+};
+
 function ChartLoading() {
   return (
     <div className="h-[320px] animate-pulse rounded-[24px] border border-[var(--gray-200)] bg-[var(--gray-50)]" />
@@ -39,7 +55,8 @@ const PRESETS = {
     description: "Calibrated to Saez et al.'s roughly $100B static score.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
-      baselineWealthTaxB: 109.5,
+      wealthBase: "all",
+      excludeRealEstate: false,
       avoidanceRate: 0.1,
       departureRate: 0,
       annualReturnRate: 0,
@@ -54,9 +71,10 @@ const PRESETS = {
     description: "Calibrated to Rauh et al.'s revenue and net-cost headline.",
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
-      baselineWealthTaxB: 67.2,
+      wealthBase: "afterDepartures",
+      excludeRealEstate: true,
       avoidanceRate: 0.15,
-      departureRate: 0.3,
+      departureRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.036,
       growthRate: 0,
@@ -67,7 +85,8 @@ const PRESETS = {
 };
 
 const DEFAULT_PARAMS = {
-  baselineWealthTaxB: 109.5,
+  wealthBase: "all",
+  excludeRealEstate: false,
   avoidanceRate: 0.1,
   departureRate: 0,
   annualReturnRate: 0,
@@ -76,6 +95,12 @@ const DEFAULT_PARAMS = {
   horizonYears: Infinity,
   discountRate: 0.03,
 };
+
+function computeBaselineWealthTaxB(wealthBase, excludeRealEstate) {
+  const option = WEALTH_BASE_OPTIONS[wealthBase] ?? WEALTH_BASE_OPTIONS.all;
+  const wealth = option.wealthB - (excludeRealEstate ? option.realEstateB : 0);
+  return wealth * WEALTH_TAX_RATE;
+}
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -91,17 +116,29 @@ function taxableWealthBaseFromBaseline(baselineWealthTaxB) {
 }
 
 function buildPresetDetails(params) {
-  const taxableWealthBaseB = taxableWealthBaseFromBaseline(
-    params.baselineWealthTaxB
+  const baselineWealthTaxB = computeBaselineWealthTaxB(
+    params.wealthBase,
+    params.excludeRealEstate
   );
+  const taxableWealthBaseB = taxableWealthBaseFromBaseline(baselineWealthTaxB);
   const annualTaxableIncomeB = taxableWealthBaseB * params.incomeYieldRate;
   const annualIncomeTaxB = estimateCaliforniaIncomeTaxB(
     annualTaxableIncomeB,
     incomeTaxLookup
   );
-  const result = calculateFiscalImpact({ ...params, annualIncomeTaxB });
+  const result = calculateFiscalImpact({
+    baselineWealthTaxB,
+    avoidanceRate: params.avoidanceRate,
+    departureRate: params.departureRate,
+    annualIncomeTaxB,
+    horizonYears: params.horizonYears,
+    discountRate: params.discountRate,
+    annualReturnRate: params.annualReturnRate,
+    growthRate: params.growthRate,
+  });
 
   return {
+    baselineWealthTaxB,
     taxableWealthBaseB,
     annualTaxableIncomeB,
     annualIncomeTaxB,
@@ -119,9 +156,13 @@ export default function Home() {
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
 
+  const baselineWealthTaxB = useMemo(
+    () => computeBaselineWealthTaxB(params.wealthBase, params.excludeRealEstate),
+    [params.wealthBase, params.excludeRealEstate]
+  );
   const taxableWealthBaseB = useMemo(
-    () => taxableWealthBaseFromBaseline(params.baselineWealthTaxB),
-    [params.baselineWealthTaxB]
+    () => taxableWealthBaseFromBaseline(baselineWealthTaxB),
+    [baselineWealthTaxB]
   );
   const annualTaxableIncomeB = useMemo(
     () => taxableWealthBaseB * params.incomeYieldRate,
@@ -134,10 +175,16 @@ export default function Home() {
   const result = useMemo(
     () =>
       calculateFiscalImpact({
-        ...params,
+        baselineWealthTaxB,
+        avoidanceRate: params.avoidanceRate,
+        departureRate: params.departureRate,
         annualIncomeTaxB,
+        horizonYears: params.horizonYears,
+        discountRate: params.discountRate,
+        annualReturnRate: params.annualReturnRate,
+        growthRate: params.growthRate,
       }),
-    [annualIncomeTaxB, params]
+    [annualIncomeTaxB, baselineWealthTaxB, params]
   );
   const cashFlow = useMemo(
     () =>
@@ -268,26 +315,82 @@ export default function Home() {
             <div className="space-y-10">
 
               <AssumptionSection title="Tax base">
-                <Slider
-                  label="Baseline wealth tax score"
-                  value={params.baselineWealthTaxB}
-                  onChange={(nextValue) =>
-                    update("baselineWealthTaxB", nextValue)
-                  }
-                  min={20}
-                  max={140}
-                  step={0.5}
-                  format={(value) => `$${value.toFixed(1)}B`}
-                  description=""
-                  quickPicks={[
-                    { label: "$67B (Rauh)", value: 67.2 },
-                    { label: "$110B (Saez)", value: 109.5 },
-                  ]}
-                  minLabel="$20B"
-                  maxLabel="$140B"
-                  inputSuffix="B"
-                  toInputValue={(value) => value.toFixed(1)}
-                />
+                <div className="space-y-4 py-4">
+                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                    Who is included?
+                  </p>
+                  <div className="space-y-2">
+                    {Object.entries(WEALTH_BASE_OPTIONS).map(([key, option]) => (
+                      <label
+                        key={key}
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                          params.wealthBase === key
+                            ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
+                            : "border-[var(--gray-200)] bg-white hover:border-[var(--gray-300)]"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="wealthBase"
+                          value={key}
+                          checked={params.wealthBase === key}
+                          onChange={() => update("wealthBase", key)}
+                          className="accent-[var(--teal-600)]"
+                        />
+                        <div>
+                          <span className="text-sm font-semibold text-[var(--gray-700)]">
+                            {option.label}
+                          </span>
+                          <span className="ml-2 text-sm text-[var(--gray-500)]">
+                            ${option.wealthB.toLocaleString()}B
+                          </span>
+                          <p className="text-xs text-[var(--gray-500)]">
+                            {option.description}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="py-4">
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={params.excludeRealEstate}
+                      onChange={(e) =>
+                        update("excludeRealEstate", e.target.checked)
+                      }
+                      className="h-4 w-4 rounded accent-[var(--teal-600)]"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-[var(--gray-700)]">
+                        Exclude directly-held real estate
+                      </span>
+                      <span className="ml-2 text-sm text-[var(--gray-500)]">
+                        −$
+                        {(
+                          WEALTH_BASE_OPTIONS[params.wealthBase]?.realEstateB ??
+                          0
+                        ).toFixed(1)}
+                        B
+                      </span>
+                      <p className="text-xs text-[var(--gray-500)]">
+                        The bill excludes real estate held directly by
+                        billionaires (already subject to property tax)
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
+                  <span className="text-sm text-[var(--gray-600)]">
+                    Gross wealth tax score
+                  </span>
+                  <span className="text-sm font-semibold text-[var(--teal-700)]">
+                    {formatBillions(baselineWealthTaxB)}
+                  </span>
+                </div>
               </AssumptionSection>
 
               <AssumptionSection title="Behavior">
@@ -560,25 +663,12 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                A static revenue estimate with no behavioral response. The
-                gross score is{" "}
-                {formatBillions(PRESETS.saez.params.baselineWealthTaxB)}; after{" "}
+                All 214 Forbes CA billionaires, including those who
+                subsequently left. After{" "}
                 {formatPercent(PRESETS.saez.params.avoidanceRate)} avoidance
                 the tax collects about{" "}
                 {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
-                close to the paper&apos;s roughly $100B headline. No
-                departures and no income-tax dynamics.
-              </p>
-              <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Other values filled by this app:{" "}
-                {formatPercent(PRESETS.saez.params.incomeYieldRate, 1)} annual
-                income / wealth,{" "}
-                {formatBillions(PRESET_DETAILS.saez.annualTaxableIncomeB)}/yr
-                taxable income,{" "}
-                {formatBillions(PRESET_DETAILS.saez.annualIncomeTaxB)}/yr CA
-                income tax,{" "}
-                {formatPercent(PRESETS.saez.params.discountRate, 1)} discount
-                rate, perpetuity horizon.
+                close to the paper&apos;s roughly $100B headline.
               </p>
             </div>
 
@@ -594,27 +684,19 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                Accounts for a smaller tax base (
-                {formatBillions(PRESETS.rauh.params.baselineWealthTaxB)} gross
-                score), {formatPercent(PRESETS.rauh.params.avoidanceRate)}{" "}
-                avoidance, and{" "}
-                {formatPercent(PRESETS.rauh.params.departureRate)} departures.
-                When future income-tax losses are included, the net fiscal
-                impact is about{" "}
-                {formatBillions(PRESET_DETAILS.rauh.result.netFiscalImpact)}.
+                Uses only the 205 billionaires who stayed through Dec 31, 2025
+                (excluding 9 known departures worth $806B), excludes
+                directly-held real estate, and applies{" "}
+                {formatPercent(PRESETS.rauh.params.avoidanceRate)} avoidance.
+                Gross score:{" "}
+                {formatBillions(PRESET_DETAILS.rauh.baselineWealthTaxB)}.
               </p>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                This app fits their headline by setting income / wealth yield
-                to {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)},
-                implying{" "}
-                {formatBillions(PRESET_DETAILS.rauh.taxableWealthBaseB)} of
-                taxed wealth,{" "}
-                {formatBillions(PRESET_DETAILS.rauh.annualTaxableIncomeB)}/yr
-                taxable income, and{" "}
-                {formatBillions(PRESET_DETAILS.rauh.annualIncomeTaxB)}/yr CA
-                income tax. Zero return migration,{" "}
+                Income / wealth yield set to{" "}
+                {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)},{" "}
                 {formatPercent(PRESETS.rauh.params.discountRate, 1)} discount
-                rate, perpetuity horizon.
+                rate, perpetuity horizon. Billionaire-level data from Rauh
+                et al.&apos;s replication repository.
               </p>
             </div>
           </div>
