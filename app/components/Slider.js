@@ -116,9 +116,6 @@ export default function Slider({
 
       {showNumberInput && (
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-400)]">
-            Exact value
-          </span>
           <div className="inline-flex items-center rounded-full border border-[var(--gray-300)] bg-white px-3 py-2 shadow-sm">
             <input
               type="number"

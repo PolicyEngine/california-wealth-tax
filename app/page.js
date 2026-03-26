@@ -224,10 +224,6 @@ export default function Home() {
           <h1 className="text-xl font-bold">
             California wealth tax fiscal impact calculator
           </h1>
-          <p className="mt-1 text-sm text-teal-100">
-            How much would California&apos;s proposed one-time 5% billionaire
-            tax actually raise? Adjust the assumptions and find out.
-          </p>
         </div>
       </header>
 
@@ -271,10 +267,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
-              <AssumptionSection
-                title="Tax base"
-                description="Start with the gross one-time wealth tax score before households react."
-              >
+              <AssumptionSection title="Tax base">
                 <Slider
                   label="Baseline wealth tax score"
                   value={params.baselineWealthTaxB}
@@ -285,7 +278,7 @@ export default function Home() {
                   max={140}
                   step={0.5}
                   format={(value) => `$${value.toFixed(1)}B`}
-                  description="Gross one-time revenue before avoidance and departures."
+                  description=""
                   quickPicks={[
                     { label: "$67B (Rauh)", value: 67.2 },
                     { label: "$110B (Saez)", value: 109.5 },
@@ -297,10 +290,7 @@ export default function Home() {
                 />
               </AssumptionSection>
 
-              <AssumptionSection
-                title="Behavior"
-                description="Model how much of the base disappears through avoidance and migration."
-              >
+              <AssumptionSection title="Behavior">
                 <Slider
                   label="Avoidance rate"
                   value={params.avoidanceRate}
@@ -309,7 +299,7 @@ export default function Home() {
                   max={0.5}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description="Fraction of the wealth tax base lost to avoidance or evasion."
+                  description=""
                   quickPicks={[
                     { label: "5%", value: 0.05 },
                     { label: "15%", value: 0.15 },
@@ -330,7 +320,7 @@ export default function Home() {
                   max={0.6}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description="Fraction of billionaire households who leave California to avoid the tax."
+                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "15%", value: 0.15 },
@@ -354,7 +344,7 @@ export default function Home() {
                   max={0.5}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description="Share of departed billionaires who return each year."
+                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "5%", value: 0.05 },
@@ -370,10 +360,7 @@ export default function Home() {
               </AssumptionSection>
 
               {params.departureRate > 0 && (
-              <AssumptionSection
-                title="Income / wealth"
-                description="How much California-taxable income do billionaires generate relative to their wealth, and how does it grow over time?"
-              >
+              <AssumptionSection title="Income / wealth">
                 <Slider
                   label="Annual CA-taxable income / taxed wealth"
                   value={params.incomeYieldRate}
@@ -382,7 +369,7 @@ export default function Home() {
                   max={0.05}
                   step={0.001}
                   format={(value) => formatPercent(value, 1)}
-                  description="Annual California-taxable income as a share of the wealth base. Wages, dividends, and capital gains all run through the same state rate schedule at this level."
+                  description=""
                   quickPicks={[
                     { label: "1.0%", value: 0.01 },
                     { label: "1.7%", value: 0.017 },
@@ -403,7 +390,7 @@ export default function Home() {
                   max={0.1}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  description="Annual real growth rate of billionaire wealth and California-taxable income. Increases the income tax lost each year movers stay away."
+                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "4%", value: 0.04 },
@@ -428,7 +415,7 @@ export default function Home() {
                   max={100}
                   step={5}
                   format={(value) => formatYears(value >= 100 ? Infinity : value)}
-                  description="How many years to keep pricing income-tax losses under the departure and return path."
+                  description=""
                   quickPicks={[
                     { label: "10y", value: 10 },
                     { label: "30y", value: 30 },
@@ -447,7 +434,7 @@ export default function Home() {
                   max={0.07}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  description="Discount rate applied to future income tax losses."
+                  description=""
                   quickPicks={[
                     { label: "2%", value: 0.02 },
                     { label: "3%", value: 0.03 },
@@ -464,17 +451,9 @@ export default function Home() {
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal-700)]">
-                Live estimate
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
                 Net fiscal impact
-              </h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-[var(--gray-600)]">
-                One-time wealth-tax revenue minus the present value of future
-                California income tax lost from billionaire departures.
               </p>
-
               <div
                 className={`mt-6 text-5xl font-semibold tracking-[-0.05em] ${
                   result.netFiscalImpact >= 0
@@ -489,71 +468,67 @@ export default function Home() {
                 <WaterfallChart waterfall={result.waterfall} />
               </div>
 
-              <div className="mt-6 divide-y divide-[var(--gray-100)] text-sm text-[var(--gray-600)]">
-                <div className="flex items-center justify-between py-3">
-                  <span>Taxable wealth base</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(taxableWealthBaseB)}
-                  </span>
+              <details className="mt-6 text-sm text-[var(--gray-600)]">
+                <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
+                  Derivation
+                </summary>
+                <div className="mt-2 divide-y divide-[var(--gray-100)]">
+                  <div className="flex items-center justify-between py-2">
+                    <span>Taxable wealth base</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(taxableWealthBaseB)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>Annual CA-taxable income</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(annualTaxableIncomeB)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>CA income tax (PolicyEngine)</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(annualIncomeTaxB)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>Effective CA rate</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatPercent(impliedCaRate, 1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>Wealth tax collected</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(result.wealthTaxCollected)}
+                    </span>
+                  </div>
+                  {result.annualIncomeTaxLost > 0 && (
+                  <>
+                  <div className="flex items-center justify-between py-2">
+                    <span>Annual income tax lost</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      ${result.annualIncomeTaxLost.toFixed(1)}B/yr
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>PV of lost income tax</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(result.pvLostIncomeTax)}
+                    </span>
+                  </div>
+                  </>
+                  )}
                 </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>Derived annual CA-taxable income</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(annualTaxableIncomeB)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>PolicyEngine CA income tax</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(annualIncomeTaxB)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>Implied CA effective rate</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatPercent(impliedCaRate, 1)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>Wealth tax collected</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(result.wealthTaxCollected)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>Initial annual income tax lost</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    ${result.annualIncomeTaxLost.toFixed(1)}B/yr
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>Implied five-year return share</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatPercent(result.fiveYearReturnShare, 1)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span>PV of lost income tax</span>
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(result.pvLostIncomeTax)}
-                  </span>
-                </div>
-              </div>
+              </details>
             </aside>
           </div>
         </div>
 
         <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
-          <div className="space-y-1">
-            <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
-              Year-by-year cash flow
-            </h3>
-            <p className="max-w-4xl text-sm leading-6 text-[var(--gray-600)]">
-              The wealth tax lands once in {DEFAULT_CASH_FLOW_START_YEAR}, then
-              California loses income tax each year movers stay away. This
-              chart shows the annual cash-flow path only.
-            </p>
-          </div>
+          <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
+            Year-by-year cash flow
+          </h3>
           <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
             <CashFlowChart data={cashFlow.rows} />
           </div>
@@ -656,15 +631,12 @@ export default function Home() {
   );
 }
 
-function AssumptionSection({ title, description, children }) {
+function AssumptionSection({ title, children }) {
   return (
-    <section className="space-y-5 border-t border-[var(--gray-200)] pt-6 first:border-t-0 first:pt-0">
-      <div className="space-y-1">
-        <h4 className="text-lg font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
-          {title}
-        </h4>
-        <p className="text-sm leading-6 text-[var(--gray-600)]">{description}</p>
-      </div>
+    <section className="space-y-4 border-t border-[var(--gray-200)] pt-6 first:border-t-0 first:pt-0">
+      <h4 className="text-lg font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
+        {title}
+      </h4>
       <div className="divide-y divide-[var(--gray-100)]">{children}</div>
     </section>
   );
