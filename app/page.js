@@ -4,7 +4,11 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
 import { formatBillions } from "@/lib/format";
-import { computeMicroResults } from "@/lib/microModel";
+import {
+  computeMicroResults,
+  DATA_SOURCE_DATE,
+  VALUATION_DATE,
+} from "@/lib/microModel";
 import {
   buildAnnualCashFlows,
   DEFAULT_CASH_FLOW_START_YEAR,
@@ -24,7 +28,14 @@ const BillionaireTable = dynamic(
 
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
-const MONTHS_SNAPSHOT_TO_VALUATION = 14.5;
+
+const SOURCE_LABEL = DATA_SOURCE_DATE.toLocaleDateString("en-US", {
+  month: "short",
+  year: "numeric",
+});
+const MONTHS_TO_VALUATION = Math.round(
+  (VALUATION_DATE - DATA_SOURCE_DATE) / (30.44 * 24 * 60 * 60 * 1000)
+);
 
 // From Rauh et al. replication data (Raw_Data_Collection.xlsx)
 const WEALTH_BASE_OPTIONS = {
@@ -381,9 +392,9 @@ export default function Home() {
                         Forecast wealth growth to Dec 31, 2026
                       </span>
                       <p className="text-xs text-[var(--gray-500)]">
-                        The bill taxes wealth as of Dec 31, 2026. Forbes data
-                        is from Oct 2025 — {MONTHS_SNAPSHOT_TO_VALUATION} months
-                        of growth to forecast.
+                        The bill taxes wealth as of Dec 31, 2026. Data is
+                        from {SOURCE_LABEL} — ~{MONTHS_TO_VALUATION} months of
+                        growth to forecast.
                       </p>
                     </div>
                   </label>
