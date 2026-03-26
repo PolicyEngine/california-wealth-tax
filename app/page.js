@@ -15,6 +15,12 @@ import {
   parseScenarioParams,
 } from "@/lib/scenarioUrl";
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
+import billionairesData from "@/data/billionaires.json";
+
+const BillionaireTable = dynamic(
+  () => import("@/app/components/BillionaireTable"),
+  { loading: () => <ChartLoading /> }
+);
 
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
@@ -644,6 +650,27 @@ export default function Home() {
                 : ` ${params.horizonYears}-year horizon.`}
             </p>
           )}
+        </section>
+
+        <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
+          <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
+            Billionaire-level detail
+          </h3>
+          <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
+            <BillionaireTable
+              billionaires={billionairesData}
+              incomeTaxLookup={incomeTaxLookup}
+              excludeRealEstate={params.excludeRealEstate}
+              avoidanceRate={params.avoidanceRate}
+              incomeYieldRate={params.incomeYieldRate}
+              wealthBase={params.wealthBase}
+            />
+          </div>
+          <p className="text-xs leading-5 text-[var(--gray-400)]">
+            Source: Rauh et al. replication data (Forbes 2025 + news reports).
+            Annual income and CA income tax derived from the income/wealth
+            yield and PolicyEngine&apos;s ca_income_tax lookup.
+          </p>
         </section>
 
         <details className="group border-t border-[var(--gray-200)] pt-6">
