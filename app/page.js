@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
 import { formatBillions } from "@/lib/format";
-import { estimateCaliforniaIncomeTaxB } from "@/lib/incomeTaxLookup";
+import { computeMicroResults } from "@/lib/microModel";
 import {
   buildAnnualCashFlows,
   DEFAULT_CASH_FLOW_START_YEAR,
@@ -64,7 +64,6 @@ const PRESETS = {
       wealthBase: "all",
       excludeRealEstate: false,
       avoidanceRate: 0.1,
-      departureRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.01,
       growthRate: 0,
@@ -80,7 +79,6 @@ const PRESETS = {
       wealthBase: "afterDepartures",
       excludeRealEstate: true,
       avoidanceRate: 0.15,
-      departureRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.036,
       growthRate: 0,
@@ -94,7 +92,6 @@ const DEFAULT_PARAMS = {
   wealthBase: "all",
   excludeRealEstate: false,
   avoidanceRate: 0.1,
-  departureRate: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
   growthRate: 0,
@@ -102,11 +99,6 @@ const DEFAULT_PARAMS = {
   discountRate: 0.03,
 };
 
-function computeBaselineWealthTaxB(wealthBase, excludeRealEstate) {
-  const option = WEALTH_BASE_OPTIONS[wealthBase] ?? WEALTH_BASE_OPTIONS.all;
-  const wealth = option.wealthB - (excludeRealEstate ? option.realEstateB : 0);
-  return wealth * WEALTH_TAX_RATE;
-}
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -117,39 +109,25 @@ const toPercentInputValue = (value, decimals = 0) =>
 const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
 
-function taxableWealthBaseFromBaseline(baselineWealthTaxB) {
-  return baselineWealthTaxB / WEALTH_TAX_RATE;
-}
-
 function buildPresetDetails(params) {
-  const baselineWealthTaxB = computeBaselineWealthTaxB(
-    params.wealthBase,
-    params.excludeRealEstate
-  );
-  const taxableWealthBaseB = taxableWealthBaseFromBaseline(baselineWealthTaxB);
-  const annualTaxableIncomeB = taxableWealthBaseB * params.incomeYieldRate;
-  const annualIncomeTaxB = estimateCaliforniaIncomeTaxB(
-    annualTaxableIncomeB,
-    incomeTaxLookup
-  );
+  const micro = computeMicroResults({
+    billionaires: billionairesData,
+    incomeTaxLookup,
+    wealthBase: params.wealthBase,
+    excludeRealEstate: params.excludeRealEstate,
+    incomeYieldRate: params.incomeYieldRate,
+  });
   const result = calculateFiscalImpact({
-    baselineWealthTaxB,
+    grossWealthTaxB: micro.grossWealthTaxB,
     avoidanceRate: params.avoidanceRate,
-    departureRate: params.departureRate,
-    annualIncomeTaxB,
+    moverIncomeTaxB: micro.moverIncomeTaxB,
     horizonYears: params.horizonYears,
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
     growthRate: params.growthRate,
   });
 
-  return {
-    baselineWealthTaxB,
-    taxableWealthBaseB,
-    annualTaxableIncomeB,
-    annualIncomeTaxB,
-    result,
-  };
+  return { micro, result };
 }
 
 const PRESET_DETAILS = {
@@ -162,35 +140,29 @@ export default function Home() {
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
 
-  const baselineWealthTaxB = useMemo(
-    () => computeBaselineWealthTaxB(params.wealthBase, params.excludeRealEstate),
-    [params.wealthBase, params.excludeRealEstate]
-  );
-  const taxableWealthBaseB = useMemo(
-    () => taxableWealthBaseFromBaseline(baselineWealthTaxB),
-    [baselineWealthTaxB]
-  );
-  const annualTaxableIncomeB = useMemo(
-    () => taxableWealthBaseB * params.incomeYieldRate,
-    [params.incomeYieldRate, taxableWealthBaseB]
-  );
-  const annualIncomeTaxB = useMemo(
-    () => estimateCaliforniaIncomeTaxB(annualTaxableIncomeB, incomeTaxLookup),
-    [annualTaxableIncomeB]
+  const micro = useMemo(
+    () =>
+      computeMicroResults({
+        billionaires: billionairesData,
+        incomeTaxLookup,
+        wealthBase: params.wealthBase,
+        excludeRealEstate: params.excludeRealEstate,
+        incomeYieldRate: params.incomeYieldRate,
+      }),
+    [params.wealthBase, params.excludeRealEstate, params.incomeYieldRate]
   );
   const result = useMemo(
     () =>
       calculateFiscalImpact({
-        baselineWealthTaxB,
+        grossWealthTaxB: micro.grossWealthTaxB,
         avoidanceRate: params.avoidanceRate,
-        departureRate: params.departureRate,
-        annualIncomeTaxB,
+        moverIncomeTaxB: micro.moverIncomeTaxB,
         horizonYears: params.horizonYears,
         discountRate: params.discountRate,
         annualReturnRate: params.annualReturnRate,
         growthRate: params.growthRate,
       }),
-    [annualIncomeTaxB, baselineWealthTaxB, params]
+    [micro, params]
   );
   const cashFlow = useMemo(
     () =>
@@ -204,14 +176,7 @@ export default function Home() {
         startYear: DEFAULT_CASH_FLOW_START_YEAR,
         growthRate: params.growthRate,
       }),
-    [
-      params.annualReturnRate,
-      params.discountRate,
-      params.growthRate,
-      params.horizonYears,
-      result.annualIncomeTaxLost,
-      result.wealthTaxCollected,
-    ]
+    [params, result]
   );
 
   useEffect(() => {
@@ -266,9 +231,6 @@ export default function Home() {
       setCopyStatus("Copy failed");
     }
   }
-
-  const impliedCaRate =
-    annualTaxableIncomeB > 0 ? annualIncomeTaxB / annualTaxableIncomeB : 0;
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -391,15 +353,15 @@ export default function Home() {
 
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
                   <span className="text-sm text-[var(--gray-600)]">
-                    Gross wealth tax score
+                    Gross wealth tax (with phase-in)
                   </span>
                   <span className="text-sm font-semibold text-[var(--teal-700)]">
-                    {formatBillions(baselineWealthTaxB)}
+                    {formatBillions(micro.grossWealthTaxB)}
                   </span>
                 </div>
               </AssumptionSection>
 
-              <AssumptionSection title="Behavior">
+              <AssumptionSection title="Avoidance / evasion">
                 <Slider
                   label="Avoidance rate"
                   value={params.avoidanceRate}
@@ -411,8 +373,8 @@ export default function Home() {
                   description=""
                   quickPicks={[
                     { label: "5%", value: 0.05 },
-                    { label: "15%", value: 0.15 },
-                    { label: "30%", value: 0.3 },
+                    { label: "10% (Saez)", value: 0.1 },
+                    { label: "15% (Rauh)", value: 0.15 },
                   ]}
                   minLabel="0%"
                   maxLabel="50%"
@@ -420,56 +382,10 @@ export default function Home() {
                   toInputValue={(value) => toPercentInputValue(value)}
                   fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
-
-                <Slider
-                  label="Departure rate"
-                  value={params.departureRate}
-                  onChange={(nextValue) => update("departureRate", nextValue)}
-                  min={0}
-                  max={0.6}
-                  step={0.01}
-                  format={(value) => formatPercent(value)}
-                  description=""
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "15%", value: 0.15 },
-                    { label: "30%", value: 0.3 },
-                  ]}
-                  minLabel="0%"
-                  maxLabel="60%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
-                />
-
-                {params.departureRate > 0 && (
-                <Slider
-                  label="Annual return rate of remaining movers"
-                  value={params.annualReturnRate}
-                  onChange={(nextValue) =>
-                    update("annualReturnRate", nextValue)
-                  }
-                  min={0}
-                  max={0.5}
-                  step={0.01}
-                  format={(value) => formatPercent(value)}
-                  description=""
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "5%", value: 0.05 },
-                    { label: "15%", value: 0.15 },
-                  ]}
-                  minLabel="0%"
-                  maxLabel="50%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
-                />
-                )}
               </AssumptionSection>
 
-              {params.departureRate > 0 && (
-              <AssumptionSection title="Income / wealth">
+              {micro.movers.length > 0 && (
+              <AssumptionSection title="Income tax loss from departures">
                 <Slider
                   label="Annual CA-taxable income / taxed wealth"
                   value={params.incomeYieldRate}
@@ -555,6 +471,16 @@ export default function Home() {
                   toInputValue={(value) => toPercentInputValue(value, 1)}
                   fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
+                <div className="py-3 text-sm text-[var(--gray-600)]">
+                  <span className="font-semibold text-[var(--gray-700)]">
+                    {micro.movers.length} billionaires
+                  </span>{" "}
+                  left CA, losing{" "}
+                  <span className="font-semibold text-[var(--gray-700)]">
+                    {formatBillions(micro.moverIncomeTaxB)}/yr
+                  </span>{" "}
+                  in CA income tax.
+                </div>
               </AssumptionSection>
               )}
             </div>
@@ -583,31 +509,13 @@ export default function Home() {
                 </summary>
                 <div className="mt-2 divide-y divide-[var(--gray-100)]">
                   <div className="flex items-center justify-between py-2">
-                    <span>Taxable wealth base</span>
+                    <span>Gross wealth tax (with phase-in)</span>
                     <span className="font-semibold text-[var(--gray-700)]">
-                      {formatBillions(taxableWealthBaseB)}
+                      {formatBillions(result.grossWealthTaxB)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span>Annual CA-taxable income</span>
-                    <span className="font-semibold text-[var(--gray-700)]">
-                      {formatBillions(annualTaxableIncomeB)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span>CA income tax (PolicyEngine)</span>
-                    <span className="font-semibold text-[var(--gray-700)]">
-                      {formatBillions(annualIncomeTaxB)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span>Effective CA rate</span>
-                    <span className="font-semibold text-[var(--gray-700)]">
-                      {formatPercent(impliedCaRate, 1)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span>Wealth tax collected</span>
+                    <span>After avoidance</span>
                     <span className="font-semibold text-[var(--gray-700)]">
                       {formatBillions(result.wealthTaxCollected)}
                     </span>
@@ -658,12 +566,8 @@ export default function Home() {
           </h3>
           <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
             <BillionaireTable
-              billionaires={billionairesData}
-              incomeTaxLookup={incomeTaxLookup}
-              excludeRealEstate={params.excludeRealEstate}
+              rows={micro.rows}
               avoidanceRate={params.avoidanceRate}
-              incomeYieldRate={params.incomeYieldRate}
-              wealthBase={params.wealthBase}
             />
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">

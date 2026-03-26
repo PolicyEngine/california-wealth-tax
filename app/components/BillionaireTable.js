@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { formatBillions } from "@/lib/format";
-import { estimateCaliforniaIncomeTaxB } from "@/lib/incomeTaxLookup";
 
 const formatB = (v) => {
   if (v >= 1) return `$${v.toFixed(1)}B`;
@@ -11,64 +10,15 @@ const formatB = (v) => {
   return `$${(v * 1e6).toFixed(0)}K`;
 };
 
-export default function BillionaireTable({
-  billionaires,
-  incomeTaxLookup,
-  excludeRealEstate,
-  avoidanceRate,
-  incomeYieldRate,
-  wealthBase,
-}) {
+export default function BillionaireTable({ rows, avoidanceRate }) {
   const [showAll, setShowAll] = useState(false);
-
-  const rows = useMemo(() => {
-    const filtered =
-      wealthBase === "afterDepartures"
-        ? billionaires.filter((b) => !b.moved)
-        : billionaires;
-
-    return filtered.map((b) => {
-      const netWorthB = b.netWorth / 1e9;
-      const reB = (excludeRealEstate ? b.realEstate : 0) / 1e9;
-      const taxableWealthB = netWorthB - reB;
-      const grossTaxB = taxableWealthB * 0.05;
-      const collectedTaxB = grossTaxB * (1 - avoidanceRate);
-      const annualIncomeB = taxableWealthB * incomeYieldRate;
-      const annualIncomeTaxB = estimateCaliforniaIncomeTaxB(
-        annualIncomeB,
-        incomeTaxLookup
-      );
-
-      return {
-        name: b.name,
-        moved: b.moved,
-        netWorthB,
-        taxableWealthB,
-        collectedTaxB,
-        annualIncomeB,
-        annualIncomeTaxB,
-      };
-    });
-  }, [
-    billionaires,
-    excludeRealEstate,
-    avoidanceRate,
-    incomeYieldRate,
-    wealthBase,
-    incomeTaxLookup,
-  ]);
-
   const displayed = showAll ? rows : rows.slice(0, 20);
-  const totals = useMemo(
-    () => ({
-      netWorthB: rows.reduce((s, r) => s + r.netWorthB, 0),
-      taxableWealthB: rows.reduce((s, r) => s + r.taxableWealthB, 0),
-      collectedTaxB: rows.reduce((s, r) => s + r.collectedTaxB, 0),
-      annualIncomeB: rows.reduce((s, r) => s + r.annualIncomeB, 0),
-      annualIncomeTaxB: rows.reduce((s, r) => s + r.annualIncomeTaxB, 0),
-    }),
-    [rows]
-  );
+
+  const totals = {
+    netWorthB: rows.reduce((s, r) => s + r.netWorthB, 0),
+    grossTaxB: rows.reduce((s, r) => s + r.grossTaxB * (1 - avoidanceRate), 0),
+    annualIncomeTaxB: rows.reduce((s, r) => s + r.annualIncomeTaxB, 0),
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -77,8 +27,8 @@ export default function BillionaireTable({
           <tr className="border-b border-[var(--gray-200)] text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
             <th className="py-3 pr-4">Name</th>
             <th className="px-2 py-3 text-right">Net worth</th>
+            <th className="px-2 py-3 text-right">Rate</th>
             <th className="px-2 py-3 text-right">Wealth tax</th>
-            <th className="px-2 py-3 text-right">Annual income</th>
             <th className="px-2 py-3 text-right">CA income tax/yr</th>
           </tr>
         </thead>
@@ -87,14 +37,16 @@ export default function BillionaireTable({
             <tr
               key={row.name}
               className={`border-b border-[var(--gray-100)] ${
-                row.moved
+                row.moved && !row.inBase
                   ? "bg-[var(--red-50)] text-[var(--gray-500)]"
-                  : ""
+                  : row.moved
+                    ? "bg-amber-50"
+                    : ""
               }`}
             >
               <td className="py-2 pr-4 font-medium text-[var(--gray-700)]">
                 {row.name}
-                {row.moved && (
+                {row.moved && !row.inBase && (
                   <span className="ml-2 text-xs text-[var(--red-500)]">
                     left CA
                   </span>
@@ -104,10 +56,10 @@ export default function BillionaireTable({
                 {formatB(row.netWorthB)}
               </td>
               <td className="px-2 py-2 text-right tabular-nums">
-                {formatB(row.collectedTaxB)}
+                {(row.rate * 100).toFixed(1)}%
               </td>
               <td className="px-2 py-2 text-right tabular-nums">
-                {formatB(row.annualIncomeB)}
+                {formatB(row.grossTaxB * (1 - avoidanceRate))}
               </td>
               <td className="px-2 py-2 text-right tabular-nums">
                 {formatB(row.annualIncomeTaxB)}
@@ -118,16 +70,14 @@ export default function BillionaireTable({
         <tfoot>
           <tr className="border-t-2 border-[var(--gray-300)] font-semibold text-[var(--gray-700)]">
             <td className="py-3 pr-4">
-              Total ({rows.length} billionaires)
+              Total ({rows.length})
             </td>
             <td className="px-2 py-3 text-right tabular-nums">
               {formatBillions(totals.netWorthB)}
             </td>
+            <td className="px-2 py-3"></td>
             <td className="px-2 py-3 text-right tabular-nums">
-              {formatBillions(totals.collectedTaxB)}
-            </td>
-            <td className="px-2 py-3 text-right tabular-nums">
-              {formatBillions(totals.annualIncomeB)}
+              {formatBillions(totals.grossTaxB)}
             </td>
             <td className="px-2 py-3 text-right tabular-nums">
               {formatBillions(totals.annualIncomeTaxB)}
