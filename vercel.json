@@ -3,7 +3,12 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/us/california-wealth-tax",
+      "destination": "/us/california-wealth-tax/embed",
+      "permanent": false
+    },
+    {
+      "source": "/us/california-wealth-tax",
+      "destination": "/us/california-wealth-tax/embed",
       "permanent": false
     }
   ]
