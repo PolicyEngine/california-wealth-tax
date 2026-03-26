@@ -378,12 +378,12 @@ export default function Home() {
                     />
                     <div>
                       <span className="text-sm font-semibold text-[var(--gray-700)]">
-                        Project wealth to Dec 31, 2026
+                        Forecast wealth growth to Dec 31, 2026
                       </span>
                       <p className="text-xs text-[var(--gray-500)]">
-                        Forbes data is from Oct 2025. The bill taxes wealth as
-                        of Dec 31, 2026 — {MONTHS_SNAPSHOT_TO_VALUATION} months
-                        later.
+                        The bill taxes wealth as of Dec 31, 2026. Forbes data
+                        is from Oct 2025 — {MONTHS_SNAPSHOT_TO_VALUATION} months
+                        of growth to forecast.
                       </p>
                     </div>
                   </label>
