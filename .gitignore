@@ -11,6 +11,7 @@
 
 # next.js
 /.next/
+/.next.bad.*/
 /out/
 
 # production
@@ -19,6 +20,8 @@
 # misc
 .DS_Store
 *.pem
+__pycache__/
+.playwright-cli/
 
 # debug
 npm-debug.log*
