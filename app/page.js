@@ -37,19 +37,27 @@ const MONTHS_TO_VALUATION = Math.round(
   (VALUATION_DATE - DATA_SOURCE_DATE) / (30.44 * 24 * 60 * 60 * 1000)
 );
 
-// From Rauh et al. replication data (Raw_Data_Collection.xlsx)
+// Derived from billionaires.json at build time
+const allBillionaires = billionairesData;
+const allWealth = allBillionaires.reduce((s, b) => s + b.netWorth / 1e9, 0);
+const allRE = allBillionaires.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
+const stayers = allBillionaires.filter((b) => !b.moved);
+const stayerWealth = stayers.reduce((s, b) => s + b.netWorth / 1e9, 0);
+const stayerRE = stayers.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
+const moverCount = allBillionaires.length - stayers.length;
+
 const WEALTH_BASE_OPTIONS = {
   all: {
     label: "All Forbes CA billionaires",
-    wealthB: 2149.6,
-    realEstateB: 4.74,
-    description: "214 billionaires, Oct 2025 Forbes snapshot",
+    wealthB: allWealth,
+    realEstateB: allRE,
+    description: `${allBillionaires.length} billionaires, ${SOURCE_LABEL} Forbes`,
   },
   afterDepartures: {
     label: "After known departures",
-    wealthB: 1343.2,
-    realEstateB: 4.21,
-    description: "205 billionaires who stayed through Dec 31, 2025",
+    wealthB: stayerWealth,
+    realEstateB: stayerRE,
+    description: `${stayers.length} billionaires (${moverCount} left CA)`,
   },
 };
 
