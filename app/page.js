@@ -24,6 +24,7 @@ const BillionaireTable = dynamic(
 
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
+const MONTHS_SNAPSHOT_TO_VALUATION = 14.5;
 
 // From Rauh et al. replication data (Raw_Data_Collection.xlsx)
 const WEALTH_BASE_OPTIONS = {
@@ -63,7 +64,9 @@ const PRESETS = {
     params: {
       wealthBase: "all",
       excludeRealEstate: false,
+      wealthGrowthRate: 0,
       avoidanceRate: 0.1,
+      unannouncedDepartureShare: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.01,
       growthRate: 0,
@@ -78,7 +81,9 @@ const PRESETS = {
     params: {
       wealthBase: "afterDepartures",
       excludeRealEstate: true,
+      wealthGrowthRate: 0,
       avoidanceRate: 0.15,
+      unannouncedDepartureShare: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.023,
       growthRate: 0,
@@ -91,7 +96,9 @@ const PRESETS = {
 const DEFAULT_PARAMS = {
   wealthBase: "all",
   excludeRealEstate: false,
+  wealthGrowthRate: 0,
   avoidanceRate: 0.1,
+  unannouncedDepartureShare: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
   growthRate: 0,
@@ -148,8 +155,16 @@ export default function Home() {
         wealthBase: params.wealthBase,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
+        wealthGrowthRate: params.wealthGrowthRate,
+        unannouncedDepartureShare: params.unannouncedDepartureShare,
       }),
-    [params.wealthBase, params.excludeRealEstate, params.incomeYieldRate]
+    [
+      params.wealthBase,
+      params.excludeRealEstate,
+      params.incomeYieldRate,
+      params.wealthGrowthRate,
+      params.unannouncedDepartureShare,
+    ]
   );
   const result = useMemo(
     () =>
@@ -351,6 +366,57 @@ export default function Home() {
                   </label>
                 </div>
 
+                <div className="py-4">
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={params.wealthGrowthRate > 0}
+                      onChange={(e) =>
+                        update("wealthGrowthRate", e.target.checked ? 0.075 : 0)
+                      }
+                      className="h-4 w-4 rounded accent-[var(--teal-600)]"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-[var(--gray-700)]">
+                        Project wealth to Dec 31, 2026
+                      </span>
+                      <p className="text-xs text-[var(--gray-500)]">
+                        Forbes data is from Oct 2025. The bill taxes wealth as
+                        of Dec 31, 2026 — {MONTHS_SNAPSHOT_TO_VALUATION} months
+                        later.
+                      </p>
+                    </div>
+                  </label>
+                  {params.wealthGrowthRate > 0 && (
+                    <div className="ml-7 mt-2">
+                      <Slider
+                        label="Annual real wealth growth"
+                        value={params.wealthGrowthRate}
+                        onChange={(nextValue) =>
+                          update("wealthGrowthRate", nextValue)
+                        }
+                        min={0.01}
+                        max={0.15}
+                        step={0.005}
+                        format={(value) => formatPercent(value, 1)}
+                        description=""
+                        quickPicks={[
+                          { label: "3%", value: 0.03 },
+                          { label: "7.5% (Saez)", value: 0.075 },
+                          { label: "10%", value: 0.1 },
+                        ]}
+                        minLabel="1%"
+                        maxLabel="15%"
+                        inputSuffix="%"
+                        toInputValue={(value) =>
+                          toPercentInputValue(value, 1)
+                        }
+                        fromInputValue={(rawValue) => Number(rawValue) / 100}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
                   <span className="text-sm text-[var(--gray-600)]">
                     Gross wealth tax (with phase-in)
@@ -361,9 +427,9 @@ export default function Home() {
                 </div>
               </AssumptionSection>
 
-              <AssumptionSection title="Avoidance / evasion">
+              <AssumptionSection title="Behavioral response">
                 <Slider
-                  label="Avoidance rate"
+                  label="Avoidance / evasion"
                   value={params.avoidanceRate}
                   onChange={(nextValue) => update("avoidanceRate", nextValue)}
                   min={0}
@@ -382,9 +448,32 @@ export default function Home() {
                   toInputValue={(value) => toPercentInputValue(value)}
                   fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
+
+                <Slider
+                  label="Additional unannounced departures"
+                  value={params.unannouncedDepartureShare}
+                  onChange={(nextValue) =>
+                    update("unannouncedDepartureShare", nextValue)
+                  }
+                  min={0}
+                  max={0.3}
+                  step={0.01}
+                  format={(value) => formatPercent(value)}
+                  description=""
+                  quickPicks={[
+                    { label: "0%", value: 0 },
+                    { label: "5%", value: 0.05 },
+                    { label: "10%", value: 0.1 },
+                  ]}
+                  minLabel="0%"
+                  maxLabel="30%"
+                  inputSuffix="%"
+                  toInputValue={(value) => toPercentInputValue(value)}
+                  fromInputValue={(rawValue) => Number(rawValue) / 100}
+                />
               </AssumptionSection>
 
-              {micro.movers.length > 0 && (
+              {(micro.movers.length > 0 || params.unannouncedDepartureShare > 0) && (
               <AssumptionSection title="Income tax loss from departures">
                 <Slider
                   label="Annual return rate"
@@ -495,14 +584,26 @@ export default function Home() {
                   fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
                 <div className="py-3 text-sm text-[var(--gray-600)]">
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {micro.movers.length} billionaires
-                  </span>{" "}
-                  left CA, losing{" "}
+                  {micro.movers.length > 0 && (
+                    <span>
+                      <span className="font-semibold text-[var(--gray-700)]">
+                        {micro.movers.length} known departures
+                      </span>
+                      {params.unannouncedDepartureShare > 0 && (
+                        <span>
+                          {" "}
+                          +{" "}
+                          {formatPercent(params.unannouncedDepartureShare)}{" "}
+                          unannounced
+                        </span>
+                      )}
+                      {" → "}
+                    </span>
+                  )}
                   <span className="font-semibold text-[var(--gray-700)]">
                     {formatBillions(micro.moverIncomeTaxB)}/yr
                   </span>{" "}
-                  in CA income tax.
+                  in lost CA income tax.
                 </div>
               </AssumptionSection>
               )}
@@ -591,12 +692,21 @@ export default function Home() {
             <BillionaireTable
               rows={micro.rows}
               avoidanceRate={params.avoidanceRate}
+              excludeRealEstate={params.excludeRealEstate}
             />
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">
-            Source: Rauh et al. replication data (Forbes 2025 + news reports).
-            Annual income and CA income tax derived from the income/wealth
-            yield and PolicyEngine&apos;s ca_income_tax lookup.
+            Source:{" "}
+            <a
+              href="https://github.com/bjaros20/wealth_tax"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-[var(--teal-600)]"
+            >
+              Rauh et al. replication data
+            </a>{" "}
+            (Forbes Oct 2025 + news-reported real estate + departure status).
+            Income tax from PolicyEngine.
           </p>
         </section>
 

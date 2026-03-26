@@ -7,10 +7,15 @@ const formatB = (v) => {
   if (v >= 1) return `$${v.toFixed(1)}B`;
   if (v >= 0.01) return `$${(v * 1000).toFixed(0)}M`;
   if (v >= 0.001) return `$${(v * 1000).toFixed(1)}M`;
-  return `$${(v * 1e6).toFixed(0)}K`;
+  if (v > 0) return `$${(v * 1e6).toFixed(0)}K`;
+  return "—";
 };
 
-export default function BillionaireTable({ rows, avoidanceRate }) {
+export default function BillionaireTable({
+  rows,
+  avoidanceRate,
+  excludeRealEstate,
+}) {
   const [showAll, setShowAll] = useState(false);
   const displayed = showAll ? rows : rows.slice(0, 20);
 
@@ -27,6 +32,9 @@ export default function BillionaireTable({ rows, avoidanceRate }) {
           <tr className="border-b border-[var(--gray-200)] text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
             <th className="py-3 pr-4">Name</th>
             <th className="px-2 py-3 text-right">Net worth</th>
+            {excludeRealEstate && (
+              <th className="px-2 py-3 text-right">RE excluded</th>
+            )}
             <th className="px-2 py-3 text-right">Rate</th>
             <th className="px-2 py-3 text-right">Wealth tax</th>
             <th className="px-2 py-3 text-right">CA income tax/yr</th>
@@ -55,6 +63,13 @@ export default function BillionaireTable({ rows, avoidanceRate }) {
               <td className="px-2 py-2 text-right tabular-nums">
                 {formatB(row.netWorthB)}
               </td>
+              {excludeRealEstate && (
+                <td className="px-2 py-2 text-right tabular-nums text-[var(--gray-500)]">
+                  {row.netWorthB !== row.taxableWealthB
+                    ? formatB(row.netWorthB - row.taxableWealthB)
+                    : "—"}
+                </td>
+              )}
               <td className="px-2 py-2 text-right tabular-nums">
                 {(row.rate * 100).toFixed(1)}%
               </td>
@@ -69,12 +84,11 @@ export default function BillionaireTable({ rows, avoidanceRate }) {
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-[var(--gray-300)] font-semibold text-[var(--gray-700)]">
-            <td className="py-3 pr-4">
-              Total ({rows.length})
-            </td>
+            <td className="py-3 pr-4">Total ({rows.length})</td>
             <td className="px-2 py-3 text-right tabular-nums">
               {formatBillions(totals.netWorthB)}
             </td>
+            {excludeRealEstate && <td className="px-2 py-3"></td>}
             <td className="px-2 py-3"></td>
             <td className="px-2 py-3 text-right tabular-nums">
               {formatBillions(totals.grossTaxB)}
