@@ -445,7 +445,7 @@ export default function Home() {
                 />
 
                 <Slider
-                  label="Annual wealth growth"
+                  label="Annual wealth growth (nominal)"
                   value={params.wealthGrowthRate}
                   onChange={(nextValue) =>
                     update("wealthGrowthRate", nextValue)
@@ -521,7 +521,7 @@ export default function Home() {
                 />
 
                 <Slider
-                  label="Discount rate"
+                  label="Real discount rate"
                   value={params.discountRate}
                   onChange={(nextValue) => update("discountRate", nextValue)}
                   min={0.01}
