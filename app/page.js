@@ -27,12 +27,12 @@ const CASH_FLOW_DISPLAY_YEARS = 30;
 
 const DATA_SNAPSHOTS = {
   rauh: {
-    label: "Oct 2025 (Rauh/Saez)",
+    label: "Oct 17, 2025",
     date: new Date("2025-10-17"),
     data: rauhData,
   },
   live: {
-    label: "Mar 2026 (Forbes live)",
+    label: "Mar 2, 2026",
     date: new Date("2026-03-02"),
     data: liveData,
   },
@@ -326,7 +326,7 @@ export default function Home() {
               <AssumptionSection title="Tax base">
                 <div className="space-y-2 py-4">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
-                    Data source
+                    Forbes snapshot
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(DATA_SNAPSHOTS).map(([key, snap]) => (
