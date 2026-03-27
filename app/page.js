@@ -137,9 +137,6 @@ const DEFAULT_PARAMS = {
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
 
-const toPercentInputValue = (value, decimals = 0) =>
-  (value * 100).toFixed(decimals);
-
 const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
 
@@ -423,17 +420,11 @@ export default function Home() {
                   max={0.5}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description=""
                   quickPicks={[
                     { label: "5%", value: 0.05 },
                     { label: "10%", value: 0.1 },
                     { label: "15%", value: 0.15 },
                   ]}
-                  minLabel="0%"
-                  maxLabel="50%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
 
                 <Slider
@@ -446,17 +437,11 @@ export default function Home() {
                   max={0.3}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "5%", value: 0.05 },
                     { label: "10%", value: 0.1 },
                   ]}
-                  minLabel="0%"
-                  maxLabel="30%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
 
                 <Slider
@@ -469,17 +454,11 @@ export default function Home() {
                   max={0.15}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "7.5%", value: 0.075 },
                     { label: "10%", value: 0.1 },
                   ]}
-                  minLabel="0%"
-                  maxLabel="15%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value, 1)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
 
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
@@ -504,17 +483,11 @@ export default function Home() {
                   max={0.5}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  description=""
                   quickPicks={[
                     { label: "0%", value: 0 },
                     { label: "5%", value: 0.05 },
                     { label: "15%", value: 0.15 },
                   ]}
-                  minLabel="0%"
-                  maxLabel="50%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
 
                 <Slider
@@ -525,38 +498,11 @@ export default function Home() {
                   max={0.05}
                   step={0.001}
                   format={(value) => formatPercent(value, 1)}
-                  description=""
                   quickPicks={[
                     { label: "1.0%", value: 0.01 },
-                    { label: "1.7%", value: 0.017 },
+                    { label: "2.3%", value: 0.023 },
                     { label: "3.6%", value: 0.036 },
                   ]}
-                  minLabel="0.5%"
-                  maxLabel="5.0%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value, 1)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
-                />
-
-                <Slider
-                  label="Annual real wealth/income growth"
-                  value={params.growthRate}
-                  onChange={(nextValue) => update("growthRate", nextValue)}
-                  min={0}
-                  max={0.1}
-                  step={0.005}
-                  format={(value) => formatPercent(value, 1)}
-                  description=""
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "4%", value: 0.04 },
-                    { label: "7%", value: 0.07 },
-                  ]}
-                  minLabel="0%"
-                  maxLabel="10%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value, 1)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
 
                 <Slider
@@ -571,15 +517,11 @@ export default function Home() {
                   max={100}
                   step={5}
                   format={(value) => formatYears(value >= 100 ? Infinity : value)}
-                  description=""
                   quickPicks={[
                     { label: "10y", value: 10 },
                     { label: "30y", value: 30 },
                     { label: "Perpetuity", value: 100 },
                   ]}
-                  minLabel="5 years"
-                  maxLabel="Perpetuity"
-                  showNumberInput={false}
                 />
 
                 <Slider
@@ -590,17 +532,11 @@ export default function Home() {
                   max={0.07}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  description=""
                   quickPicks={[
                     { label: "2%", value: 0.02 },
                     { label: "3%", value: 0.03 },
                     { label: "5%", value: 0.05 },
                   ]}
-                  minLabel="1%"
-                  maxLabel="7%"
-                  inputSuffix="%"
-                  toInputValue={(value) => toPercentInputValue(value, 1)}
-                  fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
                 <div className="py-3 text-sm text-[var(--gray-600)]">
                   {micro.movers.length > 0 && (
