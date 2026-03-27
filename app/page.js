@@ -474,7 +474,7 @@ export default function Home() {
               {(micro.movers.length > 0 || params.unannouncedDepartureShare > 0) && (
               <AssumptionSection title="Income tax loss from departures">
                 <Slider
-                  label="Annual return rate"
+                  label="Share of leavers who return to CA per year"
                   value={params.annualReturnRate}
                   onChange={(nextValue) =>
                     update("annualReturnRate", nextValue)
