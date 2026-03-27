@@ -471,8 +471,8 @@ export default function Home() {
                   format={(value) => formatPercent(value, 1)}
                   description=""
                   quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "7.5% (Saez)", value: 0.075 },
+                    { label: "0% (Saez/Rauh)", value: 0 },
+                    { label: "7.5% (historical)", value: 0.075 },
                     { label: "10%", value: 0.1 },
                   ]}
                   minLabel="0%"
