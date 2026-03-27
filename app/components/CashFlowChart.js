@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import {
   Bar,
   Cell,
   ComposedChart,
-  Customized,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -12,6 +12,11 @@ import {
   YAxis,
 } from "recharts";
 import { formatBillions } from "@/lib/format";
+
+const basePath =
+  process.env.NEXT_PUBLIC_BASE_PATH !== undefined
+    ? process.env.NEXT_PUBLIC_BASE_PATH
+    : "/us/california-wealth-tax/embed";
 
 function CashFlowTooltip({ active, payload, label }) {
   if (!active || !payload?.length) {
@@ -60,40 +65,34 @@ function CashFlowTooltip({ active, payload, label }) {
 
 export default function CashFlowChart({ data }) {
   return (
-    <ResponsiveContainer width="100%" height={340}>
-      <ComposedChart data={data} margin={{ top: 10, right: 16, left: 8, bottom: 12 }}>
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={4} />
-        <YAxis
-          tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
-          tick={{ fontSize: 11 }}
-        />
-        <Tooltip content={<CashFlowTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
-        <ReferenceLine y={0} stroke="var(--gray-400)" />
-        <Bar dataKey="netCashFlow" name="Annual net cash flow" radius={[6, 6, 0, 0]}>
-          {data.map((entry) => (
-            <Cell
-              key={entry.year}
-              fill={entry.netCashFlow >= 0 ? "var(--teal-500)" : "var(--red-400)"}
-            />
-          ))}
-        </Bar>
-        <Customized
-          component={({ width, height }) => (
-            <text
-              x={width - 20}
-              y={height - 16}
-              textAnchor="end"
-              fill="#2C7A7B"
-              opacity={0.35}
-              fontSize={10}
-              fontFamily="system-ui, sans-serif"
-              fontWeight={600}
-            >
-              PolicyEngine
-            </text>
-          )}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <div className="relative">
+      <ResponsiveContainer width="100%" height={340}>
+        <ComposedChart data={data} margin={{ top: 10, right: 16, left: 8, bottom: 12 }}>
+          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={4} />
+          <YAxis
+            tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
+            tick={{ fontSize: 11 }}
+          />
+          <Tooltip content={<CashFlowTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
+          <ReferenceLine y={0} stroke="var(--gray-400)" />
+          <Bar dataKey="netCashFlow" name="Annual net cash flow" radius={[6, 6, 0, 0]}>
+            {data.map((entry) => (
+              <Cell
+                key={entry.year}
+                fill={entry.netCashFlow >= 0 ? "var(--teal-500)" : "var(--red-400)"}
+              />
+            ))}
+          </Bar>
+        </ComposedChart>
+      </ResponsiveContainer>
+      <Image
+        src={`${basePath}/policyengine-logo.svg`}
+        alt=""
+        aria-hidden="true"
+        width={112}
+        height={23}
+        className="pointer-events-none absolute bottom-3 right-4 opacity-30"
+      />
+    </div>
   );
 }

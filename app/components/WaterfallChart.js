@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   BarChart,
   Bar,
@@ -9,10 +10,14 @@ import {
   Cell,
   ReferenceLine,
   ResponsiveContainer,
-  Customized,
 } from "recharts";
 import { formatBillions } from "@/lib/format";
 import { buildWaterfallData } from "@/lib/waterfall";
+
+const basePath =
+  process.env.NEXT_PUBLIC_BASE_PATH !== undefined
+    ? process.env.NEXT_PUBLIC_BASE_PATH
+    : "/us/california-wealth-tax/embed";
 
 function WaterfallTooltip({ active, payload }) {
   if (!active || !payload?.length) {
@@ -51,59 +56,53 @@ export default function WaterfallChart({ waterfall }) {
   const data = buildWaterfallData(waterfall);
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11 }}
-          interval={0}
-          angle={-20}
-          textAnchor="end"
-          height={60}
-        />
-        <YAxis
-          tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
-          tick={{ fontSize: 11 }}
-        />
-        <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
-        <ReferenceLine y={0} stroke="var(--gray-400)" />
-        {/* Invisible base */}
-        <Bar dataKey="base" stackId="waterfall" fill="transparent" />
-        {/* Visible bar */}
-        <Bar dataKey="height" stackId="waterfall">
-          {data.map((entry, index) => (
-            <Cell
-              key={index}
-              radius={entry.isNegative ? [0, 0, 4, 4] : [4, 4, 0, 0]}
-              fill={
-                entry.isTotal
-                  ? entry.total >= 0
-                    ? "var(--teal-500)"
-                    : "var(--red-500)"
-                  : entry.value >= 0
-                    ? "var(--teal-400)"
-                    : "var(--red-400)"
-              }
-            />
-          ))}
-        </Bar>
-        <Customized
-          component={({ width, height }) => (
-            <text
-              x={width - 14}
-              y={height - 10}
-              textAnchor="end"
-              fill="#2C7A7B"
-              opacity={0.35}
-              fontSize={10}
-              fontFamily="system-ui, sans-serif"
-              fontWeight={600}
-            >
-              PolicyEngine
-            </text>
-          )}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="relative">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11 }}
+            interval={0}
+            angle={-20}
+            textAnchor="end"
+            height={60}
+          />
+          <YAxis
+            tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
+            tick={{ fontSize: 11 }}
+          />
+          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
+          <ReferenceLine y={0} stroke="var(--gray-400)" />
+          {/* Invisible base */}
+          <Bar dataKey="base" stackId="waterfall" fill="transparent" />
+          {/* Visible bar */}
+          <Bar dataKey="height" stackId="waterfall">
+            {data.map((entry, index) => (
+              <Cell
+                key={index}
+                radius={entry.isNegative ? [0, 0, 4, 4] : [4, 4, 0, 0]}
+                fill={
+                  entry.isTotal
+                    ? entry.total >= 0
+                      ? "var(--teal-500)"
+                      : "var(--red-500)"
+                    : entry.value >= 0
+                      ? "var(--teal-400)"
+                      : "var(--red-400)"
+                }
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <Image
+        src={`${basePath}/policyengine-logo.svg`}
+        alt=""
+        aria-hidden="true"
+        width={112}
+        height={23}
+        className="pointer-events-none absolute bottom-3 right-4 opacity-30"
+      />
+    </div>
   );
 }

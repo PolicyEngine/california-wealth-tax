@@ -201,7 +201,7 @@ const PRESETS = {
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
-      incomeYieldRate: 0.02035,
+      incomeYieldRate: 0.02,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -888,7 +888,11 @@ export default function Home() {
                   max={0.15}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  quickPicks={[]}
+                  quickPicks={[
+                    { label: "0%", value: 0 },
+                    { label: "5%", value: 0.05 },
+                    { label: "10%", value: 0.1 },
+                  ]}
                 />
                 <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
                   Income-tax losses grow at an implied real rate of{" "}
