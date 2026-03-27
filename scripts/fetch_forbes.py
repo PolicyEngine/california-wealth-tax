@@ -1,61 +1,37 @@
 """
-Fetch latest California billionaire data from komed3/rtb-api.
+Fetch latest California billionaire data from Forbes real-time API.
 
 Usage:
     python scripts/fetch_forbes.py
 
 Outputs:
-    data/billionaires.json  — updated with latest Forbes net worth
-    data/billionaires.csv   — same data as CSV for inspection
+    data/billionaires_live.json  — latest Forbes wealth data for CA billionaires
+    data/billionaires_live.csv   — same as CSV
 
 Merges with Rauh et al. departure/real-estate data where available.
 """
 
 import json
 import csv
-import time
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
-API_BASE = "https://raw.githubusercontent.com/komed3/rtb-api/main/api"
+FORBES_API = "https://www.forbes.com/forbesapi/person/rtb/0/position/true.json"
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+# From Rauh et al. replication data and paper Tables 6/7
 RAUH_DEPARTURES = {
     "Larry Page", "Larry Ellison", "Sergey Brin", "Peter Thiel",
     "Jan Koum", "Lynsi Snyder", "Don Hankey", "Reed Hastings",
-    "Drew Houston",
+    "Drew Houston", "Steven Spielberg", "David Sacks",
+    "Mark Zuckerberg", "Andy Fang",
 }
 
 
-def fetch_json(path):
-    url = f"{API_BASE}/{path}"
-    req = urllib.request.Request(url, headers={"User-Agent": "PolicyEngine"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read())
-
-
-def fetch_text(path):
-    url = f"{API_BASE}/{path}"
-    req = urllib.request.Request(url, headers={"User-Agent": "PolicyEngine"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode()
-
-
-def get_latest_net_worth(slug):
-    """Parse space-delimited history, return (date, net_worth_dollars)."""
-    text = fetch_text(f"profile/{slug}/history")
-    lines = text.strip().split("\n")
-    if not lines:
-        return None, 0
-    last = lines[-1].split()
-    # Format: date rank networth_millions change_millions change_pct
-    date = last[0]
-    net_worth_millions = float(last[2])
-    return date, net_worth_millions * 1e6
-
-
 def load_rauh_real_estate():
-    """Load real estate data from existing billionaires.json."""
-    path = DATA_DIR / "billionaires.json"
+    """Load real estate data from Rauh snapshot."""
+    path = DATA_DIR / "billionaires_rauh.json"
     if not path.exists():
         return {}
     with open(path) as f:
@@ -63,105 +39,89 @@ def load_rauh_real_estate():
     return {b["name"]: b.get("realEstate", 0) for b in data}
 
 
+def fetch_forbes_ca():
+    """Fetch all CA billionaires from Forbes real-time API."""
+    url = f"{FORBES_API}?limit=3000&fields=uri,personName,finalWorth,state,city,countryOfCitizenship,timestamp"
+    req = urllib.request.Request(url, headers={"User-Agent": "PolicyEngine"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.loads(resp.read())
+
+    people = data["personList"]["personsLists"]
+    ca = [p for p in people if p.get("state") == "California"]
+
+    timestamp_ms = ca[0]["timestamp"] if ca else 0
+    source_date = datetime.fromtimestamp(
+        timestamp_ms / 1000, tz=timezone.utc
+    ).strftime("%Y-%m-%d")
+
+    return ca, source_date
+
+
 def main():
-    print("Fetching US billionaire slugs...")
-    us_slugs = fetch_json("filter/country/us")
-    print(f"  {len(us_slugs)} US billionaires")
+    print("Fetching from Forbes real-time API...")
+    ca_people, source_date = fetch_forbes_ca()
+    print(f"  {len(ca_people)} CA billionaires as of {source_date}")
 
-    print("Fetching profiles to filter for California...")
-    ca_billionaires = []
-    latest_date = None
+    rauh_re = load_rauh_real_estate()
 
-    for i, slug in enumerate(us_slugs):
-        if i % 50 == 0 and i > 0:
-            print(f"  ...checked {i}/{len(us_slugs)}")
-
-        try:
-            info = fetch_json(f"profile/{slug}/info")
-        except Exception as e:
-            print(f"  SKIP {slug}: {e}")
-            continue
-
-        state = info.get("residence", {}).get("state", "")
-        if state != "California":
-            continue
-
-        # Get latest net worth
-        try:
-            date, net_worth = get_latest_net_worth(slug)
-        except Exception as e:
-            print(f"  SKIP {slug} history: {e}")
-            continue
-
-        if net_worth <= 0:
-            continue
-
-        if date and (latest_date is None or date > latest_date):
-            latest_date = date
-
-        name = info.get("name", slug)
-        ca_billionaires.append({
-            "slug": slug,
+    billionaires = []
+    for p in ca_people:
+        name = p["personName"]
+        net_worth = p["finalWorth"] * 1e6  # API returns millions
+        billionaires.append({
             "name": name,
             "netWorth": net_worth,
             "moved": name in RAUH_DEPARTURES,
+            "realEstate": rauh_re.get(name, 0),
         })
 
-        # Gentle rate limiting
-        if i % 10 == 0:
-            time.sleep(0.1)
-
-    print(f"  Found {len(ca_billionaires)} CA billionaires")
-    print(f"  Latest data: {latest_date}")
-
-    # Merge real estate from Rauh data
-    rauh_re = load_rauh_real_estate()
-    for b in ca_billionaires:
-        b["realEstate"] = rauh_re.get(b["name"], 0)
-
-    # Sort by net worth descending
-    ca_billionaires.sort(key=lambda b: b["netWorth"], reverse=True)
-
-    # Remove slug before saving
-    output = [{k: v for k, v in b.items() if k != "slug"} for b in ca_billionaires]
+    billionaires.sort(key=lambda b: b["netWorth"], reverse=True)
 
     # Write JSON
-    json_path = DATA_DIR / "billionaires.json"
+    json_path = DATA_DIR / "billionaires_live.json"
     with open(json_path, "w") as f:
-        json.dump(output, f)
+        json.dump(billionaires, f)
     print(f"  Wrote {json_path}")
 
     # Write CSV
-    csv_path = DATA_DIR / "billionaires.csv"
+    csv_path = DATA_DIR / "billionaires_live.csv"
     with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["name", "netWorth", "moved", "realEstate"])
+        writer = csv.DictWriter(
+            f, fieldnames=["name", "netWorth", "moved", "realEstate"]
+        )
         writer.writeheader()
-        writer.writerows(output)
+        writer.writerows(billionaires)
     print(f"  Wrote {csv_path}")
 
-    # Update data source date in microModel.js
-    if latest_date:
-        model_path = Path(__file__).parent.parent / "lib" / "microModel.js"
-        text = model_path.read_text()
-        import re
-        new_text = re.sub(
-            r'export const DATA_SOURCE_DATE = new Date\("[^"]+"\)',
-            f'export const DATA_SOURCE_DATE = new Date("{latest_date}")',
-            text,
-        )
-        if new_text != text:
-            model_path.write_text(new_text)
-            print(f"  Updated DATA_SOURCE_DATE to {latest_date}")
+    # Update source date in page data snapshot
+    model_path = Path(__file__).parent.parent / "app" / "page.js"
+    text = model_path.read_text()
+    import re
+
+    new_text = re.sub(
+        r'(live:\s*\{[^}]*label:\s*")[^"]+(")',
+        lambda m: f'{m.group(1)}{datetime.strptime(source_date, "%Y-%m-%d").strftime("%b %-d, %Y")}{m.group(2)}',
+        text,
+    )
+    new_text = re.sub(
+        r'(live:\s*\{[^}]*date:\s*new Date\(")[^"]+("\))',
+        lambda m: f"{m.group(1)}{source_date}{m.group(2)}",
+        new_text,
+    )
+    if new_text != text:
+        model_path.write_text(new_text)
+        print(f"  Updated live snapshot date to {source_date}")
 
     # Summary
-    total_wealth = sum(b["netWorth"] for b in output)
-    mover_wealth = sum(b["netWorth"] for b in output if b["moved"])
-    stayer_wealth = total_wealth - mover_wealth
-    movers = sum(1 for b in output if b["moved"])
+    total = sum(b["netWorth"] for b in billionaires)
+    movers = [b for b in billionaires if b["moved"]]
+    mover_wealth = sum(b["netWorth"] for b in movers)
+    stayer_wealth = total - mover_wealth
     print(f"\nSummary:")
-    print(f"  Total: {len(output)} billionaires, ${total_wealth/1e9:.1f}B")
-    print(f"  Movers: {movers}, ${mover_wealth/1e9:.1f}B")
-    print(f"  Stayers: {len(output)-movers}, ${stayer_wealth/1e9:.1f}B")
+    print(f"  Total: {len(billionaires)} billionaires, ${total / 1e9:.1f}B")
+    print(f"  Movers: {len(movers)}, ${mover_wealth / 1e9:.1f}B")
+    print(f"  Stayers: {len(billionaires) - len(movers)}, ${stayer_wealth / 1e9:.1f}B")
+    print(f"  Source date: {source_date}")
 
 
 if __name__ == "__main__":

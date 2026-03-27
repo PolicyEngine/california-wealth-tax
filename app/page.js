@@ -37,8 +37,8 @@ const DATA_SNAPSHOTS = {
     data: rauhData,
   },
   live: {
-    label: "Mar 2, 2026",
-    date: new Date("2026-03-02"),
+    label: "Mar 27, 2026",
+    date: new Date("2026-03-27"),
     data: liveData,
   },
 };
