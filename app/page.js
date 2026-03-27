@@ -26,6 +26,10 @@ const BillionaireTable = dynamic(
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
 
+// CBO CPI-U forecast via PolicyEngine: ~2.45% annualized 2026–2030.
+// Used to convert nominal wealth growth to real for PV discounting.
+const INFLATION_RATE = 0.025;
+
 const DATA_SNAPSHOTS = {
   rauh: {
     label: "Oct 17, 2025",
@@ -113,7 +117,7 @@ const PRESETS = {
       unannouncedDepartureShare: 0,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
-      incomeYieldRate: 0.023,
+      incomeYieldRate: 0.042,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -129,6 +133,7 @@ const DEFAULT_PARAMS = {
   wealthGrowthRate: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
+  inflationRate: 0,
   horizonYears: Infinity,
   discountRate: 0.03,
 };
@@ -159,7 +164,7 @@ function buildPresetDetails(params) {
     horizonYears: params.horizonYears,
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
-    growthRate: params.wealthGrowthRate,
+    growthRate: params.wealthGrowthRate - INFLATION_RATE,
   });
 
   return { micro, result };
@@ -445,7 +450,7 @@ export default function Home() {
                 />
 
                 <Slider
-                  label="Annual wealth growth"
+                  label="Nominal wealth growth"
                   value={params.wealthGrowthRate}
                   onChange={(nextValue) =>
                     update("wealthGrowthRate", nextValue)
@@ -521,7 +526,7 @@ export default function Home() {
                 />
 
                 <Slider
-                  label="Discount rate"
+                  label="Real discount rate"
                   value={params.discountRate}
                   onChange={(nextValue) => update("discountRate", nextValue)}
                   min={0.01}
@@ -719,17 +724,20 @@ export default function Home() {
                 Income / wealth yield of{" "}
                 {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)} is
                 backed out by this app to match their ~-$25B net headline
-                — Rauh et al. model income differently. Perpetuity horizon,{" "}
-                {formatPercent(PRESETS.rauh.params.discountRate, 1)} discount
-                rate, no return migration or wealth growth.
+                — Rauh et al. model income differently.{" "}
+                {formatPercent(PRESETS.rauh.params.discountRate, 1)} real
+                discount rate, {formatPercent(INFLATION_RATE, 1)} CBO
+                inflation forecast, perpetuity horizon.
               </p>
             </div>
           </div>
 
           <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
             Both presets are simplified calibrations, not full replications.
-            CA income tax rates computed from PolicyEngine&apos;s ca_income_tax
-            variable (married filing jointly, 2026–2030).
+            Wealth growth is nominal; the real discount rate is adjusted by a{" "}
+            {formatPercent(INFLATION_RATE, 1)} inflation assumption (CBO
+            CPI-U forecast via PolicyEngine). CA income tax from
+            PolicyEngine (married filing jointly, 2026–2030).
           </p>
         </details>
       </main>
