@@ -4,7 +4,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
 import { formatBillions } from "@/lib/format";
-import { computeMicroResults, VALUATION_DATE } from "@/lib/microModel";
+import {
+  annotateBillionaires,
+  computeMicroResults,
+  getBillionaireFlags,
+  WEALTH_BASES,
+} from "@/lib/microModel";
 import {
   buildAnnualCashFlows,
   DEFAULT_CASH_FLOW_START_YEAR,
@@ -14,6 +19,13 @@ import {
   buildScenarioHref,
   parseScenarioParams,
 } from "@/lib/scenarioUrl";
+import {
+  DEPARTURE_RESPONSE_MODES,
+  effectiveAdditionalDepartureShare,
+  impliedRemainerElasticity,
+  totalLossShareFromElasticity,
+} from "@/lib/departureResponse";
+import billionaireMetadata from "@/data/billionaire_metadata.json";
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
 import rauhData from "@/data/billionaires_rauh.json";
 import liveData from "@/data/billionaires_live.json";
@@ -24,8 +36,10 @@ const BillionaireTable = dynamic(
   { loading: () => <ChartLoading /> }
 );
 
-const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
+const WEALTH_TAX_INSTALLMENT_YEARS = 5;
+const BALLOT_MEASURE_URL =
+  "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
 
 // CBO CPI-U forecast via PolicyEngine: ~2.45% annualized 2026–2030.
 // Used to convert nominal wealth growth to real for PV discounting.
@@ -39,32 +53,62 @@ const BUNDLED_SNAPSHOTS = {
 const LIVE_DATE = snapshotIndex[snapshotIndex.length - 1];
 BUNDLED_SNAPSHOTS[LIVE_DATE] = liveData;
 
-function deriveBaseOptions(snapshot) {
-  const data = snapshot.data;
-  const dateLabel = snapshot.date.toLocaleDateString("en-US", {
+function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
+  return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
+}
+
+function getSnapshotRows(snapshotDate, data) {
+  return annotateBillionaires({
+    billionaires: data,
+    metadata: billionaireMetadata,
+    snapshotDate,
+  });
+}
+
+function deriveBaseOptions({ snapshotDate, data, date }) {
+  const dateLabel = date.toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
   });
-  const all = data;
-  const stayers = data.filter((b) => !b.moved);
-  const allWealth = all.reduce((s, b) => s + b.netWorth / 1e9, 0);
-  const allRE = all.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
-  const stayerWealth = stayers.reduce((s, b) => s + b.netWorth / 1e9, 0);
-  const stayerRE = stayers.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
-  const moverCount = all.length - stayers.length;
+  const rows = getSnapshotRows(snapshotDate, data);
+  const classifiedRows = rows.map((row) => ({
+    ...row,
+    ...getBillionaireFlags(row),
+  }));
+  const sumBillions = (targetRows, key) =>
+    targetRows.reduce((sum, row) => sum + (row[key] || 0) / 1e9, 0);
+  const allForbesRows = classifiedRows.filter((row) => row.includeInRawForbes);
+  const correctedBaseRows = classifiedRows.filter(
+    (row) => !row.excludeFromCorrectedBase
+  );
+  const preSnapshotDepartureRows = correctedBaseRows.filter(
+    (row) => row.departureTiming === "pre_snapshot"
+  );
+  const afterPreSnapshotRows = correctedBaseRows.filter(
+    (row) => row.departureTiming !== "pre_snapshot"
+  );
 
   return {
-    all: {
+    [WEALTH_BASES.ALL_FORBES]: {
       label: "All Forbes CA billionaires",
-      wealthB: allWealth,
-      realEstateB: allRE,
-      description: `${all.length} billionaires, ${dateLabel} Forbes`,
+      wealthB: sumBillions(allForbesRows, "netWorth"),
+      realEstateB: sumBillions(allForbesRows, "realEstate"),
+      description: `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
     },
-    afterDepartures: {
-      label: "After known departures",
-      wealthB: stayerWealth,
-      realEstateB: stayerRE,
-      description: `${stayers.length} billionaires (${moverCount} left CA)`,
+    [WEALTH_BASES.CORRECTED_BASE]: {
+      label: "Corrected resident base",
+      wealthB: sumBillions(correctedBaseRows, "netWorth"),
+      realEstateB: sumBillions(correctedBaseRows, "realEstate"),
+      description:
+        snapshotDate === "2025-10-17"
+          ? `${correctedBaseRows.length} after Rauh residency corrections`
+          : `${correctedBaseRows.length} after applying known residency corrections`,
+    },
+    [WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES]: {
+      label: "After pre-snapshot departures",
+      wealthB: sumBillions(afterPreSnapshotRows, "netWorth"),
+      realEstateB: sumBillions(afterPreSnapshotRows, "realEstate"),
+      description: `${afterPreSnapshotRows.length} after removing ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`,
     },
   };
 }
@@ -90,10 +134,12 @@ const PRESETS = {
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
       snapshotDate: "2025-10-17",
-      wealthBase: "all",
+      wealthBase: WEALTH_BASES.ALL_FORBES,
+      departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       excludeRealEstate: false,
       avoidanceRate: 0.1,
       unannouncedDepartureShare: 0,
+      migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.01,
@@ -107,10 +153,12 @@ const PRESETS = {
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
       snapshotDate: "2025-10-17",
-      wealthBase: "afterDepartures",
+      wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
+      departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       excludeRealEstate: true,
       avoidanceRate: 0.15,
-      unannouncedDepartureShare: 0,
+      unannouncedDepartureShare: 0.484,
+      migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.042,
@@ -121,19 +169,19 @@ const PRESETS = {
 };
 
 const DEFAULT_PARAMS = {
-  dataSnapshot: "rauh",
-  wealthBase: "all",
+  snapshotDate: LIVE_DATE,
+  wealthBase: WEALTH_BASES.ALL_FORBES,
+  departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
   excludeRealEstate: false,
   avoidanceRate: 0.1,
   unannouncedDepartureShare: 0,
+  migrationSemiElasticity: 12.6,
   wealthGrowthRate: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
-  inflationRate: 0,
   horizonYears: Infinity,
   discountRate: 0.03,
 };
-
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -142,8 +190,33 @@ const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
 
 function buildPresetDetails(params) {
-  const data = BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData;
+  const data = getSnapshotRows(
+    params.snapshotDate,
+    BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
+  );
   const sourceDate = new Date(params.snapshotDate + "T00:00:00");
+  const realGrowthRate = toRealGrowthRate(params.wealthGrowthRate);
+  const baseMicro = computeMicroResults({
+    billionaires: data,
+    incomeTaxLookup,
+    wealthBase: params.wealthBase,
+    excludeRealEstate: params.excludeRealEstate,
+    incomeYieldRate: params.incomeYieldRate,
+    wealthGrowthRate: params.wealthGrowthRate,
+    unannouncedDepartureShare: 0,
+    sourceDate,
+  });
+  const observedDepartureLossShare =
+    baseMicro.correctedBaseGrossWealthTaxB > 0
+      ? baseMicro.observedPreSnapshotDepartureGrossWealthTaxB /
+        baseMicro.correctedBaseGrossWealthTaxB
+      : 0;
+  const modeledAdditionalDepartureShare = effectiveAdditionalDepartureShare({
+    mode: params.departureResponseMode,
+    share: params.unannouncedDepartureShare,
+    totalElasticity: params.migrationSemiElasticity,
+    observedLossShare: observedDepartureLossShare,
+  });
   const micro = computeMicroResults({
     billionaires: data,
     incomeTaxLookup,
@@ -151,7 +224,7 @@ function buildPresetDetails(params) {
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
     wealthGrowthRate: params.wealthGrowthRate,
-    unannouncedDepartureShare: params.unannouncedDepartureShare,
+    unannouncedDepartureShare: modeledAdditionalDepartureShare,
     sourceDate,
   });
   const result = calculateFiscalImpact({
@@ -161,7 +234,7 @@ function buildPresetDetails(params) {
     horizonYears: params.horizonYears,
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
-    growthRate: params.wealthGrowthRate - INFLATION_RATE,
+    growthRate: realGrowthRate,
   });
 
   return { micro, result };
@@ -176,6 +249,10 @@ export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
+  const realGrowthRate = useMemo(
+    () => toRealGrowthRate(params.wealthGrowthRate),
+    [params.wealthGrowthRate]
+  );
 
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
@@ -197,24 +274,130 @@ export default function Home() {
     () => new Date(params.snapshotDate + "T00:00:00"),
     [params.snapshotDate]
   );
+  const snapshotRows = useMemo(
+    () => getSnapshotRows(params.snapshotDate, snapshotData),
+    [params.snapshotDate, snapshotData]
+  );
   const baseOptions = useMemo(
-    () => deriveBaseOptions({ data: snapshotData, date: sourceDate }),
-    [snapshotData, sourceDate]
+    () =>
+      deriveBaseOptions({
+        snapshotDate: params.snapshotDate,
+        data: snapshotData,
+        date: sourceDate,
+      }),
+    [params.snapshotDate, snapshotData, sourceDate]
   );
 
-  const micro = useMemo(
+  const baseMicro = useMemo(
     () =>
       computeMicroResults({
-        billionaires: snapshotData,
+        billionaires: snapshotRows,
         incomeTaxLookup,
         wealthBase: params.wealthBase,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
-        unannouncedDepartureShare: params.unannouncedDepartureShare,
+        unannouncedDepartureShare: 0,
         sourceDate,
       }),
-    [snapshotData, sourceDate, params]
+    [
+      snapshotRows,
+      sourceDate,
+      params.wealthBase,
+      params.excludeRealEstate,
+      params.incomeYieldRate,
+      params.wealthGrowthRate,
+    ]
+  );
+  const observedDepartureLossShare = useMemo(
+    () =>
+      baseMicro.correctedBaseGrossWealthTaxB > 0
+        ? baseMicro.observedPreSnapshotDepartureGrossWealthTaxB /
+          baseMicro.correctedBaseGrossWealthTaxB
+        : 0,
+    [
+      baseMicro.correctedBaseGrossWealthTaxB,
+      baseMicro.observedPreSnapshotDepartureGrossWealthTaxB,
+    ]
+  );
+  const elasticityModeEnabled =
+    params.wealthBase === WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES;
+  const usesElasticityMode =
+    elasticityModeEnabled &&
+    params.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY;
+  const totalDepartureLossShare = useMemo(
+    () => totalLossShareFromElasticity(params.migrationSemiElasticity),
+    [params.migrationSemiElasticity]
+  );
+  const rauhLinearizedResidualShare = useMemo(() => {
+    if (observedDepartureLossShare >= 1) {
+      return 0;
+    }
+
+    const linearizedTotalLossShare = Math.min(
+      1,
+      PRESETS.rauh.params.migrationSemiElasticity * 0.05
+    );
+
+    if (linearizedTotalLossShare <= observedDepartureLossShare) {
+      return 0;
+    }
+
+    return (
+      (linearizedTotalLossShare - observedDepartureLossShare) /
+      (1 - observedDepartureLossShare)
+    );
+  }, [observedDepartureLossShare]);
+  const modeledAdditionalDepartureShare = useMemo(
+    () =>
+      usesElasticityMode
+        ? effectiveAdditionalDepartureShare({
+            mode: params.departureResponseMode,
+            share: params.unannouncedDepartureShare,
+            totalElasticity: params.migrationSemiElasticity,
+            observedLossShare: observedDepartureLossShare,
+          })
+        : params.unannouncedDepartureShare,
+    [
+      usesElasticityMode,
+      params.departureResponseMode,
+      params.unannouncedDepartureShare,
+      params.migrationSemiElasticity,
+      observedDepartureLossShare,
+    ]
+  );
+  const impliedResidualElasticity = useMemo(
+    () =>
+      usesElasticityMode
+        ? impliedRemainerElasticity({
+            totalElasticity: params.migrationSemiElasticity,
+            observedLossShare: observedDepartureLossShare,
+          })
+        : 0,
+    [usesElasticityMode, params.migrationSemiElasticity, observedDepartureLossShare]
+  );
+
+  const micro = useMemo(
+    () =>
+      computeMicroResults({
+        billionaires: snapshotRows,
+        incomeTaxLookup,
+        wealthBase: params.wealthBase,
+        excludeRealEstate: params.excludeRealEstate,
+        incomeYieldRate: params.incomeYieldRate,
+        wealthGrowthRate: params.wealthGrowthRate,
+        unannouncedDepartureShare: modeledAdditionalDepartureShare,
+        sourceDate,
+      }),
+    [
+      snapshotRows,
+      sourceDate,
+      params.wealthBase,
+      params.excludeRealEstate,
+      params.incomeYieldRate,
+      params.wealthGrowthRate,
+      modeledAdditionalDepartureShare,
+    ]
   );
   const result = useMemo(
     () =>
@@ -225,9 +408,9 @@ export default function Home() {
         horizonYears: params.horizonYears,
         discountRate: params.discountRate,
         annualReturnRate: params.annualReturnRate,
-        growthRate: params.wealthGrowthRate,
+        growthRate: realGrowthRate,
       }),
-    [micro, params]
+    [micro, params, realGrowthRate]
   );
   const cashFlow = useMemo(
     () =>
@@ -239,9 +422,10 @@ export default function Home() {
         horizonYears: params.horizonYears,
         displayYears: CASH_FLOW_DISPLAY_YEARS,
         startYear: DEFAULT_CASH_FLOW_START_YEAR,
-        growthRate: params.growthRate,
+        growthRate: realGrowthRate,
+        wealthTaxInstallmentYears: WEALTH_TAX_INSTALLMENT_YEARS,
       }),
-    [params, result]
+    [params, realGrowthRate, result]
   );
 
   useEffect(() => {
@@ -277,7 +461,19 @@ export default function Home() {
   }, [copyStatus]);
 
   function update(key, value) {
-    setParams((prev) => ({ ...prev, [key]: value }));
+    setParams((prev) => {
+      const next = { ...prev, [key]: value };
+
+      if (
+        key === "wealthBase" &&
+        value !== WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES &&
+        prev.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY
+      ) {
+        next.departureResponseMode = DEPARTURE_RESPONSE_MODES.SHARE;
+      }
+
+      return next;
+    });
     setActivePreset(null);
   }
 
@@ -342,6 +538,14 @@ export default function Home() {
             >
               {copyStatus === "idle" ? "Copy scenario link" : copyStatus}
             </button>
+            <a
+              href={BALLOT_MEASURE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+            >
+              Ballot measure text
+            </a>
           </div>
 
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
@@ -428,6 +632,11 @@ export default function Home() {
                       </span>
                     </div>
                   </label>
+                  <p className="mt-2 text-xs leading-5 text-[var(--gray-500)]">
+                    The measure text excludes directly held real property from
+                    &nbsp;net worth before the $1.0B to $1.1B phase-in is
+                    applied.
+                  </p>
                 </div>
 
                 <Slider
@@ -445,22 +654,130 @@ export default function Home() {
                   ]}
                 />
 
-                <Slider
-                  label="Additional unannounced departures"
-                  value={params.unannouncedDepartureShare}
-                  onChange={(nextValue) =>
-                    update("unannouncedDepartureShare", nextValue)
-                  }
-                  min={0}
-                  max={0.3}
-                  step={0.01}
-                  format={(value) => formatPercent(value)}
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "5%", value: 0.05 },
-                    { label: "10%", value: 0.1 },
-                  ]}
-                />
+                <div className="space-y-3 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                      Additional migration response
+                    </p>
+                    {elasticityModeEnabled && (
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          {
+                            key: DEPARTURE_RESPONSE_MODES.SHARE,
+                            label: "% of remaining base",
+                          },
+                          {
+                            key: DEPARTURE_RESPONSE_MODES.ELASTICITY,
+                            label: "Elasticity",
+                          },
+                        ].map((option) => (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() =>
+                              update("departureResponseMode", option.key)
+                            }
+                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                              params.departureResponseMode === option.key
+                                ? "bg-[var(--teal-700)] text-white"
+                                : "bg-[var(--gray-100)] text-[var(--gray-600)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {usesElasticityMode ? (
+                    <>
+                      <Slider
+                        label="Overall migration semi-elasticity"
+                        value={params.migrationSemiElasticity}
+                        onChange={(nextValue) =>
+                          update("migrationSemiElasticity", nextValue)
+                        }
+                        min={0}
+                        max={20}
+                        step={0.1}
+                        format={(value) => value.toFixed(1)}
+                        quickPicks={[
+                          { label: "8.3", value: 8.3 },
+                          { label: "10.3", value: 10.3 },
+                          { label: "12.6", value: 12.6 },
+                        ]}
+                      />
+                      <p className="text-xs leading-5 text-[var(--gray-500)]">
+                        Confirmed pre-snapshot departures already remove{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatPercent(observedDepartureLossShare, 1)}
+                        </span>{" "}
+                        of the corrected tax base. An overall elasticity of{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {params.migrationSemiElasticity.toFixed(1)}
+                        </span>{" "}
+                        maps to{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatPercent(totalDepartureLossShare, 1)}
+                        </span>{" "}
+                        total base loss using{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          1 - exp(-ε × 5%)
+                        </span>
+                        . The residual response among remaining residents is{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatPercent(modeledAdditionalDepartureShare, 1)}
+                        </span>{" "}
+                        of the remaining base, or an elasticity of{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {impliedResidualElasticity.toFixed(1)}
+                        </span>
+                        .
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Slider
+                        label={
+                          elasticityModeEnabled
+                            ? "Additional departure share of remaining base"
+                            : "Additional unannounced departures"
+                        }
+                        value={params.unannouncedDepartureShare}
+                        onChange={(nextValue) =>
+                          update("unannouncedDepartureShare", nextValue)
+                        }
+                        min={0}
+                        max={0.7}
+                        step={0.01}
+                        format={(value) => formatPercent(value)}
+                        quickPicks={[
+                          { label: "0%", value: 0 },
+                          { label: "25%", value: 0.25 },
+                          { label: "48%", value: 0.484 },
+                        ]}
+                      />
+                      {elasticityModeEnabled && (
+                        <p className="text-xs leading-5 text-[var(--gray-500)]">
+                          This is the additional loss applied after the confirmed
+                          pre-snapshot departures already removed{" "}
+                          <span className="font-semibold text-[var(--gray-700)]">
+                            {formatPercent(observedDepartureLossShare, 1)}
+                          </span>{" "}
+                          of the corrected tax base. On this snapshot,
+                          Rauh&apos;s 12.6
+                          literature-calibrated elasticity corresponds to about{" "}
+                          <span className="font-semibold text-[var(--gray-700)]">
+                            {formatPercent(rauhLinearizedResidualShare, 1)}
+                          </span>{" "}
+                          of the remaining base under the paper&apos;s linear
+                          conversion.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
 
                 <Slider
                   label="Nominal wealth growth"
@@ -474,6 +791,15 @@ export default function Home() {
                   format={(value) => formatPercent(value, 1)}
                   quickPicks={[]}
                 />
+                <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
+                  Income-tax losses grow at an implied real rate of{" "}
+                  <span className="font-semibold text-[var(--gray-700)]">
+                    {formatPercent(realGrowthRate, 1)}
+                  </span>
+                  {" "}
+                  after subtracting{" "}
+                  {formatPercent(INFLATION_RATE, 1)} inflation.
+                </p>
 
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
                   <span className="text-sm font-semibold text-[var(--gray-600)]">
@@ -485,96 +811,114 @@ export default function Home() {
                 </div>
               </AssumptionSection>
 
-              {(micro.movers.length > 0 || params.unannouncedDepartureShare > 0) && (
-              <AssumptionSection title="Income tax loss from departures">
-                <Slider
-                  label="Share of leavers who return to CA per year"
-                  value={params.annualReturnRate}
-                  onChange={(nextValue) =>
-                    update("annualReturnRate", nextValue)
-                  }
-                  min={0}
-                  max={0.5}
-                  step={0.01}
-                  format={(value) => formatPercent(value)}
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "5%", value: 0.05 },
-                    { label: "15%", value: 0.15 },
-                  ]}
-                />
+              {(micro.movers.length > 0 || modeledAdditionalDepartureShare > 0) && (
+                <AssumptionSection title="Income tax loss from departures">
+                  <Slider
+                    label="Share of remaining leavers who return each year"
+                    value={params.annualReturnRate}
+                    onChange={(nextValue) =>
+                      update("annualReturnRate", nextValue)
+                    }
+                    min={0}
+                    max={0.5}
+                    step={0.01}
+                    format={(value) => formatPercent(value)}
+                    quickPicks={[
+                      { label: "0%", value: 0 },
+                      { label: "5%", value: 0.05 },
+                      { label: "15%", value: 0.15 },
+                    ]}
+                  />
 
-                <Slider
-                  label="Annual CA-taxable income / taxed wealth"
-                  value={params.incomeYieldRate}
-                  onChange={(nextValue) => update("incomeYieldRate", nextValue)}
-                  min={0.005}
-                  max={0.05}
-                  step={0.001}
-                  format={(value) => formatPercent(value, 1)}
-                  quickPicks={[
-                    { label: "1%", value: 0.01 },
-                    { label: "2%", value: 0.02 },
-                    { label: "3%", value: 0.03 },
-                  ]}
-                />
+                  <Slider
+                    label="Annual CA-taxable income / taxed wealth"
+                    value={params.incomeYieldRate}
+                    onChange={(nextValue) => update("incomeYieldRate", nextValue)}
+                    min={0.005}
+                    max={0.05}
+                    step={0.001}
+                    format={(value) => formatPercent(value, 1)}
+                    quickPicks={[
+                      { label: "1%", value: 0.01 },
+                      { label: "2%", value: 0.02 },
+                      { label: "3%", value: 0.03 },
+                    ]}
+                  />
 
-                <Slider
-                  label="Income tax horizon"
-                  value={
-                    params.horizonYears === Infinity ? 100 : params.horizonYears
-                  }
-                  onChange={(nextValue) =>
-                    update("horizonYears", nextValue >= 100 ? Infinity : nextValue)
-                  }
-                  min={5}
-                  max={100}
-                  step={5}
-                  format={(value) => formatYears(value >= 100 ? Infinity : value)}
-                  quickPicks={[
-                    { label: "10y", value: 10 },
-                    { label: "30y", value: 30 },
-                    { label: "Perpetuity", value: 100 },
-                  ]}
-                />
+                  <Slider
+                    label="Income tax horizon"
+                    value={
+                      params.horizonYears === Infinity ? 100 : params.horizonYears
+                    }
+                    onChange={(nextValue) =>
+                      update(
+                        "horizonYears",
+                        nextValue >= 100 ? Infinity : nextValue
+                      )
+                    }
+                    min={5}
+                    max={100}
+                    step={5}
+                    format={(value) =>
+                      formatYears(value >= 100 ? Infinity : value)
+                    }
+                    quickPicks={[
+                      { label: "10y", value: 10 },
+                      { label: "30y", value: 30 },
+                      { label: "Perpetuity", value: 100 },
+                    ]}
+                  />
 
-                <Slider
-                  label="Real discount rate"
-                  value={params.discountRate}
-                  onChange={(nextValue) => update("discountRate", nextValue)}
-                  min={0.01}
-                  max={0.07}
-                  step={0.005}
-                  format={(value) => formatPercent(value, 1)}
-                  quickPicks={[
-                    { label: "2%", value: 0.02 },
-                    { label: "3%", value: 0.03 },
-                    { label: "5%", value: 0.05 },
-                  ]}
-                />
-                <div className="py-3 text-sm text-[var(--gray-600)]">
-                  {micro.movers.length > 0 && (
-                    <span>
-                      <span className="font-semibold text-[var(--gray-700)]">
-                        {micro.movers.length} known departures
-                      </span>
-                      {params.unannouncedDepartureShare > 0 && (
-                        <span>
-                          {" "}
-                          +{" "}
-                          {formatPercent(params.unannouncedDepartureShare)}{" "}
-                          unannounced
+                  <Slider
+                    label="Real discount rate"
+                    value={params.discountRate}
+                    onChange={(nextValue) => update("discountRate", nextValue)}
+                    min={0.01}
+                    max={0.07}
+                    step={0.005}
+                    format={(value) => formatPercent(value, 1)}
+                    quickPicks={[
+                      { label: "2%", value: 0.02 },
+                      { label: "3%", value: 0.03 },
+                      { label: "5%", value: 0.05 },
+                    ]}
+                  />
+                  <div className="py-3 text-sm text-[var(--gray-600)]">
+                    {micro.knownDepartureRows.length > 0 && (
+                      <span>
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {micro.preSnapshotDepartureRows.length} pre-snapshot
+                          departures
                         </span>
-                      )}
-                      {" → "}
-                    </span>
-                  )}
-                  <span className="font-semibold text-[var(--gray-700)]">
-                    {formatBillions(micro.moverIncomeTaxB)}/yr
-                  </span>{" "}
-                  in lost CA income tax.
-                </div>
-              </AssumptionSection>
+                        {(micro.postSnapshotDepartureRows.length > 0 ||
+                          micro.unconfirmedDepartureRows.length > 0) && (
+                          <span>
+                            {" "}
+                            +{" "}
+                            {micro.postSnapshotDepartureRows.length +
+                              micro.unconfirmedDepartureRows.length}{" "}
+                            post-snapshot / reported
+                          </span>
+                        )}
+                        {modeledAdditionalDepartureShare > 0 && (
+                          <span>
+                            {" "}
+                            +{" "}
+                            {formatPercent(modeledAdditionalDepartureShare)}{" "}
+                            {usesElasticityMode
+                              ? "modeled additional"
+                              : "additional"}
+                          </span>
+                        )}
+                        {" → "}
+                      </span>
+                    )}
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(micro.moverIncomeTaxB)}/yr
+                    </span>{" "}
+                    in lost CA income tax.
+                  </div>
+                </AssumptionSection>
               )}
             </div>
 
@@ -639,6 +983,11 @@ export default function Home() {
           <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
             Year-by-year cash flow
           </h3>
+          <p className="text-xs leading-5 text-[var(--gray-500)]">
+            Wealth-tax receipts are shown as five equal annual installments. PIT
+            losses grow in real terms using the implied growth rate above.
+            Deferral charges in the measure text are not modeled.
+          </p>
           <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
             <CashFlowChart data={cashFlow.rows} />
           </div>
@@ -665,7 +1014,17 @@ export default function Home() {
             />
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">
-            Wealth from Forbes. Departure status and real estate from{" "}
+            Wealth from Forbes snapshots. Departure timing from Rauh et al.
+            Tables 6 and 7; directly held real estate treatment matches the{" "}
+            <a
+              href={BALLOT_MEASURE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-[var(--teal-600)]"
+            >
+              ballot measure text
+            </a>
+            . Paper correction metadata from{" "}
             <a
               href="https://github.com/bjaros20/wealth_tax"
               target="_blank"
@@ -704,8 +1063,9 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                All 214 Forbes CA billionaires, including those who
-                subsequently left. After{" "}
+                Uses the raw Forbes California list of{" "}
+                {PRESET_DETAILS.saez.micro.rawForbesRows.length} billionaires.
+                After{" "}
                 {formatPercent(PRESETS.saez.params.avoidanceRate)} avoidance
                 the tax collects about{" "}
                 {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
@@ -725,19 +1085,31 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                Uses only the {PRESET_DETAILS.rauh.micro.stayers.length}{" "}
-                billionaires who stayed through Dec 31, 2025
-                (excluding {PRESET_DETAILS.rauh.micro.movers.length} known
-                departures), excludes directly-held real estate, and
-                applies {formatPercent(PRESETS.rauh.params.avoidanceRate)}{" "}
-                avoidance. Net wealth tax collected:{" "}
+                Starts from Rauh&apos;s corrected{" "}
+                {PRESET_DETAILS.rauh.micro.correctedBaseRows.length}-person base,
+                removes{" "}
+                {PRESET_DETAILS.rauh.micro.preSnapshotDepartureRows.length}{" "}
+                confirmed pre-snapshot departures from the wealth-tax base,
+                keeps{" "}
+                {PRESET_DETAILS.rauh.micro.postSnapshotDepartureRows.length +
+                  PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
+                later / reported departures on the PIT-loss side, excludes
+                directly held real estate, and applies{" "}
+                {formatPercent(PRESETS.rauh.params.avoidanceRate)} avoidance.
+                The default migration input is{" "}
+                {formatPercent(PRESETS.rauh.params.unannouncedDepartureShare)}
+                {" "}
+                of the remaining base, corresponding to Rauh&apos;s 12.6
+                literature-calibrated elasticity under the paper&apos;s linear
+                conversion. Net wealth tax collected:{" "}
                 {formatBillions(PRESET_DETAILS.rauh.result.wealthTaxCollected)}.
               </p>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Income / wealth yield of{" "}
+                Annual CA-taxable income / wealth of{" "}
                 {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)} is
-                backed out by this app to match their ~-$25B net headline
-                — Rauh et al. model income differently.{" "}
+                backed out by this app to match the paper&apos;s roughly -$25B
+                Monte Carlo mean headline; Rauh et al. instead estimate annual
+                PIT from FTB data.{" "}
                 {formatPercent(PRESETS.rauh.params.discountRate, 1)} real
                 discount rate, {formatPercent(INFLATION_RATE, 1)} CBO
                 inflation forecast, perpetuity horizon.
@@ -750,7 +1122,16 @@ export default function Home() {
             Wealth growth is nominal; the real discount rate is adjusted by a{" "}
             {formatPercent(INFLATION_RATE, 1)} inflation assumption (CBO
             CPI-U forecast via PolicyEngine). CA income tax from
-            PolicyEngine (married filing jointly, 2026–2030).
+            PolicyEngine (married filing jointly, 2026–2030). Elasticity mode
+            uses the exact semi-elasticity mapping{" "}
+            <span className="font-semibold text-[var(--gray-700)]">
+              1 - exp(-ε × Δτ)
+            </span>
+            , not the linear{" "}
+            <span className="font-semibold text-[var(--gray-700)]">
+              ε × Δτ
+            </span>{" "}
+            approximation.
           </p>
         </details>
       </main>

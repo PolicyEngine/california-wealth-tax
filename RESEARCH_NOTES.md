@@ -4,11 +4,14 @@
 
 The 2026 California Billionaire Tax Act (Initiative 25-0024) proposes a one-time 5% excise tax on worldwide net worth exceeding $1 billion for California residents as of January 1, 2026.
 
+Official filing:
+- **[Initiative text (Amdt. 1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
+
 Key provisions:
 - **Valuation date**: December 31, 2026 (not the Forbes snapshot date)
 - **Phase-in**: Rate ramps linearly from 0% at $1B to 5% at $1.1B net worth
 - **Real estate exclusion**: Directly held real property is excluded (already subject to property tax)
-- **Threshold includes RE**: The $1B threshold is based on total net worth *including* real estate, even though RE is excluded from the taxable base
+- **Threshold excludes directly held RE**: The initiative excludes directly held real property from "net worth," so the phase-in applies after that exclusion
 - **Payment**: Payable in annual installments of 1%/year over 5 years (with deferral charge)
 - **Residency**: Based on CA resident/part-year resident status as of January 1, 2026; residency is determined by subjective and objective factors, not a simple address change
 
@@ -38,7 +41,7 @@ Key provisions:
   - Larry Page ($256.2B), Sergey Brin ($236.4B), Peter Thiel ($26.7B), Don Hankey ($8.1B), Steven Spielberg ($7.0B), David Sacks ($2.0B)
   - Total: **$536.4B** (28.3% of base), **$26.7B** in tax avoided
 - **10 confirmed + reported departures** (expanded estimate including post-snapshot and unconfirmed):
-  - Adds Mark Zuckerberg ($225.1B, post-snapshot), Jan Koum ($17.1B, unconfirmed), Reed Hastings ($5.1B, unconfirmed), Andy Fang ($1.7B, pre-snapshot)
+  - Adds Mark Zuckerberg ($225.1B, post-snapshot), Jan Koum ($17.1B, unconfirmed), Reed Hastings ($5.1B, unconfirmed), Andy Fang ($1.7B, unconfirmed)
   - Total: **$785.4B** (41.4% of base), **$39.1B** in tax avoided
 - Revenue after 6 confirmed departures: **$67.51B**
 - Revenue after 10 expanded departures: **$55.10B**
@@ -92,15 +95,16 @@ Our model should ideally match the paper's Table 7 (10 departures) or let users 
 ## Key modeling choices for our tool
 
 ### What we currently do
-1. **Wealth base**: Toggle between "all Forbes" and "after known departures" using Rauh replication data
+1. **Wealth base**: Toggle between raw Forbes, Rauh-corrected base, and after confirmed pre-snapshot departures
 2. **Real estate**: Toggle to exclude directly-held RE per the bill
 3. **Phase-in**: Per-billionaire effective rate from 0% ($1B) to 5% ($1.1B)
 4. **Avoidance**: Slider (10% Saez, 15% Rauh)
-5. **Unannounced departures**: Slider (share of remaining wealth)
+5. **Unannounced departures**: Slider (share of remaining resident wealth)
 6. **Income tax**: Derived from wealth × income yield rate × PolicyEngine CA income tax (MFJ, 2026-2030 lookup)
 7. **PV**: Real discount rate (3%), minus inflation-adjusted nominal growth, with annual return hazard, over a horizon
 8. **Wealth growth**: Nominal, forecast from Forbes snapshot date to Dec 31, 2026
 9. **Inflation**: 2.5% CBO forecast baked in (converts nominal growth to real for PV)
+10. **Cash flow**: Year-by-year chart shows five equal annual wealth-tax installments; deferral charges are not modeled
 
 ### What should change based on the paper
 
@@ -110,7 +114,7 @@ Rauh derives income tax from FTB data ($3.3-5.8B/yr), not from wealth × yield �
 - Or at minimum, show how our PE-derived figure compares to Rauh's range
 
 #### Departure data
-Our replication data doesn't match the paper's tables. We should update `billionaires_rauh.json` to match either Table 6 (6 confirmed) or Table 7 (10 expanded). The paper's Table 7 is the more complete dataset and includes timing (pre-snapshot, post-snapshot, unconfirmed).
+The raw replication spreadsheet doesn't match the paper's final tables. The app now overlays local metadata to align the corrected base and timing buckets with Tables 6 and 7, but the raw JSON snapshot is still a Forbes-style base file rather than a paper-ready analytical table.
 
 #### Discount rate vs (r-g)
 Rauh uses (r-g) as a single parameter calibrated to dividend yield (~1.5%). Our model correctly separates r and g, which is more transparent, but:
@@ -129,6 +133,6 @@ Both papers use the Forbes snapshot as-is (implicitly 0% growth to Dec 31, 2026)
 
 3. **Departure data alignment**: The replication data has different movers than the paper. Need to reconcile.
 
-4. **Post-snapshot departures**: Rauh's expanded estimate (Table 7) includes Zuckerberg and others who left after Jan 1, 2026. These don't reduce the wealth tax (they still owe it) but do create income tax loss. Our model currently treats all "movers" the same — they should be split by pre-snapshot (reduces wealth tax + income tax) vs post-snapshot (income tax only).
+4. **Post-snapshot departures**: Rauh's expanded estimate (Table 7) includes Zuckerberg and others who left after Jan 1, 2026. These don't reduce the wealth tax (they still owe it) but do create income tax loss. The app now splits pre-snapshot vs post-snapshot / unconfirmed timing, but the underlying departure evidence is still paper-driven rather than mechanically refreshed.
 
 5. **Constitutional challenge**: Rauh (Section 6) argues the retroactive provision is constitutionally vulnerable. Post-snapshot departures may successfully argue they changed residency before the law was enacted (Nov 2026 vote). If the retroactive provision fails, only pre-vote residents would be taxed.
