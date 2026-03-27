@@ -21,6 +21,10 @@
     "Don Hankey": {
       "departureTiming": "pre_snapshot"
     },
+    "David Sacks": {
+      "includeInRawForbes": false,
+      "departureTiming": "pre_snapshot"
+    },
     "Steven Spielberg": {
       "departureTiming": "pre_snapshot"
     },

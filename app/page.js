@@ -52,6 +52,11 @@ const BUNDLED_SNAPSHOTS = {
 // Add live data under its date key
 const LIVE_DATE = snapshotIndex[snapshotIndex.length - 1];
 BUNDLED_SNAPSHOTS[LIVE_DATE] = liveData;
+const PAPER_DATE = "2025-10-17";
+const DEFAULT_CUSTOM_SNAPSHOT_DATE =
+  [...snapshotIndex]
+    .reverse()
+    .find((date) => date !== LIVE_DATE && date !== PAPER_DATE) ?? LIVE_DATE;
 
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
@@ -63,6 +68,38 @@ function getSnapshotRows(snapshotDate, data) {
     metadata: billionaireMetadata,
     snapshotDate,
   });
+}
+
+function resolveSnapshotDate(requestedDate) {
+  if (!requestedDate) {
+    return LIVE_DATE;
+  }
+
+  if (snapshotIndex.includes(requestedDate)) {
+    return requestedDate;
+  }
+
+  let resolvedDate = snapshotIndex[0];
+
+  for (const candidateDate of snapshotIndex) {
+    if (candidateDate > requestedDate) {
+      break;
+    }
+    resolvedDate = candidateDate;
+  }
+
+  return resolvedDate;
+}
+
+function normalizeParams(nextParams) {
+  if (nextParams.wealthBase === WEALTH_BASES.CORRECTED_BASE) {
+    return {
+      ...nextParams,
+      wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
+    };
+  }
+
+  return nextParams;
 }
 
 function deriveBaseOptions({ snapshotDate, data, date }) {
@@ -105,10 +142,13 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
           : `${correctedBaseRows.length} after applying known residency corrections`,
     },
     [WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES]: {
-      label: "After pre-snapshot departures",
+      label: "After residency corrections and pre-snapshot departures",
       wealthB: sumBillions(afterPreSnapshotRows, "netWorth"),
       realEstateB: sumBillions(afterPreSnapshotRows, "realEstate"),
-      description: `${afterPreSnapshotRows.length} after removing ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`,
+      description:
+        snapshotDate === PAPER_DATE
+          ? `${afterPreSnapshotRows.length} after 2 residency corrections and ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`
+          : `${afterPreSnapshotRows.length} after residency corrections and removing ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`,
     },
   };
 }
@@ -133,7 +173,7 @@ const PRESETS = {
     description: "Calibrated to Saez et al.'s roughly $100B static score.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
-      snapshotDate: "2025-10-17",
+      snapshotDate: PAPER_DATE,
       wealthBase: WEALTH_BASES.ALL_FORBES,
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       excludeRealEstate: false,
@@ -152,16 +192,16 @@ const PRESETS = {
     description: "Calibrated to Rauh et al.'s revenue and net-cost headline.",
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
-      snapshotDate: "2025-10-17",
+      snapshotDate: PAPER_DATE,
       wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       excludeRealEstate: true,
-      avoidanceRate: 0.15,
+      avoidanceRate: 0,
       unannouncedDepartureShare: 0.484,
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
-      incomeYieldRate: 0.042,
+      incomeYieldRate: 0.02035,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -257,6 +297,12 @@ export default function Home() {
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
   );
+  const snapshotMode =
+    params.snapshotDate === PAPER_DATE
+      ? "paper"
+      : params.snapshotDate === LIVE_DATE
+        ? "today"
+        : "other";
 
   useEffect(() => {
     const date = params.snapshotDate;
@@ -430,7 +476,7 @@ export default function Home() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
+    setParams(normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS)));
     setHasSyncedUrlState(true);
   }, []);
 
@@ -462,7 +508,7 @@ export default function Home() {
 
   function update(key, value) {
     setParams((prev) => {
-      const next = { ...prev, [key]: value };
+      const next = normalizeParams({ ...prev, [key]: value });
 
       if (
         key === "wealthBase" &&
@@ -477,10 +523,27 @@ export default function Home() {
     setActivePreset(null);
   }
 
+  function updateSnapshotMode(nextMode) {
+    if (nextMode === "paper") {
+      update("snapshotDate", PAPER_DATE);
+      return;
+    }
+
+    if (nextMode === "today") {
+      update("snapshotDate", LIVE_DATE);
+      return;
+    }
+
+    update(
+      "snapshotDate",
+      snapshotMode === "other" ? params.snapshotDate : DEFAULT_CUSTOM_SNAPSHOT_DATE
+    );
+  }
+
   const [activePreset, setActivePreset] = useState("saez");
 
   function applyPreset(key) {
-    setParams({ ...PRESETS[key].params });
+    setParams(normalizeParams({ ...PRESETS[key].params }));
     setActivePreset(key);
   }
 
@@ -552,23 +615,51 @@ export default function Home() {
             <div className="space-y-10">
 
               <AssumptionSection title="Tax base">
-                <div className="flex items-center gap-3 py-4">
-                  <label className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                <div className="space-y-3 py-4">
+                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                     Forbes snapshot
-                  </label>
-                  <select
-                    value={params.snapshotDate}
-                    onChange={(e) => update("snapshotDate", e.target.value)}
-                    className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
-                  >
-                    {snapshotIndex.map((date) => (
-                      <option key={date} value={date}>
-                        {date}
-                        {date === "2025-10-17" ? " (Saez/Rauh)" : ""}
-                        {date === LIVE_DATE ? " (latest)" : ""}
-                      </option>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: "paper", label: "2025-10-17" },
+                      { key: "today", label: "Today" },
+                      { key: "other", label: "Other snapshot" },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => updateSnapshotMode(option.key)}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                          snapshotMode === option.key
+                            ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+                            : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                  {snapshotMode === "other" && (
+                    <div className="space-y-2">
+                      <input
+                        type="date"
+                        value={params.snapshotDate}
+                        min={snapshotIndex[0]}
+                        max={LIVE_DATE}
+                        onChange={(e) =>
+                          update(
+                            "snapshotDate",
+                            resolveSnapshotDate(e.target.value)
+                          )
+                        }
+                        className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
+                      />
+                      <p className="text-xs leading-5 text-[var(--gray-500)]">
+                        Loads the nearest stored daily snapshot on or before the
+                        selected date.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 py-4">
@@ -576,7 +667,9 @@ export default function Home() {
                     Who is included?
                   </p>
                   <div className="space-y-2">
-                    {Object.entries(baseOptions).map(([key, option]) => (
+                    {Object.entries(baseOptions)
+                      .filter(([key]) => key !== WEALTH_BASES.CORRECTED_BASE)
+                      .map(([key, option]) => (
                       <label
                         key={key}
                         className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
@@ -640,7 +733,7 @@ export default function Home() {
                 </div>
 
                 <Slider
-                  label="Avoidance / evasion"
+                  label="Non-migration erosion of tax base"
                   value={params.avoidanceRate}
                   onChange={(nextValue) => update("avoidanceRate", nextValue)}
                   min={0}
@@ -648,11 +741,17 @@ export default function Home() {
                   step={0.01}
                   format={(value) => formatPercent(value)}
                   quickPicks={[
+                    { label: "0%", value: 0 },
                     { label: "5%", value: 0.05 },
                     { label: "10%", value: 0.1 },
                     { label: "15%", value: 0.15 },
                   ]}
                 />
+                <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
+                  This reduces one-time wealth-tax collections only. Migration is
+                  modeled below and also flows through to California income-tax
+                  loss.
+                </p>
 
                 <div className="space-y-3 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -952,7 +1051,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span>After avoidance</span>
+                    <span>After non-migration erosion</span>
                     <span className="font-semibold text-[var(--gray-700)]">
                       {formatBillions(result.wealthTaxCollected)}
                     </span>
@@ -1066,7 +1165,8 @@ export default function Home() {
                 Uses the raw Forbes California list of{" "}
                 {PRESET_DETAILS.saez.micro.rawForbesRows.length} billionaires.
                 After{" "}
-                {formatPercent(PRESETS.saez.params.avoidanceRate)} avoidance
+                {formatPercent(PRESETS.saez.params.avoidanceRate)} non-migration
+                erosion
                 the tax collects about{" "}
                 {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
                 close to the paper&apos;s roughly $100B headline.
@@ -1094,8 +1194,8 @@ export default function Home() {
                 {PRESET_DETAILS.rauh.micro.postSnapshotDepartureRows.length +
                   PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
                 later / reported departures on the PIT-loss side, excludes
-                directly held real estate, and applies{" "}
-                {formatPercent(PRESETS.rauh.params.avoidanceRate)} avoidance.
+                directly held real estate, and applies no additional
+                non-migration erosion.
                 The default migration input is{" "}
                 {formatPercent(PRESETS.rauh.params.unannouncedDepartureShare)}
                 {" "}
