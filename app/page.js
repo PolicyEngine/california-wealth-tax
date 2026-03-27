@@ -454,11 +454,7 @@ export default function Home() {
                   max={0.15}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "7.5%", value: 0.075 },
-                    { label: "10%", value: 0.1 },
-                  ]}
+                  quickPicks={[]}
                 />
 
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
@@ -703,19 +699,21 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                Uses only the 205 billionaires who stayed through Dec 31, 2025
-                (excluding 9 known departures worth $806B), excludes
-                directly-held real estate, and applies{" "}
-                {formatPercent(PRESETS.rauh.params.avoidanceRate)} avoidance.
-                Gross score:{" "}
-                {formatBillions(PRESET_DETAILS.rauh.baselineWealthTaxB)}.
+                Uses only the {PRESET_DETAILS.rauh.micro.stayers.length}{" "}
+                billionaires who stayed through Dec 31, 2025
+                (excluding {PRESET_DETAILS.rauh.micro.movers.length} known
+                departures), excludes directly-held real estate, and
+                applies {formatPercent(PRESETS.rauh.params.avoidanceRate)}{" "}
+                avoidance. Net wealth tax collected:{" "}
+                {formatBillions(PRESET_DETAILS.rauh.result.wealthTaxCollected)}.
               </p>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Income / wealth yield set to{" "}
-                {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)},{" "}
+                Income / wealth yield of{" "}
+                {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)} is
+                backed out by this app to match their ~-$25B net headline
+                — Rauh et al. model income differently. Perpetuity horizon,{" "}
                 {formatPercent(PRESETS.rauh.params.discountRate, 1)} discount
-                rate, perpetuity horizon. Billionaire-level data from Rauh
-                et al.&apos;s replication repository.
+                rate, no return migration or wealth growth.
               </p>
             </div>
           </div>
