@@ -4,11 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { calculateFiscalImpact } from "@/lib/calculator";
 import { formatBillions } from "@/lib/format";
-import {
-  computeMicroResults,
-  DATA_SOURCE_DATE,
-  VALUATION_DATE,
-} from "@/lib/microModel";
+import { computeMicroResults, VALUATION_DATE } from "@/lib/microModel";
 import {
   buildAnnualCashFlows,
   DEFAULT_CASH_FLOW_START_YEAR,
@@ -19,7 +15,8 @@ import {
   parseScenarioParams,
 } from "@/lib/scenarioUrl";
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
-import billionairesData from "@/data/billionaires.json";
+import rauhData from "@/data/billionaires_rauh.json";
+import liveData from "@/data/billionaires_live.json";
 
 const BillionaireTable = dynamic(
   () => import("@/app/components/BillionaireTable"),
@@ -29,37 +26,48 @@ const BillionaireTable = dynamic(
 const WEALTH_TAX_RATE = 0.05;
 const CASH_FLOW_DISPLAY_YEARS = 30;
 
-const SOURCE_LABEL = DATA_SOURCE_DATE.toLocaleDateString("en-US", {
-  month: "short",
-  year: "numeric",
-});
-const MONTHS_TO_VALUATION = Math.round(
-  (VALUATION_DATE - DATA_SOURCE_DATE) / (30.44 * 24 * 60 * 60 * 1000)
-);
-
-// Derived from billionaires.json at build time
-const allBillionaires = billionairesData;
-const allWealth = allBillionaires.reduce((s, b) => s + b.netWorth / 1e9, 0);
-const allRE = allBillionaires.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
-const stayers = allBillionaires.filter((b) => !b.moved);
-const stayerWealth = stayers.reduce((s, b) => s + b.netWorth / 1e9, 0);
-const stayerRE = stayers.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
-const moverCount = allBillionaires.length - stayers.length;
-
-const WEALTH_BASE_OPTIONS = {
-  all: {
-    label: "All Forbes CA billionaires",
-    wealthB: allWealth,
-    realEstateB: allRE,
-    description: `${allBillionaires.length} billionaires, ${SOURCE_LABEL} Forbes`,
+const DATA_SNAPSHOTS = {
+  rauh: {
+    label: "Oct 2025 (Rauh/Saez)",
+    date: new Date("2025-10-17"),
+    data: rauhData,
   },
-  afterDepartures: {
-    label: "After known departures",
-    wealthB: stayerWealth,
-    realEstateB: stayerRE,
-    description: `${stayers.length} billionaires (${moverCount} left CA)`,
+  live: {
+    label: "Mar 2026 (Forbes live)",
+    date: new Date("2026-03-02"),
+    data: liveData,
   },
 };
+
+function deriveBaseOptions(snapshot) {
+  const data = snapshot.data;
+  const dateLabel = snapshot.date.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+  const all = data;
+  const stayers = data.filter((b) => !b.moved);
+  const allWealth = all.reduce((s, b) => s + b.netWorth / 1e9, 0);
+  const allRE = all.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
+  const stayerWealth = stayers.reduce((s, b) => s + b.netWorth / 1e9, 0);
+  const stayerRE = stayers.reduce((s, b) => s + (b.realEstate || 0) / 1e9, 0);
+  const moverCount = all.length - stayers.length;
+
+  return {
+    all: {
+      label: "All Forbes CA billionaires",
+      wealthB: allWealth,
+      realEstateB: allRE,
+      description: `${all.length} billionaires, ${dateLabel} Forbes`,
+    },
+    afterDepartures: {
+      label: "After known departures",
+      wealthB: stayerWealth,
+      realEstateB: stayerRE,
+      description: `${stayers.length} billionaires (${moverCount} left CA)`,
+    },
+  };
+}
 
 function ChartLoading() {
   return (
@@ -81,14 +89,14 @@ const PRESETS = {
     description: "Calibrated to Saez et al.'s roughly $100B static score.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
+      dataSnapshot: "rauh",
       wealthBase: "all",
       excludeRealEstate: false,
-      wealthGrowthRate: 0,
       avoidanceRate: 0.1,
       unannouncedDepartureShare: 0,
+      wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.01,
-      growthRate: 0,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -98,14 +106,14 @@ const PRESETS = {
     description: "Calibrated to Rauh et al.'s revenue and net-cost headline.",
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
+      dataSnapshot: "rauh",
       wealthBase: "afterDepartures",
       excludeRealEstate: true,
-      wealthGrowthRate: 0,
       avoidanceRate: 0.15,
       unannouncedDepartureShare: 0,
+      wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.023,
-      growthRate: 0,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -113,14 +121,14 @@ const PRESETS = {
 };
 
 const DEFAULT_PARAMS = {
+  dataSnapshot: "rauh",
   wealthBase: "all",
   excludeRealEstate: false,
-  wealthGrowthRate: 0,
   avoidanceRate: 0.1,
   unannouncedDepartureShare: 0,
+  wealthGrowthRate: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
-  growthRate: 0,
   horizonYears: Infinity,
   discountRate: 0.03,
 };
@@ -136,12 +144,16 @@ const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
 
 function buildPresetDetails(params) {
+  const snapshot = DATA_SNAPSHOTS[params.dataSnapshot] ?? DATA_SNAPSHOTS.rauh;
   const micro = computeMicroResults({
-    billionaires: billionairesData,
+    billionaires: snapshot.data,
     incomeTaxLookup,
     wealthBase: params.wealthBase,
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
+    wealthGrowthRate: params.wealthGrowthRate,
+    unannouncedDepartureShare: params.unannouncedDepartureShare,
+    sourceDate: snapshot.date,
   });
   const result = calculateFiscalImpact({
     grossWealthTaxB: micro.grossWealthTaxB,
@@ -150,7 +162,7 @@ function buildPresetDetails(params) {
     horizonYears: params.horizonYears,
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
-    growthRate: params.growthRate,
+    growthRate: params.wealthGrowthRate,
   });
 
   return { micro, result };
@@ -166,24 +178,25 @@ export default function Home() {
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
 
+  const snapshot = DATA_SNAPSHOTS[params.dataSnapshot] ?? DATA_SNAPSHOTS.rauh;
+  const baseOptions = useMemo(
+    () => deriveBaseOptions(snapshot),
+    [snapshot]
+  );
+
   const micro = useMemo(
     () =>
       computeMicroResults({
-        billionaires: billionairesData,
+        billionaires: snapshot.data,
         incomeTaxLookup,
         wealthBase: params.wealthBase,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
         unannouncedDepartureShare: params.unannouncedDepartureShare,
+        sourceDate: snapshot.date,
       }),
-    [
-      params.wealthBase,
-      params.excludeRealEstate,
-      params.incomeYieldRate,
-      params.wealthGrowthRate,
-      params.unannouncedDepartureShare,
-    ]
+    [snapshot, params]
   );
   const result = useMemo(
     () =>
@@ -194,7 +207,7 @@ export default function Home() {
         horizonYears: params.horizonYears,
         discountRate: params.discountRate,
         annualReturnRate: params.annualReturnRate,
-        growthRate: params.growthRate,
+        growthRate: params.wealthGrowthRate,
       }),
     [micro, params]
   );
@@ -317,12 +330,34 @@ export default function Home() {
             <div className="space-y-10">
 
               <AssumptionSection title="Tax base">
-                <div className="space-y-4 py-4">
+                <div className="space-y-2 py-4">
+                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                    Data source
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(DATA_SNAPSHOTS).map(([key, snap]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => update("dataSnapshot", key)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          params.dataSnapshot === key
+                            ? "bg-[var(--teal-700)] text-white"
+                            : "bg-[var(--gray-100)] text-[var(--gray-600)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                        }`}
+                      >
+                        {snap.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 py-4">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                     Who is included?
                   </p>
                   <div className="space-y-2">
-                    {Object.entries(WEALTH_BASE_OPTIONS).map(([key, option]) => (
+                    {Object.entries(baseOptions).map(([key, option]) => (
                       <label
                         key={key}
                         className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
@@ -344,7 +379,7 @@ export default function Home() {
                             {option.label}
                           </span>
                           <span className="ml-2 text-sm text-[var(--gray-500)]">
-                            ${option.wealthB.toLocaleString()}B
+                            ${option.wealthB.toLocaleString(undefined, { maximumFractionDigits: 0 })}B
                           </span>
                           <p className="text-xs text-[var(--gray-500)]">
                             {option.description}
@@ -355,7 +390,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="py-4">
+                <div className="py-3">
                   <label className="flex cursor-pointer items-center gap-3">
                     <input
                       type="checkbox"
@@ -372,81 +407,14 @@ export default function Home() {
                       <span className="ml-2 text-sm text-[var(--gray-500)]">
                         −$
                         {(
-                          WEALTH_BASE_OPTIONS[params.wealthBase]?.realEstateB ??
-                          0
+                          baseOptions[params.wealthBase]?.realEstateB ?? 0
                         ).toFixed(1)}
                         B
                       </span>
-                      <p className="text-xs text-[var(--gray-500)]">
-                        The bill excludes real estate held directly by
-                        billionaires (already subject to property tax)
-                      </p>
                     </div>
                   </label>
                 </div>
 
-                <div className="py-4">
-                  <label className="flex cursor-pointer items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={params.wealthGrowthRate > 0}
-                      onChange={(e) =>
-                        update("wealthGrowthRate", e.target.checked ? 0.075 : 0)
-                      }
-                      className="h-4 w-4 rounded accent-[var(--teal-600)]"
-                    />
-                    <div>
-                      <span className="text-sm font-semibold text-[var(--gray-700)]">
-                        Forecast wealth growth to Dec 31, 2026
-                      </span>
-                      <p className="text-xs text-[var(--gray-500)]">
-                        The bill taxes wealth as of Dec 31, 2026. Data is
-                        from {SOURCE_LABEL} — ~{MONTHS_TO_VALUATION} months of
-                        growth to forecast.
-                      </p>
-                    </div>
-                  </label>
-                  {params.wealthGrowthRate > 0 && (
-                    <div className="ml-7 mt-2">
-                      <Slider
-                        label="Annual real wealth growth"
-                        value={params.wealthGrowthRate}
-                        onChange={(nextValue) =>
-                          update("wealthGrowthRate", nextValue)
-                        }
-                        min={0.01}
-                        max={0.15}
-                        step={0.005}
-                        format={(value) => formatPercent(value, 1)}
-                        description=""
-                        quickPicks={[
-                          { label: "3%", value: 0.03 },
-                          { label: "7.5% (Saez)", value: 0.075 },
-                          { label: "10%", value: 0.1 },
-                        ]}
-                        minLabel="1%"
-                        maxLabel="15%"
-                        inputSuffix="%"
-                        toInputValue={(value) =>
-                          toPercentInputValue(value, 1)
-                        }
-                        fromInputValue={(rawValue) => Number(rawValue) / 100}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
-                  <span className="text-sm text-[var(--gray-600)]">
-                    Gross wealth tax (with phase-in)
-                  </span>
-                  <span className="text-sm font-semibold text-[var(--teal-700)]">
-                    {formatBillions(micro.grossWealthTaxB)}
-                  </span>
-                </div>
-              </AssumptionSection>
-
-              <AssumptionSection title="Behavioral response">
                 <Slider
                   label="Avoidance / evasion"
                   value={params.avoidanceRate}
@@ -490,6 +458,38 @@ export default function Home() {
                   toInputValue={(value) => toPercentInputValue(value)}
                   fromInputValue={(rawValue) => Number(rawValue) / 100}
                 />
+
+                <Slider
+                  label="Annual real wealth growth"
+                  value={params.wealthGrowthRate}
+                  onChange={(nextValue) =>
+                    update("wealthGrowthRate", nextValue)
+                  }
+                  min={0}
+                  max={0.15}
+                  step={0.005}
+                  format={(value) => formatPercent(value, 1)}
+                  description=""
+                  quickPicks={[
+                    { label: "0%", value: 0 },
+                    { label: "7.5% (Saez)", value: 0.075 },
+                    { label: "10%", value: 0.1 },
+                  ]}
+                  minLabel="0%"
+                  maxLabel="15%"
+                  inputSuffix="%"
+                  toInputValue={(value) => toPercentInputValue(value, 1)}
+                  fromInputValue={(rawValue) => Number(rawValue) / 100}
+                />
+
+                <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
+                  <span className="text-sm font-semibold text-[var(--gray-600)]">
+                    Net wealth tax collected
+                  </span>
+                  <span className="text-sm font-semibold text-[var(--teal-700)]">
+                    {formatBillions(result.wealthTaxCollected)}
+                  </span>
+                </div>
               </AssumptionSection>
 
               {(micro.movers.length > 0 || params.unannouncedDepartureShare > 0) && (
