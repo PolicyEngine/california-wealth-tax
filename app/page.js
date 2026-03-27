@@ -426,8 +426,8 @@ export default function Home() {
                   description=""
                   quickPicks={[
                     { label: "5%", value: 0.05 },
-                    { label: "10% (Saez)", value: 0.1 },
-                    { label: "15% (Rauh)", value: 0.15 },
+                    { label: "10%", value: 0.1 },
+                    { label: "15%", value: 0.15 },
                   ]}
                   minLabel="0%"
                   maxLabel="50%"
@@ -471,8 +471,8 @@ export default function Home() {
                   format={(value) => formatPercent(value, 1)}
                   description=""
                   quickPicks={[
-                    { label: "0% (Saez/Rauh)", value: 0 },
-                    { label: "7.5% (historical)", value: 0.075 },
+                    { label: "0%", value: 0 },
+                    { label: "7.5%", value: 0.075 },
                     { label: "10%", value: 0.1 },
                   ]}
                   minLabel="0%"
