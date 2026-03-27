@@ -14,7 +14,6 @@ import {
   buildScenarioHref,
   parseScenarioParams,
 } from "@/lib/scenarioUrl";
-import incomeTaxLookup from "@/data/income_tax_lookup.json";
 import rauhData from "@/data/billionaires_rauh.json";
 import liveData from "@/data/billionaires_live.json";
 
@@ -144,7 +143,6 @@ function buildPresetDetails(params) {
   const snapshot = DATA_SNAPSHOTS[params.dataSnapshot] ?? DATA_SNAPSHOTS.rauh;
   const micro = computeMicroResults({
     billionaires: snapshot.data,
-    incomeTaxLookup,
     wealthBase: params.wealthBase,
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
@@ -185,8 +183,7 @@ export default function Home() {
     () =>
       computeMicroResults({
         billionaires: snapshot.data,
-        incomeTaxLookup,
-        wealthBase: params.wealthBase,
+            wealthBase: params.wealthBase,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
@@ -657,7 +654,7 @@ export default function Home() {
               Rauh et al. replication data
             </a>{" "}
             (Forbes Oct 2025 + news-reported real estate + departure status).
-            Income tax from PolicyEngine.
+            Income tax at 13.3% effective CA rate.
           </p>
         </section>
 
@@ -720,9 +717,8 @@ export default function Home() {
 
           <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
             Both presets are simplified calibrations, not full replications.
-            Income tax is derived from PolicyEngine&apos;s{" "}
-            <code className="text-xs">ca_income_tax</code> variable via a
-            precomputed lookup at billionaire-scale income levels.
+            CA income tax uses a flat 13.3% effective rate (the top marginal
+            rate dominates at billionaire income levels).
           </p>
         </details>
       </main>
