@@ -83,6 +83,22 @@ def main():
         json.dump(billionaires, f)
     print(f"  Wrote {json_path}")
 
+    # Write dated snapshot
+    snapshots_dir = Path(__file__).parent.parent / "public" / "snapshots"
+    snapshots_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_path = snapshots_dir / f"{source_date}.json"
+    with open(snapshot_path, "w") as f:
+        json.dump(billionaires, f)
+    print(f"  Wrote {snapshot_path}")
+
+    # Update index
+    all_dates = sorted(
+        f.stem for f in snapshots_dir.glob("*.json") if f.stem != "index"
+    )
+    with open(snapshots_dir / "index.json", "w") as f:
+        json.dump(all_dates, f)
+    print(f"  Index: {len(all_dates)} dates")
+
     # Write CSV
     csv_path = DATA_DIR / "billionaires_live.csv"
     with open(csv_path, "w", newline="") as f:

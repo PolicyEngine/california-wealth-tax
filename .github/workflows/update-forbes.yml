@@ -24,7 +24,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/billionaires_live.json data/billionaires_live.csv app/page.js
+          git add data/billionaires_live.json data/billionaires_live.csv app/page.js public/snapshots/
           if git diff --cached --quiet; then
             echo "No changes"
           else

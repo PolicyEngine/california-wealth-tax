@@ -1,0 +1,52 @@
+{
+  "byName": {
+    "Larry Ellison": {
+      "excludeFromCorrectedBase": true
+    },
+    "Drew Houston": {
+      "excludeFromCorrectedBase": true
+    },
+    "Lynsi Snyder": {
+      "excludeFromCorrectedBase": true
+    },
+    "Larry Page": {
+      "departureTiming": "pre_snapshot"
+    },
+    "Sergey Brin": {
+      "departureTiming": "pre_snapshot"
+    },
+    "Peter Thiel": {
+      "departureTiming": "pre_snapshot"
+    },
+    "Don Hankey": {
+      "departureTiming": "pre_snapshot"
+    },
+    "Steven Spielberg": {
+      "departureTiming": "pre_snapshot"
+    },
+    "Mark Zuckerberg": {
+      "departureTiming": "post_snapshot"
+    },
+    "Jan Koum": {
+      "departureTiming": "unconfirmed"
+    },
+    "Reed Hastings": {
+      "departureTiming": "unconfirmed"
+    },
+    "Andy Fang": {
+      "departureTiming": "unconfirmed"
+    }
+  },
+  "syntheticRowsBySnapshot": {
+    "2025-10-17": [
+      {
+        "name": "David Sacks",
+        "netWorth": 2000000000,
+        "realEstate": 0,
+        "includeInRawForbes": false,
+        "excludeFromCorrectedBase": false,
+        "departureTiming": "pre_snapshot"
+      }
+    ]
+  }
+}

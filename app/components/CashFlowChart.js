@@ -30,6 +30,18 @@ function CashFlowTooltip({ active, payload, label }) {
       </p>
       <div className="mt-2 space-y-1 text-sm text-[var(--gray-600)]">
         <div className="flex min-w-[15rem] items-center justify-between gap-4">
+          <span>Wealth tax receipt</span>
+          <span className="font-semibold text-[var(--gray-700)]">
+            {formatBillions(point.wealthTaxReceipt, { showPlus: true })}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span>Income tax loss</span>
+          <span className="font-semibold text-[var(--gray-700)]">
+            {formatBillions(-point.incomeTaxLoss, { showPlus: true })}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
           <span>Annual net cash flow</span>
           <span className="font-semibold text-[var(--gray-700)]">
             {formatBillions(point.netCashFlow, { showPlus: true })}

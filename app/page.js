@@ -17,6 +17,7 @@ import {
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
 import rauhData from "@/data/billionaires_rauh.json";
 import liveData from "@/data/billionaires_live.json";
+import snapshotIndex from "@/public/snapshots/index.json";
 
 const BillionaireTable = dynamic(
   () => import("@/app/components/BillionaireTable"),
@@ -30,18 +31,13 @@ const CASH_FLOW_DISPLAY_YEARS = 30;
 // Used to convert nominal wealth growth to real for PV discounting.
 const INFLATION_RATE = 0.025;
 
-const DATA_SNAPSHOTS = {
-  rauh: {
-    label: "Oct 17, 2025",
-    date: new Date("2025-10-17"),
-    data: rauhData,
-  },
-  live: {
-    label: "Mar 27, 2026",
-    date: new Date("2026-03-27"),
-    data: liveData,
-  },
+// Bundled snapshots (always available without fetch)
+const BUNDLED_SNAPSHOTS = {
+  "2025-10-17": rauhData,
 };
+// Add live data under its date key
+const LIVE_DATE = snapshotIndex[snapshotIndex.length - 1];
+BUNDLED_SNAPSHOTS[LIVE_DATE] = liveData;
 
 function deriveBaseOptions(snapshot) {
   const data = snapshot.data;
@@ -93,7 +89,7 @@ const PRESETS = {
     description: "Calibrated to Saez et al.'s roughly $100B static score.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
-      dataSnapshot: "rauh",
+      snapshotDate: "2025-10-17",
       wealthBase: "all",
       excludeRealEstate: false,
       avoidanceRate: 0.1,
@@ -110,7 +106,7 @@ const PRESETS = {
     description: "Calibrated to Rauh et al.'s revenue and net-cost headline.",
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
-      dataSnapshot: "rauh",
+      snapshotDate: "2025-10-17",
       wealthBase: "afterDepartures",
       excludeRealEstate: true,
       avoidanceRate: 0.15,
@@ -146,16 +142,17 @@ const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
 
 function buildPresetDetails(params) {
-  const snapshot = DATA_SNAPSHOTS[params.dataSnapshot] ?? DATA_SNAPSHOTS.rauh;
+  const data = BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData;
+  const sourceDate = new Date(params.snapshotDate + "T00:00:00");
   const micro = computeMicroResults({
-    billionaires: snapshot.data,
+    billionaires: data,
     incomeTaxLookup,
     wealthBase: params.wealthBase,
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
     wealthGrowthRate: params.wealthGrowthRate,
     unannouncedDepartureShare: params.unannouncedDepartureShare,
-    sourceDate: snapshot.date,
+    sourceDate,
   });
   const result = calculateFiscalImpact({
     grossWealthTaxB: micro.grossWealthTaxB,
@@ -180,25 +177,44 @@ export default function Home() {
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
 
-  const snapshot = DATA_SNAPSHOTS[params.dataSnapshot] ?? DATA_SNAPSHOTS.rauh;
+  const [snapshotData, setSnapshotData] = useState(
+    BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
+  );
+
+  useEffect(() => {
+    const date = params.snapshotDate;
+    if (BUNDLED_SNAPSHOTS[date]) {
+      setSnapshotData(BUNDLED_SNAPSHOTS[date]);
+      return;
+    }
+    fetch(`/snapshots/${date}.json`)
+      .then((r) => r.json())
+      .then(setSnapshotData)
+      .catch(() => setSnapshotData(liveData));
+  }, [params.snapshotDate]);
+
+  const sourceDate = useMemo(
+    () => new Date(params.snapshotDate + "T00:00:00"),
+    [params.snapshotDate]
+  );
   const baseOptions = useMemo(
-    () => deriveBaseOptions(snapshot),
-    [snapshot]
+    () => deriveBaseOptions({ data: snapshotData, date: sourceDate }),
+    [snapshotData, sourceDate]
   );
 
   const micro = useMemo(
     () =>
       computeMicroResults({
-        billionaires: snapshot.data,
+        billionaires: snapshotData,
         incomeTaxLookup,
         wealthBase: params.wealthBase,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
         unannouncedDepartureShare: params.unannouncedDepartureShare,
-        sourceDate: snapshot.date,
+        sourceDate,
       }),
-    [snapshot, params]
+    [snapshotData, sourceDate, params]
   );
   const result = useMemo(
     () =>
@@ -332,26 +348,23 @@ export default function Home() {
             <div className="space-y-10">
 
               <AssumptionSection title="Tax base">
-                <div className="space-y-2 py-4">
-                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                <div className="flex items-center gap-3 py-4">
+                  <label className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                     Forbes snapshot
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(DATA_SNAPSHOTS).map(([key, snap]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => update("dataSnapshot", key)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                          params.dataSnapshot === key
-                            ? "bg-[var(--teal-700)] text-white"
-                            : "bg-[var(--gray-100)] text-[var(--gray-600)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-                        }`}
-                      >
-                        {snap.label}
-                      </button>
+                  </label>
+                  <select
+                    value={params.snapshotDate}
+                    onChange={(e) => update("snapshotDate", e.target.value)}
+                    className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
+                  >
+                    {snapshotIndex.map((date) => (
+                      <option key={date} value={date}>
+                        {date}
+                        {date === "2025-10-17" ? " (Saez/Rauh)" : ""}
+                        {date === LIVE_DATE ? " (latest)" : ""}
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
                 <div className="space-y-2 py-4">
