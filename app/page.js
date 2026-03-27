@@ -499,9 +499,9 @@ export default function Home() {
                   step={0.001}
                   format={(value) => formatPercent(value, 1)}
                   quickPicks={[
-                    { label: "1.0%", value: 0.01 },
-                    { label: "2.3%", value: 0.023 },
-                    { label: "3.6%", value: 0.036 },
+                    { label: "1%", value: 0.01 },
+                    { label: "2%", value: 0.02 },
+                    { label: "3%", value: 0.03 },
                   ]}
                 />
 
