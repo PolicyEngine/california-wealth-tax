@@ -4,6 +4,7 @@ import {
   Bar,
   Cell,
   ComposedChart,
+  Customized,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -64,6 +65,22 @@ export default function CashFlowChart({ data }) {
             />
           ))}
         </Bar>
+        <Customized
+          component={({ width, height }) => (
+            <text
+              x={width - 20}
+              y={height - 16}
+              textAnchor="end"
+              fill="#2C7A7B"
+              opacity={0.35}
+              fontSize={10}
+              fontFamily="system-ui, sans-serif"
+              fontWeight={600}
+            >
+              PolicyEngine
+            </text>
+          )}
+        />
       </ComposedChart>
     </ResponsiveContainer>
   );

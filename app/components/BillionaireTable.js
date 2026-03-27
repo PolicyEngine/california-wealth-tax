@@ -17,7 +17,8 @@ export default function BillionaireTable({
   excludeRealEstate,
 }) {
   const [showAll, setShowAll] = useState(false);
-  const displayed = showAll ? rows : rows.slice(0, 20);
+  const sorted = [...rows].sort((a, b) => b.netWorthB - a.netWorthB);
+  const displayed = showAll ? sorted : sorted.slice(0, 20);
 
   const totals = {
     netWorthB: rows.reduce((s, r) => s + r.netWorthB, 0),

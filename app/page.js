@@ -647,17 +647,25 @@ export default function Home() {
             />
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">
-            Source:{" "}
+            Wealth from Forbes. Departure status and real estate from{" "}
             <a
               href="https://github.com/bjaros20/wealth_tax"
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-[var(--teal-600)]"
             >
-              Rauh et al. replication data
+              Rauh et al.
+            </a>
+            . CA income tax from{" "}
+            <a
+              href="https://github.com/PolicyEngine/policyengine-us"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-[var(--teal-600)]"
+            >
+              PolicyEngine
             </a>{" "}
-            (Forbes Oct 2025 + news-reported real estate + departure status).
-            CA income tax from PolicyEngine (MFJ, 2026).
+            (MFJ, 2026–2030).
           </p>
         </section>
 

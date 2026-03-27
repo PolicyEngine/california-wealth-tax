@@ -9,6 +9,7 @@ import {
   Cell,
   ReferenceLine,
   ResponsiveContainer,
+  Customized,
 } from "recharts";
 import { formatBillions } from "@/lib/format";
 import { buildWaterfallData } from "@/lib/waterfall";
@@ -86,6 +87,22 @@ export default function WaterfallChart({ waterfall }) {
             />
           ))}
         </Bar>
+        <Customized
+          component={({ width, height }) => (
+            <text
+              x={width - 14}
+              y={height - 10}
+              textAnchor="end"
+              fill="#2C7A7B"
+              opacity={0.35}
+              fontSize={10}
+              fontFamily="system-ui, sans-serif"
+              fontWeight={600}
+            >
+              PolicyEngine
+            </text>
+          )}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
