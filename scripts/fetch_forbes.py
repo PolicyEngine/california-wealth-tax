@@ -28,6 +28,7 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 SNAPSHOTS_DIR = Path(__file__).parent.parent / "public" / "snapshots"
 NAME_ALIASES = {
     "Sergey Jr Brin": "Sergey Brin",
+    "Archie Aldis Emmerson & family": "Archie Aldis Emmerson",
 }
 
 
