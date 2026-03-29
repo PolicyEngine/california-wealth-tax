@@ -2,7 +2,7 @@ name: Update Forbes data
 
 on:
   schedule:
-    - cron: "0 14 * * *" # 2pm UTC / 6am PT daily
+    - cron: "0 12 * * *" # 12pm UTC / 5am PT daily
   workflow_dispatch: # manual trigger
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/billionaires_live.json data/billionaires_live.csv app/page.js public/snapshots/
+          git add data/billionaires_live.json data/billionaires_live_meta.json data/billionaires_live.csv public/snapshots/
           if git diff --cached --quiet; then
             echo "No changes"
           else

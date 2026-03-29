@@ -34,6 +34,7 @@ import billionaireMetadata from "@/data/billionaire_metadata.json";
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
 import rauhData from "@/data/billionaires_rauh.json";
 import liveData from "@/data/billionaires_live.json";
+import liveMetadata from "@/data/billionaires_live_meta.json";
 import snapshotIndex from "@/public/snapshots/index.json";
 
 const BillionaireTable = dynamic(
@@ -61,6 +62,18 @@ const DEFAULT_CUSTOM_SNAPSHOT_DATE =
   [...snapshotIndex]
     .reverse()
     .find((date) => date !== LIVE_DATE && date !== PAPER_DATE) ?? LIVE_DATE;
+
+const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
+  ? new Date(liveMetadata.sourceTimestampIso).toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    })
+  : null;
 
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
@@ -146,7 +159,10 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
       label: "All Forbes CA billionaires",
       wealthB: sumBillions(allForbesRows, "netWorth"),
       realEstateB: sumRealEstateBillions(allForbesRows),
-      description: `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
+      description:
+        snapshotDate === LIVE_DATE && LIVE_SNAPSHOT_TIMESTAMP_LABEL
+          ? `${allForbesRows.length} billionaires in Forbes; snapshot: ${LIVE_SNAPSHOT_TIMESTAMP_LABEL}`
+          : `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
     },
     [WEALTH_BASES.CORRECTED_BASE]: {
       label: "Corrected resident base",

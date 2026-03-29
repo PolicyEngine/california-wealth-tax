@@ -6,6 +6,7 @@ Usage:
 
 Outputs:
     data/billionaires_live.json  — latest Forbes wealth data for CA billionaires
+    data/billionaires_live_meta.json — snapshot date + Forbes timestamp metadata
     data/billionaires_live.csv   — same as CSV
 
 Merges Forbes data with local correction metadata:
@@ -61,11 +62,10 @@ def fetch_forbes_people():
     people = data["personList"]["personsLists"]
 
     timestamp_ms = people[0]["timestamp"] if people else 0
-    source_date = datetime.fromtimestamp(
-        timestamp_ms / 1000, tz=timezone.utc
-    ).strftime("%Y-%m-%d")
+    source_timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+    source_date = source_timestamp.strftime("%Y-%m-%d")
 
-    return people, source_date
+    return people, source_date, timestamp_ms, source_timestamp.isoformat()
 
 
 def build_row(person, rauh_re, metadata_by_name, include_in_raw_forbes=None):
@@ -194,7 +194,7 @@ def summarize_rows(rows):
 
 def main():
     print("Fetching from Forbes real-time API...")
-    people, source_date = fetch_forbes_people()
+    people, source_date, source_timestamp_ms, source_timestamp_iso = fetch_forbes_people()
     ca_people = [p for p in people if p.get("state") == "California"]
     print(f"  {len(ca_people)} CA billionaires as of {source_date}")
 
@@ -215,6 +215,18 @@ def main():
     with open(json_path, "w") as f:
         json.dump(billionaires, f)
     print(f"  Wrote {json_path}")
+
+    metadata_path = DATA_DIR / "billionaires_live_meta.json"
+    with open(metadata_path, "w") as f:
+        json.dump(
+            {
+                "sourceDate": source_date,
+                "sourceTimestampMs": source_timestamp_ms,
+                "sourceTimestampIso": source_timestamp_iso,
+            },
+            f,
+        )
+    print(f"  Wrote {metadata_path}")
 
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     snapshot_path = SNAPSHOTS_DIR / f"{source_date}.json"
@@ -259,6 +271,7 @@ def main():
         f" {summary['corrected_count']} billionaires,"
         f" ${summary['corrected_wealth'] / 1e9:.1f}B"
     )
+    print(f"  Source timestamp: {source_timestamp_iso}")
     print(
         "  Confirmed pre-snapshot departures:"
         f" {summary['pre_snapshot_count']},"
