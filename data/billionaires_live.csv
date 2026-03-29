@@ -1,7 +1,6 @@
 name,netWorth,realEstate,moved,includeInRawForbes,excludeFromCorrectedBase,departureTiming
 Larry Page,227721157000.0,101500000.0,True,True,False,pre_snapshot
-Sergey Brin,212693500000.0,35000000.0,True,False,False,pre_snapshot
-Sergey Jr Brin,210242118000.0,0,False,True,False,
+Sergey Brin,210242118000.0,35000000.0,True,True,False,pre_snapshot
 Mark Zuckerberg,180778945000.0,300000000.0,True,True,False,post_snapshot
 Jensen Huang,145336683000.0,52400000.0,False,True,False,
 Eric Schmidt,32185736000.0,600000000.0,False,True,False,

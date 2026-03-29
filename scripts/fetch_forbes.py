@@ -26,11 +26,18 @@ from pathlib import Path
 FORBES_API = "https://www.forbes.com/forbesapi/person/rtb/0/position/true.json"
 DATA_DIR = Path(__file__).parent.parent / "data"
 SNAPSHOTS_DIR = Path(__file__).parent.parent / "public" / "snapshots"
+NAME_ALIASES = {
+    "Sergey Jr Brin": "Sergey Brin",
+}
 
 
 def load_json(path):
     with open(path) as f:
         return json.load(f)
+
+
+def canonicalize_name(name):
+    return NAME_ALIASES.get(name, name)
 
 
 def load_rauh_real_estate():
@@ -69,7 +76,7 @@ def fetch_forbes_people():
 
 
 def build_row(person, rauh_re, metadata_by_name, include_in_raw_forbes=None):
-    name = person["personName"]
+    name = canonicalize_name(person["personName"])
     net_worth = person["finalWorth"] * 1e6  # API returns millions
     metadata = metadata_by_name.get(name, {})
     departure_timing = metadata.get("departureTiming")
@@ -136,7 +143,7 @@ def load_fallback_rows():
 
 def augment_tracked_departures(rows, people, rauh_re, metadata_by_name, fallback_rows):
     rows_by_name = {row["name"]: row for row in rows}
-    people_by_name = {person["personName"]: person for person in people}
+    people_by_name = {canonicalize_name(person["personName"]): person for person in people}
 
     tracked_names = {
         name
