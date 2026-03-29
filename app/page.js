@@ -2,7 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { calculateFiscalImpact } from "@/lib/calculator";
+import {
+  calculateFiscalImpact,
+  WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE,
+  WEALTH_TAX_PAYMENT_MODES,
+} from "@/lib/calculator";
 import { formatBillions } from "@/lib/format";
 import {
   annotateBillionaires,
@@ -37,7 +41,6 @@ const BillionaireTable = dynamic(
 );
 
 const CASH_FLOW_DISPLAY_YEARS = 30;
-const WEALTH_TAX_INSTALLMENT_YEARS = 5;
 const BALLOT_MEASURE_URL =
   "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
 
@@ -89,6 +92,12 @@ function resolveSnapshotDate(requestedDate) {
   }
 
   return resolvedDate;
+}
+
+function canonicalScenarioPathname(pathname) {
+  return pathname.endsWith("/embed")
+    ? pathname.slice(0, -"/embed".length) || "/"
+    : pathname;
 }
 
 function normalizeParams(nextParams) {
@@ -176,6 +185,7 @@ const PRESETS = {
       snapshotDate: PAPER_DATE,
       wealthBase: WEALTH_BASES.ALL_FORBES,
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+      wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: false,
       avoidanceRate: 0.1,
       unannouncedDepartureShare: 0,
@@ -195,9 +205,10 @@ const PRESETS = {
       snapshotDate: PAPER_DATE,
       wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+      wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: true,
       avoidanceRate: 0,
-      unannouncedDepartureShare: 0.484,
+      unannouncedDepartureShare: 0.48,
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
@@ -212,6 +223,7 @@ const DEFAULT_PARAMS = {
   snapshotDate: LIVE_DATE,
   wealthBase: WEALTH_BASES.ALL_FORBES,
   departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+  wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
   excludeRealEstate: false,
   avoidanceRate: 0.1,
   unannouncedDepartureShare: 0,
@@ -228,6 +240,19 @@ const formatPercent = (value, decimals = 0) =>
 
 const formatYears = (value) =>
   value === Infinity ? "Perpetuity" : `${value} years`;
+
+function matchesPreset(params, presetParams) {
+  return Object.entries(presetParams).every(
+    ([key, value]) => params[key] === value
+  );
+}
+
+function getMatchingPresetKey(params) {
+  return (
+    Object.keys(PRESETS).find((key) => matchesPreset(params, PRESETS[key].params)) ??
+    null
+  );
+}
 
 function buildPresetDetails(params) {
   const data = getSnapshotRows(
@@ -275,6 +300,7 @@ function buildPresetDetails(params) {
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
     growthRate: realGrowthRate,
+    wealthTaxPaymentMode: params.wealthTaxPaymentMode,
   });
 
   return { micro, result };
@@ -289,10 +315,14 @@ export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
+  const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
   const realGrowthRate = useMemo(
     () => toRealGrowthRate(params.wealthGrowthRate),
     [params.wealthGrowthRate]
   );
+  const usesInstallments =
+    params.wealthTaxPaymentMode === WEALTH_TAX_PAYMENT_MODES.INSTALLMENTS;
+  const isRauhScenario = activePreset === "rauh";
 
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
@@ -455,6 +485,7 @@ export default function Home() {
         discountRate: params.discountRate,
         annualReturnRate: params.annualReturnRate,
         growthRate: realGrowthRate,
+        wealthTaxPaymentMode: params.wealthTaxPaymentMode,
       }),
     [micro, params, realGrowthRate]
   );
@@ -462,6 +493,7 @@ export default function Home() {
     () =>
       buildAnnualCashFlows({
         wealthTaxCollected: result.wealthTaxCollected,
+        wealthTaxPaymentMode: params.wealthTaxPaymentMode,
         annualIncomeTaxLost: result.annualIncomeTaxLost,
         annualReturnRate: params.annualReturnRate,
         discountRate: params.discountRate,
@@ -469,7 +501,6 @@ export default function Home() {
         displayYears: CASH_FLOW_DISPLAY_YEARS,
         startYear: DEFAULT_CASH_FLOW_START_YEAR,
         growthRate: realGrowthRate,
-        wealthTaxInstallmentYears: WEALTH_TAX_INSTALLMENT_YEARS,
       }),
     [params, realGrowthRate, result]
   );
@@ -485,11 +516,7 @@ export default function Home() {
       return;
     }
 
-    const nextHref = buildScenarioHref(
-      window.location.pathname,
-      params,
-      DEFAULT_PARAMS
-    );
+    const nextHref = buildScenarioHref(window.location.pathname, params, DEFAULT_PARAMS);
     const currentHref = `${window.location.pathname}${window.location.search}`;
 
     if (nextHref !== currentHref) {
@@ -520,7 +547,6 @@ export default function Home() {
 
       return next;
     });
-    setActivePreset(null);
   }
 
   function updateSnapshotMode(nextMode) {
@@ -540,16 +566,15 @@ export default function Home() {
     );
   }
 
-  const [activePreset, setActivePreset] = useState("saez");
-
   function applyPreset(key) {
     setParams(normalizeParams({ ...PRESETS[key].params }));
-    setActivePreset(key);
   }
 
   async function copyScenarioLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const url = new URL(window.location.href);
+      url.pathname = canonicalScenarioPathname(url.pathname);
+      await navigator.clipboard.writeText(url.toString());
       setCopyStatus("Copied link");
     } catch {
       setCopyStatus("Copy failed");
@@ -570,14 +595,21 @@ export default function Home() {
         <div className="space-y-8">
           <div className="flex flex-wrap items-center gap-3 pb-2">
             {Object.entries(PRESETS).map(([key, preset]) => (
-              <span key={key} className="inline-flex items-center gap-1.5">
+              <span
+                key={key}
+                className={`inline-flex items-center gap-1 rounded-full border p-1 ${
+                  activePreset === key
+                    ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
+                    : "border-[var(--gray-300)] bg-white"
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => applyPreset(key)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                     activePreset === key
-                      ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
-                      : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                      ? "bg-[var(--teal-700)] text-white"
+                      : "bg-white text-[var(--gray-700)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
                   }`}
                   title={preset.description}
                 >
@@ -587,10 +619,14 @@ export default function Home() {
                   href={preset.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[var(--teal-600)] underline decoration-[var(--teal-300)] underline-offset-2 hover:text-[var(--teal-700)]"
+                  className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                    activePreset === key
+                      ? "text-[var(--teal-700)] hover:bg-white hover:text-[var(--teal-800)]"
+                      : "text-[var(--gray-500)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                  }`}
                   title="Read the paper"
                 >
-                  paper
+                  Read paper
                 </a>
               </span>
             ))}
@@ -754,6 +790,42 @@ export default function Home() {
                 </p>
 
                 <div className="space-y-3 py-4">
+                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                    Wealth-tax payment timing
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      {
+                        key: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
+                        label: "Lump sum",
+                      },
+                      {
+                        key: WEALTH_TAX_PAYMENT_MODES.INSTALLMENTS,
+                        label: "5 installments",
+                      },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => update("wealthTaxPaymentMode", option.key)}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                          params.wealthTaxPaymentMode === option.key
+                            ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+                            : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    {usesInstallments
+                      ? `Installments follow the ballot text: five equal annual principal payments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
+                      : "Lump sum books the wealth-tax inflow at model start, matching Rauh et al.'s one-time inflow framing."}
+                  </p>
+                </div>
+
+                <div className="space-y-3 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                       Additional migration response
@@ -854,7 +926,7 @@ export default function Home() {
                         quickPicks={[
                           { label: "0%", value: 0 },
                           { label: "25%", value: 0.25 },
-                          { label: "48%", value: 0.484 },
+                          { label: "48%", value: 0.48 },
                         ]}
                       />
                       {elasticityModeEnabled && (
@@ -906,10 +978,10 @@ export default function Home() {
 
                 <div className="flex items-center justify-between border-t border-[var(--gray-100)] py-4">
                   <span className="text-sm font-semibold text-[var(--gray-600)]">
-                    Net wealth tax collected
+                    PV of wealth-tax receipts
                   </span>
                   <span className="text-sm font-semibold text-[var(--teal-700)]">
-                    {formatBillions(result.wealthTaxCollected)}
+                    {formatBillions(result.pvWealthTaxReceipts)}
                   </span>
                 </div>
               </AssumptionSection>
@@ -943,10 +1015,19 @@ export default function Home() {
                     format={(value) => formatPercent(value, 1)}
                     quickPicks={[
                       { label: "1%", value: 0.01 },
-                      { label: "2%", value: 0.02 },
+                      { label: isRauhScenario ? "2% Rauh" : "2%", value: 0.02 },
                       { label: "3%", value: 0.03 },
                     ]}
                   />
+                  {isRauhScenario && params.incomeYieldRate === 0.02 && (
+                    <p className="rounded-2xl border border-[var(--teal-200)] bg-[var(--teal-50)] px-3 py-2 text-xs leading-5 text-[var(--teal-700)]">
+                      The Rauh preset backs this{" "}
+                      <span className="font-semibold">2.0%</span> value out so
+                      PolicyEngine matches the paper&apos;s annual PIT midpoint.
+                      Rauh et al. estimate PIT directly from FTB data rather
+                      than from income divided by wealth.
+                    </p>
+                  )}
 
                   <Slider
                     label="Income tax horizon"
@@ -1060,6 +1141,26 @@ export default function Home() {
                       {formatBillions(result.wealthTaxCollected)}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>Payment timing</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {usesInstallments ? "5 installments" : "Lump sum"}
+                    </span>
+                  </div>
+                  {result.wealthTaxDeferralChargeB > 0 && (
+                    <div className="flex items-center justify-between py-2">
+                      <span>Nominal deferral charges</span>
+                      <span className="font-semibold text-[var(--gray-700)]">
+                        {formatBillions(result.wealthTaxDeferralChargeB)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between py-2">
+                    <span>PV of wealth-tax receipts</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(result.pvWealthTaxReceipts)}
+                    </span>
+                  </div>
                   {result.annualIncomeTaxLost > 0 && (
                   <>
                   <div className="flex items-center justify-between py-2">
@@ -1087,9 +1188,10 @@ export default function Home() {
             Year-by-year cash flow
           </h3>
           <p className="text-xs leading-5 text-[var(--gray-500)]">
-            Wealth-tax receipts are shown as five equal annual installments. PIT
-            losses grow in real terms using the implied growth rate above.
-            Deferral charges in the measure text are not modeled.
+            {usesInstallments
+              ? `Wealth-tax receipts are shown as five annual installments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
+              : "Wealth-tax receipts are shown as a lump sum at model start."}{" "}
+            PIT losses grow in real terms using the implied growth rate above.
           </p>
           <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
             <CashFlowChart data={cashFlow.rows} />
@@ -1199,7 +1301,8 @@ export default function Home() {
                   PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
                 later / reported departures on the PIT-loss side, excludes
                 directly held real estate, and applies no additional
-                non-migration erosion.
+                non-migration erosion. The preset books the wealth-tax inflow as
+                a lump sum.
                 The default migration input is{" "}
                 {formatPercent(PRESETS.rauh.params.unannouncedDepartureShare)}
                 {" "}

@@ -99,9 +99,9 @@ export default function WaterfallChart({ waterfall }) {
         src={`${basePath}/policyengine-logo.svg`}
         alt=""
         aria-hidden="true"
-        width={112}
-        height={23}
-        className="pointer-events-none absolute bottom-3 right-4 opacity-30"
+        width={84}
+        height={17}
+        className="pointer-events-none absolute bottom-1 right-4 opacity-30"
       />
     </div>
   );
