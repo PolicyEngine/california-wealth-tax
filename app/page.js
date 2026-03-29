@@ -11,6 +11,7 @@ import { formatBillions } from "@/lib/format";
 import {
   annotateBillionaires,
   computeMicroResults,
+  estimateRealEstateHoldingsB,
   getBillionaireFlags,
   WEALTH_BASES,
 } from "@/lib/microModel";
@@ -113,6 +114,7 @@ function normalizeParams(nextParams) {
 
 function deriveBaseOptions({ snapshotDate, data, date }) {
   const dateLabel = date.toLocaleDateString("en-US", {
+    day: "numeric",
     month: "short",
     year: "numeric",
   });
@@ -123,6 +125,11 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
   }));
   const sumBillions = (targetRows, key) =>
     targetRows.reduce((sum, row) => sum + (row[key] || 0) / 1e9, 0);
+  const sumRealEstateBillions = (targetRows) =>
+    targetRows.reduce(
+      (sum, row) => sum + estimateRealEstateHoldingsB(row).realEstateB,
+      0
+    );
   const allForbesRows = classifiedRows.filter((row) => row.includeInRawForbes);
   const correctedBaseRows = classifiedRows.filter(
     (row) => !row.excludeFromCorrectedBase
@@ -138,13 +145,13 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
     [WEALTH_BASES.ALL_FORBES]: {
       label: "All Forbes CA billionaires",
       wealthB: sumBillions(allForbesRows, "netWorth"),
-      realEstateB: sumBillions(allForbesRows, "realEstate"),
+      realEstateB: sumRealEstateBillions(allForbesRows),
       description: `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
     },
     [WEALTH_BASES.CORRECTED_BASE]: {
       label: "Corrected resident base",
       wealthB: sumBillions(correctedBaseRows, "netWorth"),
-      realEstateB: sumBillions(correctedBaseRows, "realEstate"),
+      realEstateB: sumRealEstateBillions(correctedBaseRows),
       description:
         snapshotDate === "2025-10-17"
           ? `${correctedBaseRows.length} after Rauh residency corrections`
@@ -153,7 +160,7 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
     [WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES]: {
       label: "After residency corrections and pre-snapshot departures",
       wealthB: sumBillions(afterPreSnapshotRows, "netWorth"),
-      realEstateB: sumBillions(afterPreSnapshotRows, "realEstate"),
+      realEstateB: sumRealEstateBillions(afterPreSnapshotRows),
       description:
         snapshotDate === PAPER_DATE
           ? `${afterPreSnapshotRows.length} after 2 residency corrections and ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`
@@ -763,8 +770,9 @@ export default function Home() {
                   </label>
                   <p className="mt-2 text-xs leading-5 text-[var(--gray-500)]">
                     The measure text excludes directly held real property from
-                    &nbsp;net worth before the $1.0B to $1.1B phase-in is
-                    applied.
+                    &nbsp;net worth. Missing billionaire-level real estate
+                    values are imputed at 0.64% of net worth, following Rauh et
+                    al.
                   </p>
                 </div>
 
@@ -820,8 +828,8 @@ export default function Home() {
                   </div>
                   <p className="text-xs leading-5 text-[var(--gray-500)]">
                     {usesInstallments
-                      ? `Installments follow the ballot text: five equal annual principal payments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
-                      : "Lump sum books the wealth-tax inflow at model start, matching Rauh et al.'s one-time inflow framing."}
+                      ? `Billionaires may pay five equal annual principal payments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
+                      : "Lump sum books the wealth-tax inflow at model start."}
                   </p>
                 </div>
 
@@ -1220,7 +1228,9 @@ export default function Home() {
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">
             Wealth from Forbes snapshots. Departure timing from Rauh et al.
-            Tables 6 and 7; directly held real estate treatment matches the{" "}
+            Tables 6 and 7; directly held real estate uses name-level values
+            where available and otherwise imputes 0.64% of net worth, matching
+            the{" "}
             <a
               href={BALLOT_MEASURE_URL}
               target="_blank"

@@ -102,14 +102,23 @@ export default function BillionaireTable({
                       ))}
                     </div>
                   )}
+                  {row.realEstateB > 0 && (
+                    <p className="mt-1 text-xs font-normal text-[var(--gray-500)]">
+                      Real estate holdings: {formatB(row.realEstateB)}
+                      {row.realEstateImputed
+                        ? " (imputed at 0.64% of net worth)"
+                        : ""}
+                      {excludeRealEstate ? " excluded from taxable wealth" : ""}
+                    </p>
+                  )}
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums">
                   {formatB(row.netWorthB)}
                 </td>
                 {excludeRealEstate && (
                   <td className="px-2 py-2 text-right tabular-nums text-[var(--gray-500)]">
-                    {row.netWorthB !== row.taxableWealthB
-                      ? formatB(row.netWorthB - row.taxableWealthB)
+                    {row.excludedRealEstateB > 0
+                      ? formatB(row.excludedRealEstateB)
                       : "—"}
                   </td>
                 )}
