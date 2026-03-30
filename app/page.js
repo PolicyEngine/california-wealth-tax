@@ -191,6 +191,39 @@ function ChartLoading() {
   );
 }
 
+function ExternalLinkIcon({ className = "h-3.5 w-3.5" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      className={className}
+    >
+      <path
+        d="M11.25 3.75H16.25V8.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.75 11.25L16.25 3.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.25 11.25V13.75C16.25 15.1307 15.1307 16.25 13.75 16.25H6.25C4.86929 16.25 3.75 15.1307 3.75 13.75V6.25C3.75 4.86929 4.86929 3.75 6.25 3.75H8.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const CashFlowChart = dynamic(() => import("@/app/components/CashFlowChart"), {
   loading: () => <ChartLoading />,
 });
@@ -242,21 +275,7 @@ const PRESETS = {
   },
 };
 
-const DEFAULT_PARAMS = {
-  snapshotDate: LIVE_DATE,
-  wealthBase: WEALTH_BASES.ALL_FORBES,
-  departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-  wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
-  excludeRealEstate: false,
-  avoidanceRate: 0.1,
-  unannouncedDepartureShare: 0,
-  migrationSemiElasticity: 12.6,
-  wealthGrowthRate: 0,
-  annualReturnRate: 0,
-  incomeYieldRate: 0.01,
-  horizonYears: Infinity,
-  discountRate: 0.03,
-};
+const DEFAULT_PARAMS = { ...PRESETS.saez.params };
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -642,7 +661,7 @@ export default function Home() {
                   href={preset.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
                     activePreset === key
                       ? "text-[var(--teal-700)] hover:bg-white hover:text-[var(--teal-800)]"
                       : "text-[var(--gray-500)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
@@ -650,6 +669,7 @@ export default function Home() {
                   title="Read the paper"
                 >
                   Read paper
+                  <ExternalLinkIcon className="h-3 w-3 opacity-75" />
                 </a>
               </span>
             ))}
@@ -664,9 +684,10 @@ export default function Home() {
               href={BALLOT_MEASURE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
             >
               Ballot measure text
+              <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
             </a>
           </div>
 
