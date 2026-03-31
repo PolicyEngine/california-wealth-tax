@@ -74,7 +74,8 @@ const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
       timeZoneName: "short",
     })
   : null;
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE_PATH =
+  process.env.NEXT_PUBLIC_BASE_PATH ?? "/us/california-wealth-tax/embed";
 const PAPER_DRAFT_PATH = `${BASE_PATH}/papers/california-wealth-tax-ssrn-draft.pdf`;
 
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
