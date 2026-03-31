@@ -1,0 +1,14 @@
+project:
+  type: default
+
+format:
+  pdf:
+    pdf-engine: pdflatex
+    geometry: margin=1in
+    fontsize: 11pt
+    linestretch: 1.15
+    number-sections: false
+    colorlinks: true
+
+execute:
+  enabled: false

@@ -74,6 +74,8 @@ const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
       timeZoneName: "short",
     })
   : null;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const PAPER_DRAFT_PATH = `${BASE_PATH}/papers/california-wealth-tax-ssrn-draft.pdf`;
 
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
@@ -275,7 +277,21 @@ const PRESETS = {
   },
 };
 
-const DEFAULT_PARAMS = { ...PRESETS.saez.params };
+const DEFAULT_PARAMS = {
+  snapshotDate: LIVE_DATE,
+  wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
+  departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+  wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
+  excludeRealEstate: true,
+  avoidanceRate: 0,
+  unannouncedDepartureShare: 0,
+  migrationSemiElasticity: 12.6,
+  wealthGrowthRate: 0,
+  annualReturnRate: 0,
+  incomeYieldRate: 0.01,
+  horizonYears: Infinity,
+  discountRate: 0.03,
+};
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -357,6 +373,7 @@ export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
+  const [paperExpanded, setPaperExpanded] = useState(false);
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
   const realGrowthRate = useMemo(
     () => toRealGrowthRate(params.wealthGrowthRate),
@@ -965,13 +982,14 @@ export default function Home() {
                           update("unannouncedDepartureShare", nextValue)
                         }
                         min={0}
-                        max={0.7}
+                        max={1}
                         step={0.01}
                         format={(value) => formatPercent(value)}
                         quickPicks={[
                           { label: "0%", value: 0 },
                           { label: "25%", value: 0.25 },
                           { label: "48%", value: 0.48 },
+                          { label: "100%", value: 1 },
                         ]}
                       />
                       {elasticityModeEnabled && (
@@ -1102,14 +1120,15 @@ export default function Home() {
                     label="Real discount rate"
                     value={params.discountRate}
                     onChange={(nextValue) => update("discountRate", nextValue)}
-                    min={0.01}
-                    max={0.07}
+                    min={0}
+                    max={0.05}
                     step={0.005}
                     format={(value) => formatPercent(value, 1)}
                     quickPicks={[
-                      { label: "2%", value: 0.02 },
+                      { label: "0%", value: 0 },
+                      { label: "1.5%", value: 0.015 },
                       { label: "3%", value: 0.03 },
-                      { label: "5%", value: 0.05 },
+                      { label: "4.5%", value: 0.045 },
                     ]}
                   />
                   <div className="py-3 text-sm text-[var(--gray-600)]">
@@ -1387,6 +1406,49 @@ export default function Home() {
             </span>{" "}
             approximation.
           </p>
+        </details>
+
+        <details
+          className="group border-t border-[var(--gray-200)] pt-6"
+          onToggle={(event) => setPaperExpanded(event.currentTarget.open)}
+        >
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
+            Working paper (draft)
+          </summary>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm leading-6 text-[var(--gray-600)]">
+              Draft SSRN-style paper describing the calculator methodology,
+              current baseline, and the main differences between the Berkeley,
+              Rauh, and Hoopes framings.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={PAPER_DRAFT_PATH}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                Open PDF
+                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+              </a>
+              <a
+                href={PAPER_DRAFT_PATH}
+                download
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                Download PDF
+              </a>
+            </div>
+            {paperExpanded && (
+              <div className="overflow-hidden rounded-[28px] border border-[var(--gray-200)] bg-white shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
+                <iframe
+                  src={`${PAPER_DRAFT_PATH}#view=FitH`}
+                  title="California wealth tax working paper draft"
+                  className="h-[880px] w-full"
+                />
+              </div>
+            )}
+          </div>
         </details>
       </main>
     </div>

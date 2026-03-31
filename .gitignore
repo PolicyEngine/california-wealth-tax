@@ -22,6 +22,8 @@
 *.pem
 __pycache__/
 .playwright-cli/
+/output/
+/tmp/
 
 # debug
 npm-debug.log*
