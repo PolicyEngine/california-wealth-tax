@@ -34,7 +34,7 @@ California's proposed Billionaire Tax Act has produced one of the widest gaps
 in recent state tax scoring. Galle, Gamage, Saez, and Shanske report a roughly
 $100 billion static score using Forbes data and a 10 percent haircut for
 avoidance or evasion [@galle2025]. Rauh et al. build a person-level base,
-correct the residency list, model departures, and estimate that the policy may
+adjust the residency roster, model departures, and estimate that the policy may
 have negative net present value once foregone California income tax is counted
 [@rauh2026]. The Legislative Analyst's Office describes the effect only as
 being in the "tens of billions of dollars" [@lao2026].
@@ -42,7 +42,7 @@ being in the "tens of billions of dollars" [@lao2026].
 This paper documents a public calculator built at PolicyEngine to make those
 disagreements transparent [@policyengine2026]. The calculator is not a full
 replication of any one paper. It is a common framework that lets users change
-the assumptions that matter most: the billionaire base, disputed residency
+the assumptions that matter most: the billionaire base, contested residency
 classifications, directly held real estate, observed and modeled departures,
 California income tax exposure, payment timing, growth, and discounting.
 
@@ -68,21 +68,24 @@ score. It does not separately model departures or future California income tax
 losses.
 
 Rauh et al. construct a narrower and more behaviorally responsive base
-[@rauh2026]. Their paper removes known non-California residents from the
-Forbes list, adds an omitted California billionaire, estimates directly held
-real estate, and treats observed departures as evidence of migration response.
-They report a $94.2 billion no-behavior baseline, a $67.5 billion score after
-six confirmed pre-snapshot departures, and a preferred revenue range of roughly
-$35 billion to $46 billion once additional migration response is included. The
+[@rauh2026]. Their paper adjusts the Forbes residency roster, adds an omitted
+California billionaire, estimates directly held real estate, and treats
+announced departures as evidence of migration response. They report a $94.2
+billion no-behavior baseline, a $67.5 billion score after six announced
+departures, and a preferred revenue range of roughly $35 billion to $46
+billion once additional migration response is included. The
 paper's Monte Carlo exercise yields a mean net present value of -$24.7 billion.
 
 Galle, Gamage, Saez, and Shanske later published an explainer arguing that
 most publicly discussed billionaire moves should not be treated as legally
-effective changes in California residency and that a one-time tax sharply
-limits the incentive to leave in order to avoid the tax [@itep2026]. That
-position relies both on California's fact-intensive residency doctrine and on
-legal and economic scholarship that treats tax-induced physical migration as
-limited relative to paper income shifting [@bracamonte2021; @moneymoves2025].
+effective changes in California domicile [@itep2026]. They contend that
+California residency is determined by a totality-of-ties analysis weighing
+family, business, political, and social connections, that self-reported
+relocations receive little weight in that analysis, and that the one-time
+nature of the tax sharply limits the incentive to move. That position relies
+on California's fact-intensive residency doctrine and on legal and economic
+scholarship that treats tax-induced physical migration as limited relative to
+paper income shifting [@bracamonte2021; @moneymoves2025].
 
 A separate concern is valuation. Forbes wealth is a public estimate, not a tax
 filing. If reported values to the California Franchise Tax Board come in below
@@ -114,17 +117,20 @@ classification even when later evidence suggests some names are not California
 residents.
 
 The second is an alternative base that follows the Rauh or Jaros treatment of
-disputed residency cases. Here the model removes names that the Rauh or Jaros
+contested residency cases. Here the model removes names that the Rauh or Jaros
 work identifies as outside the California resident base and adds David Sacks,
-who is omitted from the Forbes California list used in the paper. This should
-be read as an attributed scenario, not as an adjudicated statement of legal
+who is omitted from the Forbes California list used in the paper. Whether
+these classifications reflect legally effective changes in domicile is
+contested; Galle et al. argue that California's totality-of-ties standard
+makes most of these reclassifications unlikely to hold [@itep2026]. This
+should be read as a scenario assumption, not an adjudicated statement of legal
 residency.
 
-The third is the alternative base after reported pre-snapshot departures. This
-retains the disputed-residency pool above but also removes names that Rauh and
-Jaros treat as having left California before the January 1, 2026 residency
-cutoff. In the paper-date replication, this means six reported departures. In
-the live calculator, the same structure is applied to the latest stored Forbes
+The third is the alternative base after announced departures. This retains the
+contested-residency pool above but also removes names that Rauh and Jaros
+treat as having left California before the January 1, 2026 residency cutoff.
+In the paper-date replication, this means six announced departures. In the
+live calculator, the same structure is applied to the latest stored Forbes
 snapshot using the same metadata overlay.
 
 ## Real estate exclusion and phase-in
@@ -151,7 +157,7 @@ form haircut that lowers one-time wealth tax collections but does not generate
 future California income tax loss.
 
 The second is migration. Here timing matters. A clean implementation needs to
-distinguish at least four cases: reported pre-January 1 departures, unreported
+distinguish at least four cases: announced pre-January 1 departures, unannounced
 pre-January 1 departures, post-January 1 but pre-vote departures whose effect
 on wealth-tax liability depends on retroactivity litigation, and later
 departures that can affect future California income tax without changing the
@@ -211,9 +217,9 @@ well as the nominal amount collected.
 
 As of the stored Forbes snapshot for March 30, 2026, the calculator's default
 opening state is an unnamed corrected-current baseline. It uses the latest
-Forbes data, the corrected base after confirmed pre-snapshot departures,
-excludes directly held real estate, and adds no extra non-migration erosion or
-additional modeled departures.
+Forbes data, the adjusted base after announced departures, excludes directly
+held real estate, and adds no extra non-migration erosion or additional modeled
+departures.
 
 Under that baseline, the calculator reports:
 
@@ -226,8 +232,8 @@ Under that baseline, the calculator reports:
 The named presets remain reference points rather than default claims. The
 Berkeley-style preset keeps the paper-date raw Forbes base, leaves real estate
 in the base, and applies a 10 percent non-migration haircut. The Rauh-style
-preset uses the disputed-residency paper-date base after reported
-pre-snapshot departures, excludes directly held real estate, and carries
+preset uses the contested-residency paper-date base after announced
+departures, excludes directly held real estate, and carries
 additional migration through to future California income tax losses. The
 calculator does not claim either preset is the correct answer. Its purpose is
 to show which assumptions move the result.
@@ -276,7 +282,7 @@ them inspectable.
 
 California's proposed Billionaire Tax Act should not be summarized by a single
 number without showing the assumptions underneath it. Reasonable choices about
-the billionaire base, disputed residency cases, directly held real estate,
+the billionaire base, contested residency cases, directly held real estate,
 migration, income tax exposure, valuation, and discounting are enough to move
 the estimate from a roughly $100 billion static score to a much smaller figure
 and, in some scenarios, to a negative net present value.
@@ -284,7 +290,7 @@ and, in some scenarios, to a negative net present value.
 A transparent calculator is useful because it makes those choices visible. The
 next stage of work should focus less on replacing one opaque point estimate
 with another and more on improving measurement of the valuation base, the
-disputed residency base, and the California income tax exposure of the
+contested residency base, and the California income tax exposure of the
 affected cohort, while separating the one-time wealth tax score from the more
 speculative question of later California income tax effects.
 

@@ -843,7 +843,7 @@ export default function Home() {
 
                 <details className="rounded-2xl border border-[var(--gray-200)] bg-white px-4 py-3">
                   <summary className="cursor-pointer text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)] hover:text-[var(--teal-700)]">
-                    Disputed residency / departure adjustments
+                    Residency adjustments
                     {params.residencyExclusionIds.length > 0 && (
                       <span className="ml-2 text-xs font-medium text-[var(--gray-500)]">
                         ({params.residencyExclusionIds.length} excluded)
@@ -851,10 +851,9 @@ export default function Home() {
                     )}
                   </summary>
                   <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
-                    Toggle whether each disputed name stays in the one-time
-                    2026 wealth-tax base. These are scenario assumptions drawn
-                    from public reporting and Rauh/Jaros metadata, not legal
-                    determinations.
+                    Toggle whether each name stays in the one-time 2026
+                    wealth-tax base. Whether these cases establish a change
+                    in CA domicile is contested; see the paper for details.
                   </p>
                   <div className="mt-4 space-y-4">
                     {[
@@ -867,7 +866,7 @@ export default function Home() {
                       },
                       {
                         key: "pre_snapshot_departure",
-                        title: "Reported pre-January 1 departures",
+                        title: "Announced departures",
                         items: RESIDENCY_ADJUSTMENTS.filter(
                           (adjustment) =>
                             adjustment.category === "pre_snapshot_departure"
@@ -928,8 +927,9 @@ export default function Home() {
                     ))}
                   </div>
                   <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
-                    Saez leaves these boxes unchecked. Rauh applies the full
-                    checklist above.
+                    Default includes all. Galle et al. argue none should be
+                    excluded; Rauh &amp; Jaros exclude the full list. See the
+                    paper for the legal and empirical arguments on each side.
                   </p>
                 </details>
 
@@ -1066,7 +1066,7 @@ export default function Home() {
                         format={(value) => value.toFixed(1)}
                       />
                       <p className="text-xs leading-5 text-[var(--gray-500)]">
-                        The checked pre-January 1 departures already remove{" "}
+                        The checked announced departures already remove{" "}
                         <span className="font-semibold text-[var(--gray-700)]">
                           {formatPercent(observedDepartureLossShare, 1)}
                         </span>{" "}
@@ -1108,7 +1108,7 @@ export default function Home() {
                       />
                       <p className="text-xs leading-5 text-[var(--gray-500)]">
                         This is the additional loss applied after the checked
-                        pre-January 1 departures already remove{" "}
+                        announced departures already remove{" "}
                         <span className="font-semibold text-[var(--gray-700)]">
                           {formatPercent(observedDepartureLossShare, 1)}
                         </span>{" "}
@@ -1301,7 +1301,7 @@ export default function Home() {
                           <span>
                             <span className="font-semibold text-[var(--gray-700)]">
                               {micro.preSnapshotDepartureRows.length}{" "}
-                              pre-snapshot departures
+                              announced departures
                             </span>
                             {(micro.postSnapshotDepartureRows.length > 0 ||
                               micro.unconfirmedDepartureRows.length > 0) && (
@@ -1547,9 +1547,9 @@ export default function Home() {
               </p>
               <p>
                 Starts from the January 1, 2026 Forbes roster and checks all
-                listed residency / pre-snapshot departure adjustments, removing{" "}
+                listed residency and announced departure adjustments, removing{" "}
                 {PRESET_DETAILS.rauh.micro.preSnapshotDepartureRows.length}{" "}
-                pre-snapshot departures from the wealth-tax base,
+                announced departures from the wealth-tax base,
                 keeps{" "}
                 {PRESET_DETAILS.rauh.micro.postSnapshotDepartureRows.length +
                   PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
