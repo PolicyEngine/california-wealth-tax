@@ -247,12 +247,14 @@ const PRESETS = {
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: false,
+      includeIncomeTaxEffects: false,
       avoidanceRate: 0.1,
       unannouncedDepartureShare: 0,
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.01,
+      incomeTaxAttributionRate: 1,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -267,12 +269,14 @@ const PRESETS = {
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: true,
+      includeIncomeTaxEffects: true,
       avoidanceRate: 0,
       unannouncedDepartureShare: 0.48,
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
       incomeYieldRate: 0.02,
+      incomeTaxAttributionRate: 1,
       horizonYears: Infinity,
       discountRate: 0.03,
     },
@@ -285,12 +289,14 @@ const DEFAULT_PARAMS = {
   departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
   wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
   excludeRealEstate: true,
+  includeIncomeTaxEffects: false,
   avoidanceRate: 0,
   unannouncedDepartureShare: 0,
   migrationSemiElasticity: 12.6,
   wealthGrowthRate: 0,
   annualReturnRate: 0,
   incomeYieldRate: 0.01,
+  incomeTaxAttributionRate: 1,
   horizonYears: Infinity,
   discountRate: 0.03,
 };
@@ -356,6 +362,8 @@ function buildPresetDetails(params) {
     grossWealthTaxB: micro.grossWealthTaxB,
     avoidanceRate: params.avoidanceRate,
     moverIncomeTaxB: micro.moverIncomeTaxB,
+    includeIncomeTaxEffects: params.includeIncomeTaxEffects,
+    incomeTaxAttributionRate: params.incomeTaxAttributionRate,
     horizonYears: params.horizonYears,
     discountRate: params.discountRate,
     annualReturnRate: params.annualReturnRate,
@@ -384,6 +392,7 @@ export default function Home() {
   const usesInstallments =
     params.wealthTaxPaymentMode === WEALTH_TAX_PAYMENT_MODES.INSTALLMENTS;
   const isRauhScenario = activePreset === "rauh";
+  const pitEffectsEnabled = params.includeIncomeTaxEffects;
 
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
@@ -542,6 +551,8 @@ export default function Home() {
         grossWealthTaxB: micro.grossWealthTaxB,
         avoidanceRate: params.avoidanceRate,
         moverIncomeTaxB: micro.moverIncomeTaxB,
+        includeIncomeTaxEffects: params.includeIncomeTaxEffects,
+        incomeTaxAttributionRate: params.incomeTaxAttributionRate,
         horizonYears: params.horizonYears,
         discountRate: params.discountRate,
         annualReturnRate: params.annualReturnRate,
@@ -550,6 +561,11 @@ export default function Home() {
       }),
     [micro, params, realGrowthRate]
   );
+  const headlineValue = pitEffectsEnabled
+    ? result.netFiscalImpact
+    : result.pvWealthTaxReceipts;
+  const attributedMoverIncomeTaxB =
+    micro.moverIncomeTaxB * params.incomeTaxAttributionRate;
   const cashFlow = useMemo(
     () =>
       buildAnnualCashFlows({
@@ -713,7 +729,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
-              <AssumptionSection title="Tax base">
+              <AssumptionSection title="Stage 1: one-time wealth tax">
                 <div className="space-y-3 py-4">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                     Forbes snapshot
@@ -848,9 +864,9 @@ export default function Home() {
                   ]}
                 />
                 <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
-                  This reduces one-time wealth-tax collections only. Migration is
-                  modeled below and also flows through to California income-tax
-                  loss.
+                  This reduces one-time wealth-tax collections only. Any future
+                  California income-tax effects are handled separately in stage
+                  2 below.
                 </p>
 
                 <div className="space-y-3 py-4">
@@ -1013,6 +1029,12 @@ export default function Home() {
                       )}
                     </>
                   )}
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    These additional departures are treated as reducing the
+                    one-time wealth-tax base. The current app does not yet
+                    expose a separate control for later migration that would
+                    affect PIT only.
+                  </p>
                 </div>
 
                 <Slider
@@ -1032,12 +1054,11 @@ export default function Home() {
                   ]}
                 />
                 <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
-                  Income-tax losses grow at an implied real rate of{" "}
+                  Nominal wealth growth converts to{" "}
                   <span className="font-semibold text-[var(--gray-700)]">
                     {formatPercent(realGrowthRate, 1)}
-                  </span>
-                  {" "}
-                  after subtracting{" "}
+                  </span>{" "}
+                  real growth after subtracting{" "}
                   {formatPercent(INFLATION_RATE, 1)} inflation.
                 </p>
 
@@ -1051,140 +1072,238 @@ export default function Home() {
                 </div>
               </AssumptionSection>
 
-              {(micro.movers.length > 0 || modeledAdditionalDepartureShare > 0) && (
-                <AssumptionSection title="Income tax loss from departures">
+              <AssumptionSection title="Stage 2: optional California income tax effects">
+                <div className="space-y-3 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+                      Include future CA income tax effects
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: false, label: "Off" },
+                        { value: true, label: "On" },
+                      ].map((option) => (
+                        <button
+                          key={String(option.value)}
+                          type="button"
+                          onClick={() =>
+                            update("includeIncomeTaxEffects", option.value)
+                          }
+                          className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                            pitEffectsEnabled === option.value
+                              ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+                              : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    This second stage attributes some share of movers&apos;
+                    future California PIT loss to the tax episode. It is a
+                    separate causality assumption, not part of the one-time
+                    wealth-tax score itself. Future PIT-only migration is not
+                    yet modeled separately.
+                  </p>
+                </div>
+
+                {pitEffectsEnabled ? (
+                  <>
                   <Slider
-                    label="Share of remaining leavers who return each year"
-                    value={params.annualReturnRate}
+                    label="Share of mover PIT loss attributed to the tax"
+                    value={params.incomeTaxAttributionRate}
                     onChange={(nextValue) =>
-                      update("annualReturnRate", nextValue)
+                      update("incomeTaxAttributionRate", nextValue)
                     }
                     min={0}
-                    max={0.5}
+                    max={1}
                     step={0.01}
                     format={(value) => formatPercent(value)}
                     quickPicks={[
                       { label: "0%", value: 0 },
-                      { label: "5%", value: 0.05 },
-                      { label: "15%", value: 0.15 },
+                      { label: "50%", value: 0.5 },
+                      { label: "100%", value: 1 },
                     ]}
                   />
 
-                  <Slider
-                    label="Annual CA-taxable income / taxed wealth"
-                    value={params.incomeYieldRate}
-                    onChange={(nextValue) => update("incomeYieldRate", nextValue)}
-                    min={0.005}
-                    max={0.05}
-                    step={0.001}
-                    format={(value) => formatPercent(value, 1)}
-                    quickPicks={[
-                      { label: "1%", value: 0.01 },
-                      { label: isRauhScenario ? "2% Rauh" : "2%", value: 0.02 },
-                      { label: "3%", value: 0.03 },
-                    ]}
-                  />
-                  {isRauhScenario && params.incomeYieldRate === 0.02 && (
-                    <p className="rounded-2xl border border-[var(--teal-200)] bg-[var(--teal-50)] px-3 py-2 text-xs leading-5 text-[var(--teal-700)]">
-                      The Rauh preset backs this{" "}
-                      <span className="font-semibold">2.0%</span> value out so
-                      PolicyEngine matches the paper&apos;s annual PIT midpoint.
-                      Rauh et al. estimate PIT directly from FTB data rather
-                      than from income divided by wealth.
-                    </p>
-                  )}
-
-                  <Slider
-                    label="Income tax horizon"
-                    value={
-                      params.horizonYears === Infinity ? 100 : params.horizonYears
-                    }
-                    onChange={(nextValue) =>
-                      update(
-                        "horizonYears",
-                        nextValue >= 100 ? Infinity : nextValue
-                      )
-                    }
-                    min={5}
-                    max={100}
-                    step={5}
-                    format={(value) =>
-                      formatYears(value >= 100 ? Infinity : value)
-                    }
-                    quickPicks={[
-                      { label: "10y", value: 10 },
-                      { label: "30y", value: 30 },
-                      { label: "Perpetuity", value: 100 },
-                    ]}
-                  />
-
-                  <Slider
-                    label="Real discount rate"
-                    value={params.discountRate}
-                    onChange={(nextValue) => update("discountRate", nextValue)}
-                    min={0}
-                    max={0.05}
-                    step={0.005}
-                    format={(value) => formatPercent(value, 1)}
-                    quickPicks={[
-                      { label: "0%", value: 0 },
-                      { label: "1.5%", value: 0.015 },
-                      { label: "3%", value: 0.03 },
-                      { label: "4.5%", value: 0.045 },
-                    ]}
-                  />
-                  <div className="py-3 text-sm text-[var(--gray-600)]">
-                    {micro.knownDepartureRows.length > 0 && (
-                      <span>
-                        <span className="font-semibold text-[var(--gray-700)]">
-                          {micro.preSnapshotDepartureRows.length} pre-snapshot
-                          departures
-                        </span>
-                        {(micro.postSnapshotDepartureRows.length > 0 ||
-                          micro.unconfirmedDepartureRows.length > 0) && (
-                          <span>
-                            {" "}
-                            +{" "}
-                            {micro.postSnapshotDepartureRows.length +
-                              micro.unconfirmedDepartureRows.length}{" "}
-                            post-snapshot / reported
-                          </span>
-                        )}
-                        {modeledAdditionalDepartureShare > 0 && (
-                          <span>
-                            {" "}
-                            +{" "}
-                            {formatPercent(modeledAdditionalDepartureShare)}{" "}
-                            {usesElasticityMode
-                              ? "modeled additional"
-                              : "additional"}
-                          </span>
-                        )}
-                        {" → "}
-                      </span>
-                    )}
+                  <div className="rounded-2xl border border-[var(--gray-200)] bg-[var(--gray-50)] px-4 py-3 text-sm leading-6 text-[var(--gray-600)]">
+                    Current mover PIT implied by the selected departure
+                    assumptions:{" "}
                     <span className="font-semibold text-[var(--gray-700)]">
                       {formatBillions(micro.moverIncomeTaxB)}/yr
+                    </span>
+                    . Attributing{" "}
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatPercent(params.incomeTaxAttributionRate)}
                     </span>{" "}
-                    in lost CA income tax.
+                    of that to the tax yields{" "}
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {formatBillions(attributedMoverIncomeTaxB)}/yr
+                    </span>{" "}
+                    in modeled PIT loss before return and discounting.
                   </div>
-                </AssumptionSection>
-              )}
+
+                  {(micro.movers.length > 0 || modeledAdditionalDepartureShare > 0) && (
+                    <>
+                      <Slider
+                        label="Share of remaining leavers who return each year"
+                        value={params.annualReturnRate}
+                        onChange={(nextValue) =>
+                          update("annualReturnRate", nextValue)
+                        }
+                        min={0}
+                        max={0.5}
+                        step={0.01}
+                        format={(value) => formatPercent(value)}
+                        quickPicks={[
+                          { label: "0%", value: 0 },
+                          { label: "5%", value: 0.05 },
+                          { label: "15%", value: 0.15 },
+                        ]}
+                      />
+
+                      <Slider
+                        label="Annual CA-taxable income / taxed wealth"
+                        value={params.incomeYieldRate}
+                        onChange={(nextValue) =>
+                          update("incomeYieldRate", nextValue)
+                        }
+                        min={0.005}
+                        max={0.05}
+                        step={0.001}
+                        format={(value) => formatPercent(value, 1)}
+                        quickPicks={[
+                          { label: "1%", value: 0.01 },
+                          {
+                            label: isRauhScenario ? "2% Rauh" : "2%",
+                            value: 0.02,
+                          },
+                          { label: "3%", value: 0.03 },
+                        ]}
+                      />
+                      {isRauhScenario && params.incomeYieldRate === 0.02 && (
+                        <p className="rounded-2xl border border-[var(--teal-200)] bg-[var(--teal-50)] px-3 py-2 text-xs leading-5 text-[var(--teal-700)]">
+                          The Rauh preset backs this{" "}
+                          <span className="font-semibold">2.0%</span> value out
+                          so PolicyEngine matches the paper&apos;s annual PIT
+                          midpoint. Rauh et al. estimate PIT directly from FTB
+                          data rather than from income divided by wealth.
+                        </p>
+                      )}
+
+                      <Slider
+                        label="Income tax horizon"
+                        value={
+                          params.horizonYears === Infinity
+                            ? 100
+                            : params.horizonYears
+                        }
+                        onChange={(nextValue) =>
+                          update(
+                            "horizonYears",
+                            nextValue >= 100 ? Infinity : nextValue
+                          )
+                        }
+                        min={5}
+                        max={100}
+                        step={5}
+                        format={(value) =>
+                          formatYears(value >= 100 ? Infinity : value)
+                        }
+                        quickPicks={[
+                          { label: "10y", value: 10 },
+                          { label: "30y", value: 30 },
+                          { label: "Perpetuity", value: 100 },
+                        ]}
+                      />
+
+                      <Slider
+                        label="Real discount rate"
+                        value={params.discountRate}
+                        onChange={(nextValue) =>
+                          update("discountRate", nextValue)
+                        }
+                        min={0}
+                        max={0.05}
+                        step={0.005}
+                        format={(value) => formatPercent(value, 1)}
+                        quickPicks={[
+                          { label: "0%", value: 0 },
+                          { label: "1.5%", value: 0.015 },
+                          { label: "3%", value: 0.03 },
+                          { label: "4.5%", value: 0.045 },
+                        ]}
+                      />
+                      <div className="py-3 text-sm text-[var(--gray-600)]">
+                        {micro.knownDepartureRows.length > 0 && (
+                          <span>
+                            <span className="font-semibold text-[var(--gray-700)]">
+                              {micro.preSnapshotDepartureRows.length}{" "}
+                              pre-snapshot departures
+                            </span>
+                            {(micro.postSnapshotDepartureRows.length > 0 ||
+                              micro.unconfirmedDepartureRows.length > 0) && (
+                              <span>
+                                {" "}
+                                +{" "}
+                                {micro.postSnapshotDepartureRows.length +
+                                  micro.unconfirmedDepartureRows.length}{" "}
+                                post-snapshot / reported
+                              </span>
+                            )}
+                            {modeledAdditionalDepartureShare > 0 && (
+                              <span>
+                                {" "}
+                                +{" "}
+                                {formatPercent(modeledAdditionalDepartureShare)}{" "}
+                                {usesElasticityMode
+                                  ? "modeled additional"
+                                  : "additional"}
+                              </span>
+                            )}
+                            {" → "}
+                          </span>
+                        )}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatBillions(result.annualIncomeTaxLost)}/yr
+                        </span>{" "}
+                        in attributed lost CA income tax.
+                      </div>
+                    </>
+                  )}
+                  </>
+                ) : (
+                  <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
+                    With stage 2 off, the calculator reports only the one-time
+                    wealth-tax score after the selected base, statutory,
+                    erosion, and payment-timing assumptions.
+                  </p>
+                )}
+              </AssumptionSection>
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
-                Net fiscal impact
+                {pitEffectsEnabled
+                  ? "Net fiscal impact"
+                  : "One-time wealth-tax score"}
               </p>
               <div
                 className={`mt-6 text-5xl font-semibold tracking-[-0.05em] ${
-                  result.netFiscalImpact >= 0
+                  headlineValue >= 0
                     ? "text-[var(--teal-600)]"
                     : "text-[var(--red-600)]"
                 }`}
               >
-                {formatBillions(result.netFiscalImpact, { showPlus: true })}
+                {formatBillions(headlineValue, { showPlus: true })}
               </div>
+              <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
+                {pitEffectsEnabled
+                  ? "Includes the optional present value of attributed future California income-tax losses."
+                  : "Excludes future California income-tax losses and reports the present value of one-time wealth-tax receipts only."}
+              </p>
 
               <div className="mt-8">
                 <WaterfallChart waterfall={result.waterfall} />
@@ -1227,10 +1346,10 @@ export default function Home() {
                       {formatBillions(result.pvWealthTaxReceipts)}
                     </span>
                   </div>
-                  {result.annualIncomeTaxLost > 0 && (
+                  {pitEffectsEnabled && result.annualIncomeTaxLost > 0 && (
                   <>
                   <div className="flex items-center justify-between py-2">
-                    <span>Annual income tax lost</span>
+                    <span>Annual income tax lost (attributed)</span>
                     <span className="font-semibold text-[var(--gray-700)]">
                       ${result.annualIncomeTaxLost.toFixed(1)}B/yr
                     </span>
@@ -1257,7 +1376,9 @@ export default function Home() {
             {usesInstallments
               ? `Wealth-tax receipts are shown as five annual installments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
               : "Wealth-tax receipts are shown as a lump sum at model start."}{" "}
-            PIT losses grow in real terms using the implied growth rate above.
+            {pitEffectsEnabled
+              ? "Attributed PIT losses grow in real terms using the implied growth rate above."
+              : "No PIT-loss series is included unless stage 2 is turned on."}
           </p>
           <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
             <CashFlowChart data={cashFlow.rows} />
