@@ -20,8 +20,8 @@ const STATUS_STYLES = {
 function getRowStatuses(row) {
   const statuses = [];
 
-  if (row.excludeFromCorrectedBase) {
-    statuses.push({ label: "Excluded from corrected base", tone: "danger" });
+  if (row.excludedFromWealthTaxBase) {
+    statuses.push({ label: "Excluded from 2026 tax base", tone: "danger" });
   }
 
   if (row.departureTiming === "pre_snapshot") {
@@ -40,6 +40,10 @@ function getRowStatuses(row) {
     statuses.push({ label: "Added from paper corrections", tone: "neutral" });
   }
 
+  if (row.valuationFallback) {
+    statuses.push({ label: "Wealth fallback to Jan. 1 roster", tone: "neutral" });
+  }
+
   return statuses;
 }
 
@@ -51,11 +55,18 @@ export default function BillionaireTable({
   const [showAll, setShowAll] = useState(false);
   const sorted = [...rows].sort((a, b) => b.netWorthB - a.netWorthB);
   const displayed = showAll ? sorted : sorted.slice(0, 20);
+  const includedRows = rows.filter((row) => row.inBase);
 
   const totals = {
-    netWorthB: rows.reduce((s, r) => s + r.netWorthB, 0),
-    grossTaxB: rows.reduce((s, r) => s + r.grossTaxB * (1 - avoidanceRate), 0),
-    annualIncomeTaxB: rows.reduce((s, r) => s + r.annualIncomeTaxB, 0),
+    netWorthB: includedRows.reduce((sum, row) => sum + row.netWorthB, 0),
+    grossTaxB: includedRows.reduce(
+      (sum, row) => sum + row.grossTaxB * (1 - avoidanceRate),
+      0
+    ),
+    annualIncomeTaxB: includedRows.reduce(
+      (sum, row) => sum + row.annualIncomeTaxB,
+      0
+    ),
   };
 
   return (
@@ -137,7 +148,9 @@ export default function BillionaireTable({
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-[var(--gray-300)] font-semibold text-[var(--gray-700)]">
-            <td className="py-3 pr-4">Total ({rows.length})</td>
+            <td className="py-3 pr-4">
+              Included total ({includedRows.length} of {rows.length})
+            </td>
             <td className="px-2 py-3 text-right tabular-nums">
               {formatBillions(totals.netWorthB)}
             </td>

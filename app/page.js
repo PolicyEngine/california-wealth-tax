@@ -10,10 +10,10 @@ import {
 import { formatBillions } from "@/lib/format";
 import {
   annotateBillionaires,
+  buildResidencyRosterValuationRows,
   computeMicroResults,
   estimateRealEstateHoldingsB,
   getBillionaireFlags,
-  WEALTH_BASES,
 } from "@/lib/microModel";
 import {
   buildAnnualCashFlows,
@@ -30,12 +30,21 @@ import {
   impliedRemainerElasticity,
   totalLossShareFromElasticity,
 } from "@/lib/departureResponse";
+import {
+  PRE_SNAPSHOT_EXCLUSION_IDS,
+  RESIDENCY_ADJUSTMENTS,
+  RESIDENCY_ONLY_EXCLUSION_IDS,
+  RESIDENCY_ROSTER_DATE,
+  normalizeResidencyExclusionIds,
+  residencyExcludedNamesFromIds,
+} from "@/lib/residencyAdjustments";
 import billionaireMetadata from "@/data/billionaire_metadata.json";
 import incomeTaxLookup from "@/data/income_tax_lookup.json";
 import rauhData from "@/data/billionaires_rauh.json";
 import liveData from "@/data/billionaires_live.json";
 import liveMetadata from "@/data/billionaires_live_meta.json";
 import snapshotIndex from "@/public/snapshots/index.json";
+import residencyRosterData from "@/public/snapshots/2026-01-01.json";
 
 const BillionaireTable = dynamic(
   () => import("@/app/components/BillionaireTable"),
@@ -53,6 +62,7 @@ const INFLATION_RATE = 0.025;
 // Bundled snapshots (always available without fetch)
 const BUNDLED_SNAPSHOTS = {
   "2025-10-17": rauhData,
+  [RESIDENCY_ROSTER_DATE]: residencyRosterData,
 };
 // Add live data under its date key
 const LIVE_DATE = snapshotIndex[snapshotIndex.length - 1];
@@ -119,17 +129,15 @@ function canonicalScenarioPathname(pathname) {
 }
 
 function normalizeParams(nextParams) {
-  if (nextParams.wealthBase === WEALTH_BASES.CORRECTED_BASE) {
-    return {
-      ...nextParams,
-      wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
-    };
-  }
-
-  return nextParams;
+  return {
+    ...nextParams,
+    residencyExclusionIds: normalizeResidencyExclusionIds(
+      nextParams.residencyExclusionIds ?? []
+    ),
+  };
 }
 
-function deriveBaseOptions({ snapshotDate, data, date }) {
+function deriveResidencyRosterOption({ snapshotDate, data, date }) {
   const dateLabel = date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
@@ -148,44 +156,15 @@ function deriveBaseOptions({ snapshotDate, data, date }) {
       0
     );
   const allForbesRows = classifiedRows.filter((row) => row.includeInRawForbes);
-  const correctedBaseRows = classifiedRows.filter(
-    (row) => !row.excludeFromCorrectedBase
-  );
-  const preSnapshotDepartureRows = correctedBaseRows.filter(
-    (row) => row.departureTiming === "pre_snapshot"
-  );
-  const afterPreSnapshotRows = correctedBaseRows.filter(
-    (row) => row.departureTiming !== "pre_snapshot"
-  );
 
   return {
-    [WEALTH_BASES.ALL_FORBES]: {
-      label: "All Forbes CA billionaires",
-      wealthB: sumBillions(allForbesRows, "netWorth"),
-      realEstateB: sumRealEstateBillions(allForbesRows),
-      description:
-        snapshotDate === LIVE_DATE && LIVE_SNAPSHOT_TIMESTAMP_LABEL
-          ? `${allForbesRows.length} billionaires in Forbes; snapshot: ${LIVE_SNAPSHOT_TIMESTAMP_LABEL}`
-          : `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
-    },
-    [WEALTH_BASES.CORRECTED_BASE]: {
-      label: "Corrected resident base",
-      wealthB: sumBillions(correctedBaseRows, "netWorth"),
-      realEstateB: sumRealEstateBillions(correctedBaseRows),
-      description:
-        snapshotDate === "2025-10-17"
-          ? `${correctedBaseRows.length} after Rauh residency corrections`
-          : `${correctedBaseRows.length} after applying known residency corrections`,
-    },
-    [WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES]: {
-      label: "After residency corrections and pre-snapshot departures",
-      wealthB: sumBillions(afterPreSnapshotRows, "netWorth"),
-      realEstateB: sumRealEstateBillions(afterPreSnapshotRows),
-      description:
-        snapshotDate === PAPER_DATE
-          ? `${afterPreSnapshotRows.length} after 2 residency corrections and ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`
-          : `${afterPreSnapshotRows.length} after residency corrections and removing ${preSnapshotDepartureRows.length} confirmed pre-snapshot departures`,
-    },
+    label: "Forbes California roster used for residency proxy",
+    wealthB: sumBillions(allForbesRows, "netWorth"),
+    realEstateB: sumRealEstateBillions(allForbesRows),
+    description:
+      snapshotDate === LIVE_DATE && LIVE_SNAPSHOT_TIMESTAMP_LABEL
+        ? `${allForbesRows.length} billionaires in Forbes; snapshot: ${LIVE_SNAPSHOT_TIMESTAMP_LABEL}`
+        : `${allForbesRows.length} billionaires in Forbes, ${dateLabel}`,
   };
 }
 
@@ -239,11 +218,11 @@ const WaterfallChart = dynamic(() => import("@/app/components/WaterfallChart"), 
 const PRESETS = {
   saez: {
     label: "Saez headline",
-    description: "Calibrated to Saez et al.'s roughly $100B static score.",
+    description: "Applies Saez-style static assumptions to the calculator.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
     params: {
       snapshotDate: PAPER_DATE,
-      wealthBase: WEALTH_BASES.ALL_FORBES,
+      residencyExclusionIds: [],
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: false,
@@ -261,11 +240,14 @@ const PRESETS = {
   },
   rauh: {
     label: "Rauh headline",
-    description: "Calibrated to Rauh et al.'s revenue and net-cost headline.",
+    description: "Applies Rauh-style departures and PIT assumptions.",
     href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
     params: {
       snapshotDate: PAPER_DATE,
-      wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
+      residencyExclusionIds: normalizeResidencyExclusionIds([
+        ...RESIDENCY_ONLY_EXCLUSION_IDS,
+        ...PRE_SNAPSHOT_EXCLUSION_IDS,
+      ]),
       departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
       wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
       excludeRealEstate: true,
@@ -285,7 +267,7 @@ const PRESETS = {
 
 const DEFAULT_PARAMS = {
   snapshotDate: LIVE_DATE,
-  wealthBase: WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES,
+  residencyExclusionIds: [],
   departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
   wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
   excludeRealEstate: true,
@@ -309,7 +291,12 @@ const formatYears = (value) =>
 
 function matchesPreset(params, presetParams) {
   return Object.entries(presetParams).every(
-    ([key, value]) => params[key] === value
+    ([key, value]) =>
+      Array.isArray(value)
+        ? Array.isArray(params[key]) &&
+          params[key].length === value.length &&
+          params[key].every((entry, index) => entry === value[index])
+        : params[key] === value
   );
 }
 
@@ -321,16 +308,24 @@ function getMatchingPresetKey(params) {
 }
 
 function buildPresetDetails(params) {
-  const data = getSnapshotRows(
+  const valuationRows = getSnapshotRows(
     params.snapshotDate,
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
   );
+  const residencyRows = getSnapshotRows(
+    RESIDENCY_ROSTER_DATE,
+    BUNDLED_SNAPSHOTS[RESIDENCY_ROSTER_DATE]
+  );
+  const data = buildResidencyRosterValuationRows({
+    residencyRows,
+    valuationRows,
+  });
   const sourceDate = new Date(params.snapshotDate + "T00:00:00");
   const realGrowthRate = toRealGrowthRate(params.wealthGrowthRate);
   const baseMicro = computeMicroResults({
     billionaires: data,
     incomeTaxLookup,
-    wealthBase: params.wealthBase,
+    excludedNames: residencyExcludedNamesFromIds(params.residencyExclusionIds),
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
     wealthGrowthRate: params.wealthGrowthRate,
@@ -351,7 +346,7 @@ function buildPresetDetails(params) {
   const micro = computeMicroResults({
     billionaires: data,
     incomeTaxLookup,
-    wealthBase: params.wealthBase,
+    excludedNames: residencyExcludedNamesFromIds(params.residencyExclusionIds),
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
     wealthGrowthRate: params.wealthGrowthRate,
@@ -397,6 +392,14 @@ export default function Home() {
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
   );
+  const residencySnapshotRows = useMemo(
+    () =>
+      getSnapshotRows(
+        RESIDENCY_ROSTER_DATE,
+        BUNDLED_SNAPSHOTS[RESIDENCY_ROSTER_DATE]
+      ),
+    []
+  );
   const snapshotMode =
     params.snapshotDate === PAPER_DATE
       ? "paper"
@@ -420,18 +423,30 @@ export default function Home() {
     () => new Date(params.snapshotDate + "T00:00:00"),
     [params.snapshotDate]
   );
-  const snapshotRows = useMemo(
+  const valuationSnapshotRows = useMemo(
     () => getSnapshotRows(params.snapshotDate, snapshotData),
     [params.snapshotDate, snapshotData]
   );
-  const baseOptions = useMemo(
+  const residencyRosterOption = useMemo(
     () =>
-      deriveBaseOptions({
-        snapshotDate: params.snapshotDate,
-        data: snapshotData,
-        date: sourceDate,
+      deriveResidencyRosterOption({
+        snapshotDate: RESIDENCY_ROSTER_DATE,
+        data: BUNDLED_SNAPSHOTS[RESIDENCY_ROSTER_DATE],
+        date: new Date(`${RESIDENCY_ROSTER_DATE}T00:00:00`),
       }),
-    [params.snapshotDate, snapshotData, sourceDate]
+    []
+  );
+  const snapshotRows = useMemo(
+    () =>
+      buildResidencyRosterValuationRows({
+        residencyRows: residencySnapshotRows,
+        valuationRows: valuationSnapshotRows,
+      }),
+    [residencySnapshotRows, valuationSnapshotRows]
+  );
+  const excludedNames = useMemo(
+    () => residencyExcludedNamesFromIds(params.residencyExclusionIds),
+    [params.residencyExclusionIds]
   );
 
   const baseMicro = useMemo(
@@ -439,7 +454,7 @@ export default function Home() {
       computeMicroResults({
         billionaires: snapshotRows,
         incomeTaxLookup,
-        wealthBase: params.wealthBase,
+        excludedNames,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
@@ -449,7 +464,7 @@ export default function Home() {
     [
       snapshotRows,
       sourceDate,
-      params.wealthBase,
+      excludedNames,
       params.excludeRealEstate,
       params.incomeYieldRate,
       params.wealthGrowthRate,
@@ -466,10 +481,7 @@ export default function Home() {
       baseMicro.observedPreSnapshotDepartureGrossWealthTaxB,
     ]
   );
-  const elasticityModeEnabled =
-    params.wealthBase === WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES;
   const usesElasticityMode =
-    elasticityModeEnabled &&
     params.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY;
   const totalDepartureLossShare = useMemo(
     () => totalLossShareFromElasticity(params.migrationSemiElasticity),
@@ -528,7 +540,7 @@ export default function Home() {
       computeMicroResults({
         billionaires: snapshotRows,
         incomeTaxLookup,
-        wealthBase: params.wealthBase,
+        excludedNames,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
         wealthGrowthRate: params.wealthGrowthRate,
@@ -538,7 +550,7 @@ export default function Home() {
     [
       snapshotRows,
       sourceDate,
-      params.wealthBase,
+      excludedNames,
       params.excludeRealEstate,
       params.incomeYieldRate,
       params.wealthGrowthRate,
@@ -614,15 +626,20 @@ export default function Home() {
     setParams((prev) => {
       const next = normalizeParams({ ...prev, [key]: value });
 
-      if (
-        key === "wealthBase" &&
-        value !== WEALTH_BASES.AFTER_PRE_SNAPSHOT_DEPARTURES &&
-        prev.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY
-      ) {
-        next.departureResponseMode = DEPARTURE_RESPONSE_MODES.SHARE;
-      }
-
       return next;
+    });
+  }
+
+  function toggleResidencyExclusion(id) {
+    setParams((prev) => {
+      const nextIds = prev.residencyExclusionIds.includes(id)
+        ? prev.residencyExclusionIds.filter((value) => value !== id)
+        : [...prev.residencyExclusionIds, id];
+
+      return normalizeParams({
+        ...prev,
+        residencyExclusionIds: nextIds,
+      });
     });
   }
 
@@ -777,45 +794,111 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="space-y-2 py-4">
+                <div className="space-y-3 py-4">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
-                    Who is included?
+                    Residency roster proxy
                   </p>
-                  <div className="space-y-2">
-                    {Object.entries(baseOptions)
-                      .filter(([key]) => key !== WEALTH_BASES.CORRECTED_BASE)
-                      .map(([key, option]) => (
-                      <label
-                        key={key}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
-                          params.wealthBase === key
-                            ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
-                            : "border-[var(--gray-200)] bg-white hover:border-[var(--gray-300)]"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="wealthBase"
-                          value={key}
-                          checked={params.wealthBase === key}
-                          onChange={() => update("wealthBase", key)}
-                          className="accent-[var(--teal-600)]"
-                        />
-                        <div>
-                          <span className="text-sm font-semibold text-[var(--gray-700)]">
-                            {option.label}
-                          </span>
-                          <span className="ml-2 text-sm text-[var(--gray-500)]">
-                            ${option.wealthB.toLocaleString(undefined, { maximumFractionDigits: 0 })}B
-                          </span>
-                          <p className="text-xs text-[var(--gray-500)]">
-                            {option.description}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
+                  <div className="rounded-2xl border border-[var(--gray-200)] bg-white px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-[var(--gray-700)]">
+                        Forbes California billionaires on {RESIDENCY_ROSTER_DATE}
+                      </span>
+                      <span className="text-sm text-[var(--gray-500)]">
+                        {residencyRosterOption.description}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[var(--gray-500)]">
+                      This fixed January 1, 2026 roster is used only as a proxy
+                      for who might be in the tax base. Wealth is valued using
+                      the selected snapshot above.
+                    </p>
                   </div>
                 </div>
+
+                <details className="rounded-2xl border border-[var(--gray-200)] bg-white px-4 py-3">
+                  <summary className="cursor-pointer text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)] hover:text-[var(--teal-700)]">
+                    Disputed residency / departure adjustments
+                    {params.residencyExclusionIds.length > 0 && (
+                      <span className="ml-2 text-xs font-medium text-[var(--gray-500)]">
+                        ({params.residencyExclusionIds.length} selected)
+                      </span>
+                    )}
+                  </summary>
+                  <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
+                    Each checkbox removes a named billionaire from the
+                    one-time 2026 wealth-tax base. These are scenario
+                    assumptions drawn from public reporting and Rauh/Jaros
+                    metadata, not legal determinations.
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    {[
+                      {
+                        key: "residency",
+                        title: "Residency disputes",
+                        items: RESIDENCY_ADJUSTMENTS.filter(
+                          (adjustment) => adjustment.category === "residency"
+                        ),
+                      },
+                      {
+                        key: "pre_snapshot_departure",
+                        title: "Reported pre-January 1 departures",
+                        items: RESIDENCY_ADJUSTMENTS.filter(
+                          (adjustment) =>
+                            adjustment.category === "pre_snapshot_departure"
+                        ),
+                      },
+                    ].map((group) => (
+                      <div key={group.key} className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
+                          {group.title}
+                        </p>
+                        <div className="space-y-2">
+                          {group.items.map((adjustment) => (
+                            <label
+                              key={adjustment.id}
+                              className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                                params.residencyExclusionIds.includes(adjustment.id)
+                                  ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
+                                  : "border-[var(--gray-200)] bg-white hover:border-[var(--gray-300)]"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={params.residencyExclusionIds.includes(
+                                  adjustment.id
+                                )}
+                                onChange={() =>
+                                  toggleResidencyExclusion(adjustment.id)
+                                }
+                                className="mt-0.5 h-4 w-4 rounded accent-[var(--teal-600)]"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-sm font-semibold text-[var(--gray-700)]">
+                                    {adjustment.name}
+                                  </span>
+                                  <span
+                                    title={adjustment.summary}
+                                    className="inline-flex cursor-help rounded-full border border-[var(--gray-200)] px-2 py-0.5 text-[11px] font-medium text-[var(--gray-500)]"
+                                  >
+                                    Why?
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+                                  {adjustment.summary}
+                                </p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
+                    Saez leaves these boxes unchecked. Rauh applies the full
+                    checklist above.
+                  </p>
+                </details>
 
                 <div className="py-3">
                   <label className="flex cursor-pointer items-center gap-3">
@@ -834,7 +917,10 @@ export default function Home() {
                       <span className="ml-2 text-sm text-[var(--gray-500)]">
                         −$
                         {(
-                          baseOptions[params.wealthBase]?.realEstateB ?? 0
+                          baseMicro.wealthTaxBaseRows.reduce(
+                            (sum, row) => sum + row.excludedRealEstateB,
+                            0
+                          )
                         ).toFixed(1)}
                         B
                       </span>
@@ -856,12 +942,6 @@ export default function Home() {
                   max={0.5}
                   step={0.01}
                   format={(value) => formatPercent(value)}
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "5%", value: 0.05 },
-                    { label: "10%", value: 0.1 },
-                    { label: "15%", value: 0.15 },
-                  ]}
                 />
                 <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
                   This reduces one-time wealth-tax collections only. Any future
@@ -910,35 +990,33 @@ export default function Home() {
                     <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
                       Additional migration response
                     </p>
-                    {elasticityModeEnabled && (
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          {
-                            key: DEPARTURE_RESPONSE_MODES.SHARE,
-                            label: "% of remaining base",
-                          },
-                          {
-                            key: DEPARTURE_RESPONSE_MODES.ELASTICITY,
-                            label: "Elasticity",
-                          },
-                        ].map((option) => (
-                          <button
-                            key={option.key}
-                            type="button"
-                            onClick={() =>
-                              update("departureResponseMode", option.key)
-                            }
-                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                              params.departureResponseMode === option.key
-                                ? "bg-[var(--teal-700)] text-white"
-                                : "bg-[var(--gray-100)] text-[var(--gray-600)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        {
+                          key: DEPARTURE_RESPONSE_MODES.SHARE,
+                          label: "% of remaining base",
+                        },
+                        {
+                          key: DEPARTURE_RESPONSE_MODES.ELASTICITY,
+                          label: "Elasticity",
+                        },
+                      ].map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() =>
+                            update("departureResponseMode", option.key)
+                          }
+                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                            params.departureResponseMode === option.key
+                              ? "bg-[var(--teal-700)] text-white"
+                              : "bg-[var(--gray-100)] text-[var(--gray-600)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {usesElasticityMode ? (
@@ -953,18 +1031,13 @@ export default function Home() {
                         max={20}
                         step={0.1}
                         format={(value) => value.toFixed(1)}
-                        quickPicks={[
-                          { label: "8.3", value: 8.3 },
-                          { label: "10.3", value: 10.3 },
-                          { label: "12.6", value: 12.6 },
-                        ]}
                       />
                       <p className="text-xs leading-5 text-[var(--gray-500)]">
-                        Confirmed pre-snapshot departures already remove{" "}
+                        The checked pre-January 1 departures already remove{" "}
                         <span className="font-semibold text-[var(--gray-700)]">
                           {formatPercent(observedDepartureLossShare, 1)}
                         </span>{" "}
-                        of the corrected tax base. An overall elasticity of{" "}
+                        of the residency-adjusted tax base. An overall elasticity of{" "}
                         <span className="font-semibold text-[var(--gray-700)]">
                           {params.migrationSemiElasticity.toFixed(1)}
                         </span>{" "}
@@ -990,11 +1063,7 @@ export default function Home() {
                   ) : (
                     <>
                       <Slider
-                        label={
-                          elasticityModeEnabled
-                            ? "Additional departure share of remaining base"
-                            : "Additional unannounced departures"
-                        }
+                        label="Additional departure share of remaining base"
                         value={params.unannouncedDepartureShare}
                         onChange={(nextValue) =>
                           update("unannouncedDepartureShare", nextValue)
@@ -1003,30 +1072,22 @@ export default function Home() {
                         max={1}
                         step={0.01}
                         format={(value) => formatPercent(value)}
-                        quickPicks={[
-                          { label: "0%", value: 0 },
-                          { label: "25%", value: 0.25 },
-                          { label: "48%", value: 0.48 },
-                          { label: "100%", value: 1 },
-                        ]}
                       />
-                      {elasticityModeEnabled && (
-                        <p className="text-xs leading-5 text-[var(--gray-500)]">
-                          This is the additional loss applied after the confirmed
-                          pre-snapshot departures already removed{" "}
-                          <span className="font-semibold text-[var(--gray-700)]">
-                            {formatPercent(observedDepartureLossShare, 1)}
-                          </span>{" "}
-                          of the corrected tax base. On this snapshot,
-                          Rauh&apos;s 12.6
-                          literature-calibrated elasticity corresponds to about{" "}
-                          <span className="font-semibold text-[var(--gray-700)]">
-                            {formatPercent(rauhLinearizedResidualShare, 1)}
-                          </span>{" "}
-                          of the remaining base under the paper&apos;s linear
-                          conversion.
-                        </p>
-                      )}
+                      <p className="text-xs leading-5 text-[var(--gray-500)]">
+                        This is the additional loss applied after the checked
+                        pre-January 1 departures already remove{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatPercent(observedDepartureLossShare, 1)}
+                        </span>{" "}
+                        of the residency-adjusted tax base. On this snapshot,
+                        Rauh&apos;s 12.6 literature-calibrated elasticity
+                        corresponds to about{" "}
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {formatPercent(rauhLinearizedResidualShare, 1)}
+                        </span>{" "}
+                        of the remaining base under the paper&apos;s linear
+                        conversion.
+                      </p>
                     </>
                   )}
                   <p className="text-xs leading-5 text-[var(--gray-500)]">
@@ -1047,11 +1108,6 @@ export default function Home() {
                   max={0.15}
                   step={0.005}
                   format={(value) => formatPercent(value, 1)}
-                  quickPicks={[
-                    { label: "0%", value: 0 },
-                    { label: "5%", value: 0.05 },
-                    { label: "10%", value: 0.1 },
-                  ]}
                 />
                 <p className="py-3 text-xs leading-5 text-[var(--gray-500)]">
                   Nominal wealth growth converts to{" "}
@@ -1121,11 +1177,6 @@ export default function Home() {
                     max={1}
                     step={0.01}
                     format={(value) => formatPercent(value)}
-                    quickPicks={[
-                      { label: "0%", value: 0 },
-                      { label: "50%", value: 0.5 },
-                      { label: "100%", value: 1 },
-                    ]}
                   />
 
                   <div className="rounded-2xl border border-[var(--gray-200)] bg-[var(--gray-50)] px-4 py-3 text-sm leading-6 text-[var(--gray-600)]">
@@ -1157,11 +1208,6 @@ export default function Home() {
                         max={0.5}
                         step={0.01}
                         format={(value) => formatPercent(value)}
-                        quickPicks={[
-                          { label: "0%", value: 0 },
-                          { label: "5%", value: 0.05 },
-                          { label: "15%", value: 0.15 },
-                        ]}
                       />
 
                       <Slider
@@ -1174,14 +1220,6 @@ export default function Home() {
                         max={0.05}
                         step={0.001}
                         format={(value) => formatPercent(value, 1)}
-                        quickPicks={[
-                          { label: "1%", value: 0.01 },
-                          {
-                            label: isRauhScenario ? "2% Rauh" : "2%",
-                            value: 0.02,
-                          },
-                          { label: "3%", value: 0.03 },
-                        ]}
                       />
                       {isRauhScenario && params.incomeYieldRate === 0.02 && (
                         <p className="rounded-2xl border border-[var(--teal-200)] bg-[var(--teal-50)] px-3 py-2 text-xs leading-5 text-[var(--teal-700)]">
@@ -1212,11 +1250,6 @@ export default function Home() {
                         format={(value) =>
                           formatYears(value >= 100 ? Infinity : value)
                         }
-                        quickPicks={[
-                          { label: "10y", value: 10 },
-                          { label: "30y", value: 30 },
-                          { label: "Perpetuity", value: 100 },
-                        ]}
                       />
 
                       <Slider
@@ -1229,12 +1262,6 @@ export default function Home() {
                         max={0.05}
                         step={0.005}
                         format={(value) => formatPercent(value, 1)}
-                        quickPicks={[
-                          { label: "0%", value: 0 },
-                          { label: "1.5%", value: 0.015 },
-                          { label: "3%", value: 0.03 },
-                          { label: "4.5%", value: 0.045 },
-                        ]}
                       />
                       <div className="py-3 text-sm text-[var(--gray-600)]">
                         {micro.knownDepartureRows.length > 0 && (
@@ -1406,10 +1433,12 @@ export default function Home() {
             />
           </div>
           <p className="text-xs leading-5 text-[var(--gray-400)]">
-            Wealth from Forbes snapshots. Departure timing from Rauh et al.
-            Tables 6 and 7; directly held real estate uses name-level values
-            where available and otherwise imputes 0.64% of net worth, matching
-            the{" "}
+            Names come from the January 1, 2026 Forbes California roster proxy;
+            wealth comes from the selected Forbes valuation snapshot, falling
+            back to January 1 values only when a name is missing from the
+            selected snapshot. Departure timing from Rauh et al. Tables 6 and
+            7; directly held real estate uses name-level values where available
+            and otherwise imputes 0.64% of net worth, matching the{" "}
             <a
               href={BALLOT_MEASURE_URL}
               target="_blank"
@@ -1457,8 +1486,12 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                Uses the raw Forbes California list of{" "}
-                {PRESET_DETAILS.saez.micro.rawForbesRows.length} billionaires.
+                Uses the raw Forbes California roster on{" "}
+                {RESIDENCY_ROSTER_DATE} for inclusion and the{" "}
+                {PRESETS.saez.params.snapshotDate} wealth snapshot for
+                valuation. The stage-1 checklist is left empty, so all{" "}
+                {PRESET_DETAILS.saez.micro.rawForbesRows.length} billionaires
+                stay in the one-time tax base.
                 After{" "}
                 {formatPercent(PRESETS.saez.params.avoidanceRate)} non-migration
                 erosion
@@ -1480,11 +1513,10 @@ export default function Home() {
                 </a>
               </p>
               <p>
-                Starts from Rauh&apos;s corrected{" "}
-                {PRESET_DETAILS.rauh.micro.correctedBaseRows.length}-person base,
-                removes{" "}
+                Starts from the January 1, 2026 Forbes roster and checks all
+                listed residency / pre-snapshot departure adjustments, removing{" "}
                 {PRESET_DETAILS.rauh.micro.preSnapshotDepartureRows.length}{" "}
-                confirmed pre-snapshot departures from the wealth-tax base,
+                pre-snapshot departures from the wealth-tax base,
                 keeps{" "}
                 {PRESET_DETAILS.rauh.micro.postSnapshotDepartureRows.length +
                   PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
