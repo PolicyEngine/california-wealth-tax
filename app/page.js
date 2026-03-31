@@ -76,7 +76,8 @@ const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
   : null;
 const BASE_PATH =
   process.env.NEXT_PUBLIC_BASE_PATH ?? "/us/california-wealth-tax/embed";
-const PAPER_DRAFT_PATH = `${BASE_PATH}/papers/california-wealth-tax-ssrn-draft.pdf`;
+const PAPER_WEB_PATH = `${BASE_PATH}/papers/web/index.html`;
+const PAPER_PDF_PATH = `${BASE_PATH}/papers/california-wealth-tax-ssrn-draft.pdf`;
 
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
@@ -1424,7 +1425,16 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-3">
               <a
-                href={PAPER_DRAFT_PATH}
+                href={PAPER_WEB_PATH}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                Open web version
+                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+              </a>
+              <a
+                href={PAPER_PDF_PATH}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
@@ -1433,7 +1443,7 @@ export default function Home() {
                 <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
               </a>
               <a
-                href={PAPER_DRAFT_PATH}
+                href={PAPER_PDF_PATH}
                 download
                 className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
               >
@@ -1443,9 +1453,9 @@ export default function Home() {
             {paperExpanded && (
               <div className="overflow-hidden rounded-[28px] border border-[var(--gray-200)] bg-white shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
                 <iframe
-                  src={`${PAPER_DRAFT_PATH}#view=FitH`}
+                  src={PAPER_WEB_PATH}
                   title="California wealth tax working paper draft"
-                  className="h-[880px] w-full"
+                  className="block h-[980px] w-full border-0 bg-white"
                 />
               </div>
             )}
