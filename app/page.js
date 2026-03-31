@@ -207,6 +207,32 @@ function ExternalLinkIcon({ className = "h-3.5 w-3.5" }) {
   );
 }
 
+function InfoIcon({ className = "h-3.5 w-3.5" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      className={className}
+    >
+      <circle
+        cx="10"
+        cy="10"
+        r="6.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M10 8V12.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="10" cy="5.9" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
 const CashFlowChart = dynamic(() => import("@/app/components/CashFlowChart"), {
   loading: () => <ChartLoading />,
 });
@@ -820,15 +846,15 @@ export default function Home() {
                     Disputed residency / departure adjustments
                     {params.residencyExclusionIds.length > 0 && (
                       <span className="ml-2 text-xs font-medium text-[var(--gray-500)]">
-                        ({params.residencyExclusionIds.length} selected)
+                        ({params.residencyExclusionIds.length} excluded)
                       </span>
                     )}
                   </summary>
                   <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
-                    Each checkbox removes a named billionaire from the
-                    one-time 2026 wealth-tax base. These are scenario
-                    assumptions drawn from public reporting and Rauh/Jaros
-                    metadata, not legal determinations.
+                    Toggle whether each disputed name stays in the one-time
+                    2026 wealth-tax base. These are scenario assumptions drawn
+                    from public reporting and Rauh/Jaros metadata, not legal
+                    determinations.
                   </p>
                   <div className="mt-4 space-y-4">
                     {[
@@ -853,43 +879,50 @@ export default function Home() {
                           {group.title}
                         </p>
                         <div className="space-y-2">
-                          {group.items.map((adjustment) => (
-                            <label
-                              key={adjustment.id}
-                              className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${
-                                params.residencyExclusionIds.includes(adjustment.id)
-                                  ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
-                                  : "border-[var(--gray-200)] bg-white hover:border-[var(--gray-300)]"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={params.residencyExclusionIds.includes(
-                                  adjustment.id
-                                )}
-                                onChange={() =>
-                                  toggleResidencyExclusion(adjustment.id)
-                                }
-                                className="mt-0.5 h-4 w-4 rounded accent-[var(--teal-600)]"
-                              />
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
+                          {group.items.map((adjustment) => {
+                            const isExcluded =
+                              params.residencyExclusionIds.includes(
+                                adjustment.id
+                              );
+                            const isIncluded = !isExcluded;
+
+                            return (
+                              <div
+                                key={adjustment.id}
+                                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                                  isExcluded
+                                    ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
+                                    : "border-[var(--gray-200)] bg-white"
+                                }`}
+                              >
+                                <div className="min-w-0 flex items-center gap-2">
                                   <span className="text-sm font-semibold text-[var(--gray-700)]">
                                     {adjustment.name}
                                   </span>
                                   <span
                                     title={adjustment.summary}
-                                    className="inline-flex cursor-help rounded-full border border-[var(--gray-200)] px-2 py-0.5 text-[11px] font-medium text-[var(--gray-500)]"
+                                    className="inline-flex cursor-help text-[var(--gray-400)] hover:text-[var(--teal-600)]"
                                   >
-                                    Why?
+                                    <InfoIcon className="h-4 w-4" />
                                   </span>
                                 </div>
-                                <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
-                                  {adjustment.summary}
-                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleResidencyExclusion(adjustment.id)
+                                  }
+                                  aria-pressed={isIncluded}
+                                  className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                    isIncluded
+                                      ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+                                      : "border-[var(--gray-300)] bg-white text-[var(--gray-600)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                                  }`}
+                                >
+                                  {isIncluded ? "Included" : "Excluded"}
+                                </button>
                               </div>
-                            </label>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
