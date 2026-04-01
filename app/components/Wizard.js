@@ -3,18 +3,18 @@
 import { useState, useMemo } from "react";
 
 /**
- * Wizard / survey-style entry flow for the California wealth tax calculator.
+ * Inline guided wizard for the California wealth tax calculator.
+ *
+ * Renders as the left column inside the existing two-column layout so the
+ * results sidebar stays visible and updates in real time as users adjust
+ * assumptions. Each wizard step maps to a group of calculator params that
+ * the parent's `update()` function applies immediately.
  *
  * Three paths:
- *   berkeley  — broad tax base, minimal behavioral response (4 steps)
+ *   berkeley  — broad tax base, minimal behavioral response (3 steps)
  *   hoover    — narrower base with migration + PIT effects (5 steps)
  *   custom    — walk through everything (6 steps)
- *
- * On completion the wizard calls `onComplete(params)` with a fully-built
- * params object that the parent can feed straight into the calculator.
  */
-
-// ── step definitions ──────────────────────────────────────────────────
 
 const STEPS = [
   { id: "path", showFor: () => true },
@@ -28,54 +28,6 @@ const STEPS = [
 function visibleSteps(path) {
   return STEPS.filter((s) => s.showFor(path));
 }
-
-// ── param builder ─────────────────────────────────────────────────────
-
-function buildParams({
-  path,
-  snapshot,
-  residencyExclusionIds,
-  excludeRealEstate,
-  avoidanceRate,
-  unannouncedDepartureShare,
-  includeIncomeTaxEffects,
-  presets,
-  liveDate,
-  paperDate,
-  defaultParams,
-}) {
-  // start from the preset that matches the chosen path
-  const base =
-    path === "berkeley"
-      ? { ...presets.saez.params }
-      : path === "hoover"
-        ? { ...presets.rauh.params }
-        : { ...defaultParams };
-
-  // override snapshot
-  base.snapshotDate = snapshot === "paper" ? paperDate : liveDate;
-
-  // apply wizard-level overrides where the user changed them
-  if (residencyExclusionIds !== undefined) {
-    base.residencyExclusionIds = residencyExclusionIds;
-  }
-  if (excludeRealEstate !== undefined) {
-    base.excludeRealEstate = excludeRealEstate;
-  }
-  if (avoidanceRate !== undefined) {
-    base.avoidanceRate = avoidanceRate;
-  }
-  if (unannouncedDepartureShare !== undefined) {
-    base.unannouncedDepartureShare = unannouncedDepartureShare;
-  }
-  if (includeIncomeTaxEffects !== undefined) {
-    base.includeIncomeTaxEffects = includeIncomeTaxEffects;
-  }
-
-  return base;
-}
-
-// ── sub-components ────────────────────────────────────────────────────
 
 function OptionCard({ selected, onClick, title, description }) {
   return (
@@ -102,24 +54,22 @@ function OptionCard({ selected, onClick, title, description }) {
 
 function StepShell({ stepIndex, totalSteps, title, subtitle, children }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--gray-400)]">
-          Step {stepIndex + 1} of {totalSteps}
+        <span className="shrink-0 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--gray-400)]">
+          {stepIndex + 1} / {totalSteps}
         </span>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--gray-100)]">
           <div
             className="h-full rounded-full bg-[var(--teal-600)] transition-all duration-300"
-            style={{
-              width: `${((stepIndex + 1) / totalSteps) * 100}%`,
-            }}
+            style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }}
           />
         </div>
       </div>
       <div>
-        <h2 className="text-lg font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
+        <h4 className="text-lg font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
           {title}
-        </h2>
+        </h4>
         {subtitle && (
           <p className="mt-1 text-sm leading-6 text-[var(--gray-500)]">
             {subtitle}
@@ -131,62 +81,45 @@ function StepShell({ stepIndex, totalSteps, title, subtitle, children }) {
   );
 }
 
-// ── main wizard ───────────────────────────────────────────────────────
-
 export default function Wizard({
+  params,
+  update,
+  applyPreset,
   presets,
-  defaultParams,
   liveDate,
   paperDate,
   residencyAdjustments,
   residencyOnlyExclusionIds,
   preSnapshotExclusionIds,
   normalizeResidencyExclusionIdsFn,
-  onComplete,
-  onSkip,
+  toggleResidencyExclusion,
+  onDone,
 }) {
   const [step, setStep] = useState(0);
-
-  // wizard answers
-  const [path, setPath] = useState(null); // "berkeley" | "hoover" | "custom"
-  const [snapshot, setSnapshot] = useState("current");
-  const [residencyExclusions, setResidencyExclusions] = useState([]);
-  const [avoidanceRate, setAvoidanceRate] = useState(0.1);
-  const [departureShare, setDepartureShare] = useState(0);
-  const [includeIncomeTax, setIncludeIncomeTax] = useState(false);
+  const [path, setPath] = useState(null);
 
   const steps = useMemo(() => visibleSteps(path), [path]);
   const currentStep = steps[step];
+  const isLastStep = step >= steps.length - 1;
+  const canAdvance = currentStep?.id === "path" ? path !== null : true;
 
-  // when path changes, reset downstream defaults
   function choosePath(p) {
     setPath(p);
+    // apply the preset immediately so the results sidebar updates
     if (p === "berkeley") {
-      setResidencyExclusions([]);
-      setAvoidanceRate(0.1);
-      setDepartureShare(0);
-      setIncludeIncomeTax(false);
+      applyPreset("saez");
+      // override to current data
+      update("snapshotDate", liveDate);
     } else if (p === "hoover") {
-      setResidencyExclusions(
-        normalizeResidencyExclusionIdsFn([
-          ...residencyOnlyExclusionIds,
-          ...preSnapshotExclusionIds,
-        ])
-      );
-      setAvoidanceRate(0);
-      setDepartureShare(0.48);
-      setIncludeIncomeTax(true);
-    } else {
-      setResidencyExclusions([]);
-      setAvoidanceRate(0);
-      setDepartureShare(0);
-      setIncludeIncomeTax(false);
+      applyPreset("rauh");
+      update("snapshotDate", liveDate);
     }
+    // custom: keep current params, just set the path for step filtering
   }
 
   function next() {
-    if (step >= steps.length - 1) {
-      finish();
+    if (isLastStep) {
+      onDone();
       return;
     }
     setStep(step + 1);
@@ -195,36 +128,6 @@ export default function Wizard({
   function back() {
     if (step > 0) setStep(step - 1);
   }
-
-  function finish() {
-    const params = buildParams({
-      path,
-      snapshot,
-      residencyExclusionIds: residencyExclusions,
-      excludeRealEstate: path === "berkeley" ? false : true,
-      avoidanceRate,
-      unannouncedDepartureShare: departureShare,
-      includeIncomeTaxEffects: includeIncomeTax,
-      presets,
-      liveDate,
-      paperDate,
-      defaultParams,
-    });
-    onComplete(params);
-  }
-
-  function toggleResidencyExclusion(id) {
-    setResidencyExclusions((prev) =>
-      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
-    );
-  }
-
-  const canAdvance =
-    currentStep?.id === "path" ? path !== null : true;
-
-  const isLastStep = step >= steps.length - 1;
-
-  // ── render steps ──────────────────────────────────────────────────
 
   function renderStep() {
     if (!currentStep) return null;
@@ -236,7 +139,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Choose a starting point"
-            subtitle="Each option uses different assumptions about the tax base and behavioral response."
+            subtitle="Each option uses different assumptions. The estimate updates live as you adjust."
           >
             <OptionCard
               selected={path === "berkeley"}
@@ -265,17 +168,17 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Which wealth data?"
-            subtitle="The billionaire wealth base can use today's Forbes data or the October 2025 snapshot used in the academic papers."
+            subtitle="The estimate updates with each choice."
           >
             <OptionCard
-              selected={snapshot === "current"}
-              onClick={() => setSnapshot("current")}
+              selected={params.snapshotDate === liveDate}
+              onClick={() => update("snapshotDate", liveDate)}
               title={`Current Forbes data (${liveDate})`}
               description="Uses the latest daily Forbes billionaire snapshot."
             />
             <OptionCard
-              selected={snapshot === "paper"}
-              onClick={() => setSnapshot("paper")}
+              selected={params.snapshotDate === paperDate}
+              onClick={() => update("snapshotDate", paperDate)}
               title="Paper snapshot (2025-10-17)"
               description="Matches the Forbes data used in Saez and Rauh papers, for replication."
             />
@@ -288,7 +191,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Residency adjustments"
-            subtitle="Should any billionaires be excluded from the tax base based on contested residency or announced departures? Whether these establish a legal change of domicile is debated."
+            subtitle="Toggle names to see the estimate change. Whether these establish a legal change of domicile is debated."
           >
             {[
               {
@@ -311,7 +214,7 @@ export default function Wizard({
                   {group.title}
                 </p>
                 {group.items.map((adj) => {
-                  const excluded = residencyExclusions.includes(adj.id);
+                  const excluded = params.residencyExclusionIds.includes(adj.id);
                   return (
                     <div
                       key={adj.id}
@@ -353,7 +256,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Migration response"
-            subtitle="What share of the remaining tax base leaves California in response to the tax?"
+            subtitle="Drag the slider and watch the estimate update."
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -361,7 +264,7 @@ export default function Wizard({
                   Additional departure share
                 </span>
                 <span className="text-sm font-semibold text-[var(--teal-700)]">
-                  {(departureShare * 100).toFixed(0)}%
+                  {(params.unannouncedDepartureShare * 100).toFixed(0)}%
                 </span>
               </div>
               <input
@@ -369,8 +272,10 @@ export default function Wizard({
                 min={0}
                 max={1}
                 step={0.01}
-                value={departureShare}
-                onChange={(e) => setDepartureShare(parseFloat(e.target.value))}
+                value={params.unannouncedDepartureShare}
+                onChange={(e) =>
+                  update("unannouncedDepartureShare", parseFloat(e.target.value))
+                }
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <div className="flex justify-between text-xs text-[var(--gray-400)]">
@@ -392,7 +297,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Non-migration erosion"
-            subtitle="What share of the tax base is lost to avoidance, valuation disputes, or other non-migration factors?"
+            subtitle="Drag the slider and watch the estimate update."
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -400,7 +305,7 @@ export default function Wizard({
                   Erosion rate
                 </span>
                 <span className="text-sm font-semibold text-[var(--teal-700)]">
-                  {(avoidanceRate * 100).toFixed(0)}%
+                  {(params.avoidanceRate * 100).toFixed(0)}%
                 </span>
               </div>
               <input
@@ -408,8 +313,10 @@ export default function Wizard({
                 min={0}
                 max={0.5}
                 step={0.01}
-                value={avoidanceRate}
-                onChange={(e) => setAvoidanceRate(parseFloat(e.target.value))}
+                value={params.avoidanceRate}
+                onChange={(e) =>
+                  update("avoidanceRate", parseFloat(e.target.value))
+                }
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <div className="flex justify-between text-xs text-[var(--gray-400)]">
@@ -431,17 +338,17 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Future income tax effects"
-            subtitle="Should the model include California income tax lost from billionaires who leave?"
+            subtitle="Toggle and watch the estimate change."
           >
             <OptionCard
-              selected={includeIncomeTax}
-              onClick={() => setIncludeIncomeTax(true)}
+              selected={params.includeIncomeTaxEffects}
+              onClick={() => update("includeIncomeTaxEffects", true)}
               title="Include income tax effects"
               description="Models the present value of future California PIT lost from departing billionaires. This is a separate causality assumption."
             />
             <OptionCard
-              selected={!includeIncomeTax}
-              onClick={() => setIncludeIncomeTax(false)}
+              selected={!params.includeIncomeTaxEffects}
+              onClick={() => update("includeIncomeTaxEffects", false)}
               title="Wealth tax only"
               description="Reports only the one-time wealth-tax score, without modeling future income tax losses."
             />
@@ -454,43 +361,41 @@ export default function Wizard({
   }
 
   return (
-    <div className="mx-auto max-w-xl py-10">
-      <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-8 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-        {renderStep()}
+    <div className="space-y-6">
+      {renderStep()}
 
-        <div className="mt-8 flex items-center justify-between">
-          <div>
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={back}
-                className="rounded-full border border-[var(--gray-300)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-              >
-                Back
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          {step > 0 && (
             <button
               type="button"
-              onClick={onSkip}
-              className="text-sm font-medium text-[var(--gray-400)] transition-colors hover:text-[var(--teal-700)]"
+              onClick={back}
+              className="rounded-full border border-[var(--gray-300)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
             >
-              Skip to advanced
+              Back
             </button>
-            <button
-              type="button"
-              onClick={next}
-              disabled={!canAdvance}
-              className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
-                canAdvance
-                  ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-800)]"
-                  : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
-              }`}
-            >
-              {isLastStep ? "See results" : "Next"}
-            </button>
-          </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onDone}
+            className="text-sm font-medium text-[var(--gray-400)] transition-colors hover:text-[var(--teal-700)]"
+          >
+            Show all controls
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canAdvance}
+            className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
+              canAdvance
+                ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-600)]"
+                : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
+            }`}
+          >
+            {isLastStep ? "Show all controls" : "Next"}
+          </button>
         </div>
       </div>
     </div>

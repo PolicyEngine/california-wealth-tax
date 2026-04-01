@@ -718,25 +718,6 @@ export default function Home() {
         </div>
       </header>
 
-      {showWizard ? (
-        <main className="px-6">
-          <Wizard
-            presets={PRESETS}
-            defaultParams={DEFAULT_PARAMS}
-            liveDate={LIVE_DATE}
-            paperDate={PAPER_DATE}
-            residencyAdjustments={RESIDENCY_ADJUSTMENTS}
-            residencyOnlyExclusionIds={RESIDENCY_ONLY_EXCLUSION_IDS}
-            preSnapshotExclusionIds={PRE_SNAPSHOT_EXCLUSION_IDS}
-            normalizeResidencyExclusionIdsFn={normalizeResidencyExclusionIds}
-            onComplete={(wizardParams) => {
-              setParams(normalizeParams(wizardParams));
-              setShowWizard(false);
-            }}
-            onSkip={() => setShowWizard(false)}
-          />
-        </main>
-      ) : (
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
           <div className="flex flex-wrap items-center gap-3 pb-2">
@@ -805,6 +786,23 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
+              {showWizard ? (
+                <Wizard
+                  params={params}
+                  update={update}
+                  applyPreset={applyPreset}
+                  presets={PRESETS}
+                  liveDate={LIVE_DATE}
+                  paperDate={PAPER_DATE}
+                  residencyAdjustments={RESIDENCY_ADJUSTMENTS}
+                  residencyOnlyExclusionIds={RESIDENCY_ONLY_EXCLUSION_IDS}
+                  preSnapshotExclusionIds={PRE_SNAPSHOT_EXCLUSION_IDS}
+                  normalizeResidencyExclusionIdsFn={normalizeResidencyExclusionIds}
+                  toggleResidencyExclusion={toggleResidencyExclusion}
+                  onDone={() => setShowWizard(false)}
+                />
+              ) : (
+              <>
               <AssumptionSection title="Stage 1: one-time wealth tax">
                 <div className="space-y-3 py-4">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
@@ -1375,6 +1373,8 @@ export default function Home() {
                   </p>
                 )}
               </AssumptionSection>
+              </>
+              )}
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
@@ -1681,7 +1681,6 @@ export default function Home() {
           </div>
         </details>
       </main>
-      )}
     </div>
   );
 }
