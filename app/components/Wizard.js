@@ -108,18 +108,19 @@ export default function Wizard({
 
   function choosePath(p) {
     setPath(p);
-    onPathChange?.(p);
-    // apply the preset immediately so the results sidebar updates
+    // Berkeley/Hoover apply a preset immediately → show the number
+    // Custom resets to defaults → don't show until they start adjusting
     if (p === "berkeley") {
       applyPreset("saez");
-      // override to current data
       update("snapshotDate", liveDate);
+      onPathChange?.(true);
     } else if (p === "hoover") {
       applyPreset("rauh");
       update("snapshotDate", liveDate);
+      onPathChange?.(true);
     } else {
-      // custom: reset to clean defaults
       onResetParams?.();
+      onPathChange?.(false);
     }
   }
 
@@ -127,6 +128,10 @@ export default function Wizard({
     if (isLastStep) {
       onDone();
       return;
+    }
+    // Show the number once the custom user moves past the path step
+    if (currentStep?.id === "path" && path === "custom") {
+      onPathChange?.(true);
     }
     setStep(step + 1);
   }
