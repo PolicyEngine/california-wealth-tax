@@ -20,6 +20,7 @@ import {
   DEFAULT_CASH_FLOW_START_YEAR,
 } from "@/lib/cashFlow";
 import Slider from "@/app/components/Slider";
+import Wizard from "@/app/components/Wizard";
 import {
   buildScenarioHref,
   parseScenarioParams,
@@ -403,6 +404,7 @@ const PRESET_DETAILS = {
 export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
+  const [showWizard, setShowWizard] = useState(true);
   const [copyStatus, setCopyStatus] = useState("idle");
   const [paperExpanded, setPaperExpanded] = useState(false);
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
@@ -622,8 +624,13 @@ export default function Home() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setParams(normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS)));
+    const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
+    setParams(parsed);
     setHasSyncedUrlState(true);
+    // If URL has scenario params, skip the wizard
+    if (searchParams.toString().length > 0) {
+      setShowWizard(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -711,6 +718,25 @@ export default function Home() {
         </div>
       </header>
 
+      {showWizard ? (
+        <main className="px-6">
+          <Wizard
+            presets={PRESETS}
+            defaultParams={DEFAULT_PARAMS}
+            liveDate={LIVE_DATE}
+            paperDate={PAPER_DATE}
+            residencyAdjustments={RESIDENCY_ADJUSTMENTS}
+            residencyOnlyExclusionIds={RESIDENCY_ONLY_EXCLUSION_IDS}
+            preSnapshotExclusionIds={PRE_SNAPSHOT_EXCLUSION_IDS}
+            normalizeResidencyExclusionIdsFn={normalizeResidencyExclusionIds}
+            onComplete={(wizardParams) => {
+              setParams(normalizeParams(wizardParams));
+              setShowWizard(false);
+            }}
+            onSkip={() => setShowWizard(false)}
+          />
+        </main>
+      ) : (
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
           <div className="flex flex-wrap items-center gap-3 pb-2">
@@ -751,6 +777,13 @@ export default function Home() {
                 </a>
               </span>
             ))}
+            <button
+              type="button"
+              onClick={() => setShowWizard(true)}
+              className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+            >
+              Guided setup
+            </button>
             <button
               type="button"
               onClick={copyScenarioLink}
@@ -1648,6 +1681,7 @@ export default function Home() {
           </div>
         </details>
       </main>
+      )}
     </div>
   );
 }
