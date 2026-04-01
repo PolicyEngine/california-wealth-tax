@@ -405,6 +405,7 @@ export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const [showWizard, setShowWizard] = useState(true);
+  const [wizardHasPath, setWizardHasPath] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
   const [paperExpanded, setPaperExpanded] = useState(false);
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
@@ -720,6 +721,7 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
+          {!showWizard && (
           <div className="flex flex-wrap items-center gap-3 pb-2">
             {Object.entries(PRESETS).map(([key, preset]) => (
               <span
@@ -760,7 +762,7 @@ export default function Home() {
             ))}
             <button
               type="button"
-              onClick={() => setShowWizard(true)}
+              onClick={() => { setShowWizard(true); setWizardHasPath(false); }}
               className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
             >
               Guided setup
@@ -782,6 +784,7 @@ export default function Home() {
               <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
             </a>
           </div>
+          )}
 
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
@@ -800,6 +803,7 @@ export default function Home() {
                   normalizeResidencyExclusionIdsFn={normalizeResidencyExclusionIds}
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   onDone={() => setShowWizard(false)}
+                  onPathChange={(p) => setWizardHasPath(!!p)}
                 />
               ) : (
               <>
@@ -1378,6 +1382,20 @@ export default function Home() {
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
+              {showWizard && !wizardHasPath ? (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
+                    Estimated fiscal impact
+                  </p>
+                  <div className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-[var(--gray-300)]">
+                    Select a starting point
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
+                    Choose Berkeley, Hoover, or Custom to see the estimated fiscal impact update in real time.
+                  </p>
+                </>
+              ) : (
+              <>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
                 {pitEffectsEnabled
                   ? "Net fiscal impact"
@@ -1401,7 +1419,10 @@ export default function Home() {
               <div className="mt-8">
                 <WaterfallChart waterfall={result.waterfall} />
               </div>
+              </>
+              )}
 
+              {(!showWizard || wizardHasPath) && (
               <details className="mt-6 text-sm text-[var(--gray-600)]">
                 <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
                   Derivation
@@ -1457,10 +1478,13 @@ export default function Home() {
                   )}
                 </div>
               </details>
+              )}
             </aside>
           </div>
         </div>
 
+        {!showWizard && (
+        <>
         <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
           <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
             Year-by-year cash flow
@@ -1680,6 +1704,8 @@ export default function Home() {
             )}
           </div>
         </details>
+        </>
+        )}
       </main>
     </div>
   );

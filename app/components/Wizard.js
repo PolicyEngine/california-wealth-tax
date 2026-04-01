@@ -94,9 +94,11 @@ export default function Wizard({
   normalizeResidencyExclusionIdsFn,
   toggleResidencyExclusion,
   onDone,
+  onPathChange,
 }) {
   const [step, setStep] = useState(0);
   const [path, setPath] = useState(null);
+  const hasPath = path !== null;
 
   const steps = useMemo(() => visibleSteps(path), [path]);
   const currentStep = steps[step];
@@ -105,6 +107,7 @@ export default function Wizard({
 
   function choosePath(p) {
     setPath(p);
+    onPathChange?.(p);
     // apply the preset immediately so the results sidebar updates
     if (p === "berkeley") {
       applyPreset("saez");
