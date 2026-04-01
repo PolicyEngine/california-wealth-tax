@@ -95,6 +95,7 @@ export default function Wizard({
   toggleResidencyExclusion,
   onDone,
   onPathChange,
+  onResetParams,
 }) {
   const [step, setStep] = useState(0);
   const [path, setPath] = useState(null);
@@ -116,8 +117,10 @@ export default function Wizard({
     } else if (p === "hoover") {
       applyPreset("rauh");
       update("snapshotDate", liveDate);
+    } else {
+      // custom: reset to clean defaults
+      onResetParams?.();
     }
-    // custom: keep current params, just set the path for step filtering
   }
 
   function next() {

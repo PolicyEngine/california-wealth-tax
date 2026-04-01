@@ -804,6 +804,7 @@ export default function Home() {
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   onDone={() => setShowWizard(false)}
                   onPathChange={(p) => setWizardHasPath(!!p)}
+                  onResetParams={() => setParams(normalizeParams({ ...DEFAULT_PARAMS }))}
                 />
               ) : (
               <>
