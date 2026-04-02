@@ -690,27 +690,18 @@ export default function Wizard({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onDone}
-            className="text-sm font-medium text-[var(--gray-400)] transition-colors hover:text-[var(--teal-700)]"
-          >
-            Show all controls
-          </button>
-          <button
-            type="button"
-            onClick={next}
-            disabled={!canAdvance}
-            className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
-              canAdvance
-                ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-600)]"
-                : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
-            }`}
-          >
-            {isLastStep ? "Show all controls" : "Next"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={next}
+          disabled={!canAdvance}
+          className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
+            canAdvance
+              ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-600)]"
+              : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
+          }`}
+        >
+          {isLastStep ? "Finish setup" : "Next"}
+        </button>
       </div>
     </div>
   );
