@@ -404,8 +404,9 @@ const PRESET_DETAILS = {
 export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
-  const [showWizard, setShowWizard] = useState(true);
+  const showWizard = true;
   const [wizardHasPath, setWizardHasPath] = useState(false);
+  const [wizardComplete, setWizardComplete] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
   const [paperExpanded, setPaperExpanded] = useState(false);
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
@@ -628,9 +629,10 @@ export default function Home() {
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
     setParams(parsed);
     setHasSyncedUrlState(true);
-    // If URL has scenario params, skip the wizard
+    // If URL has scenario params, keep the wizard visible but expose results.
     if (searchParams.toString().length > 0) {
-      setShowWizard(false);
+      setWizardHasPath(true);
+      setWizardComplete(true);
     }
   }, []);
 
@@ -721,7 +723,7 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
-          {!showWizard && (
+          {wizardComplete && (
           <div className="flex flex-wrap items-center gap-3 pb-2">
             {Object.entries(PRESETS).map(([key, preset]) => (
               <span
@@ -762,13 +764,6 @@ export default function Home() {
             ))}
             <button
               type="button"
-              onClick={() => { setShowWizard(true); setWizardHasPath(false); }}
-              className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-            >
-              Guided setup
-            </button>
-            <button
-              type="button"
               onClick={copyScenarioLink}
               className="rounded-full border border-[var(--teal-200)] bg-[var(--teal-50)] px-4 py-2 text-sm font-medium text-[var(--teal-700)] transition-colors hover:border-[var(--teal-600)] hover:bg-white"
             >
@@ -798,9 +793,13 @@ export default function Home() {
                   paperDate={PAPER_DATE}
                   residencyAdjustments={RESIDENCY_ADJUSTMENTS}
                   toggleResidencyExclusion={toggleResidencyExclusion}
-                  onDone={() => setShowWizard(false)}
+                  onDone={() => setWizardComplete(true)}
                   onPathChange={(p) => setWizardHasPath(!!p)}
-                  onResetParams={() => setParams(normalizeParams({ ...DEFAULT_PARAMS }))}
+                  onResetParams={() => {
+                    setParams(normalizeParams({ ...DEFAULT_PARAMS }));
+                    setWizardHasPath(false);
+                    setWizardComplete(false);
+                  }}
                 />
               ) : (
               <>
@@ -1379,7 +1378,7 @@ export default function Home() {
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
-              {showWizard && !wizardHasPath ? (
+              {!wizardHasPath ? (
                 <>
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
                     Estimated fiscal impact
@@ -1419,7 +1418,7 @@ export default function Home() {
               </>
               )}
 
-              {(!showWizard || wizardHasPath) && (
+              {wizardHasPath && (
               <details className="mt-6 text-sm text-[var(--gray-600)]">
                 <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
                   Derivation
@@ -1480,7 +1479,7 @@ export default function Home() {
           </div>
         </div>
 
-        {!showWizard && (
+        {wizardComplete && (
         <>
         <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
           <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
