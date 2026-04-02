@@ -700,7 +700,7 @@ export default function Wizard({
               : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
           }`}
         >
-          {isLastStep ? "Finish setup" : "Next"}
+          {isLastStep ? "Done" : "Next"}
         </button>
       </div>
     </div>

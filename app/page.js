@@ -1481,79 +1481,83 @@ export default function Home() {
 
         {wizardComplete && (
         <>
-        <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
-          <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
+        <details className="group border-t border-[var(--gray-200)] pt-6">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
             Year-by-year cash flow
-          </h3>
-          <p className="text-xs leading-5 text-[var(--gray-500)]">
-            {usesInstallments
-              ? `Wealth-tax receipts are shown as five annual installments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
-              : "Wealth-tax receipts are shown as a lump sum at model start."}{" "}
-            {pitEffectsEnabled
-              ? "Attributed PIT losses grow in real terms using the implied growth rate above."
-              : "No PIT-loss series is included unless stage 2 is turned on."}
-          </p>
-          <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-            <CashFlowChart data={cashFlow.rows} />
-          </div>
-          {cashFlow.isTruncated && (
-            <p className="text-xs leading-5 text-[var(--gray-400)]">
-              The chart shows the first {cashFlow.displayedYears} years. The
-              headline PV still uses the full
-              {params.horizonYears === Infinity
-                ? " perpetuity assumption."
-                : ` ${params.horizonYears}-year horizon.`}
+          </summary>
+          <div className="mt-4 space-y-4">
+            <p className="text-xs leading-5 text-[var(--gray-500)]">
+              {usesInstallments
+                ? `Wealth-tax receipts are shown as five annual installments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
+                : "Wealth-tax receipts are shown as a lump sum at model start."}{" "}
+              {pitEffectsEnabled
+                ? "Attributed PIT losses grow in real terms using the implied growth rate above."
+                : "No PIT-loss series is included unless stage 2 is turned on."}
             </p>
-          )}
-        </section>
-
-        <section className="space-y-4 border-t border-[var(--gray-200)] pt-10">
-          <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
-            Billionaire-level detail
-          </h3>
-          <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-            <BillionaireTable
-              rows={micro.rows}
-              avoidanceRate={params.avoidanceRate}
-              excludeRealEstate={params.excludeRealEstate}
-            />
+            <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
+              <CashFlowChart data={cashFlow.rows} />
+            </div>
+            {cashFlow.isTruncated && (
+              <p className="text-xs leading-5 text-[var(--gray-400)]">
+                The chart shows the first {cashFlow.displayedYears} years. The
+                headline PV still uses the full
+                {params.horizonYears === Infinity
+                  ? " perpetuity assumption."
+                  : ` ${params.horizonYears}-year horizon.`}
+              </p>
+            )}
           </div>
-          <p className="text-xs leading-5 text-[var(--gray-400)]">
-            Names come from the January 1, 2026 Forbes California roster proxy;
-            wealth comes from the selected Forbes valuation snapshot, falling
-            back to January 1 values only when a name is missing from the
-            selected snapshot. Departure timing from Rauh et al. Tables 6 and
-            7; directly held real estate uses name-level values where available
-            and otherwise imputes 0.64% of net worth, matching the{" "}
-            <a
-              href={BALLOT_MEASURE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-[var(--teal-600)]"
-            >
-              ballot measure text
-            </a>
-            . Paper correction metadata from{" "}
-            <a
-              href="https://github.com/bjaros20/wealth_tax"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-[var(--teal-600)]"
-            >
-              Rauh et al.
-            </a>
-            . CA income tax from{" "}
-            <a
-              href="https://github.com/PolicyEngine/policyengine-us"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-[var(--teal-600)]"
-            >
-              PolicyEngine
-            </a>{" "}
-            (MFJ, 2026–2030).
-          </p>
-        </section>
+        </details>
+
+        <details className="group border-t border-[var(--gray-200)] pt-6">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
+            Billionaire-level detail
+          </summary>
+          <div className="mt-4 space-y-4">
+            <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
+              <BillionaireTable
+                rows={micro.rows}
+                avoidanceRate={params.avoidanceRate}
+                excludeRealEstate={params.excludeRealEstate}
+              />
+            </div>
+            <p className="text-xs leading-5 text-[var(--gray-400)]">
+              Names come from the January 1, 2026 Forbes California roster proxy;
+              wealth comes from the selected Forbes valuation snapshot, falling
+              back to January 1 values only when a name is missing from the
+              selected snapshot. Departure timing from Rauh et al. Tables 6 and
+              7; directly held real estate uses name-level values where available
+              and otherwise imputes 0.64% of net worth, matching the{" "}
+              <a
+                href={BALLOT_MEASURE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-[var(--teal-600)]"
+              >
+                ballot measure text
+              </a>
+              . Paper correction metadata from{" "}
+              <a
+                href="https://github.com/bjaros20/wealth_tax"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-[var(--teal-600)]"
+              >
+                Rauh et al.
+              </a>
+              . CA income tax from{" "}
+              <a
+                href="https://github.com/PolicyEngine/policyengine-us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-[var(--teal-600)]"
+              >
+                PolicyEngine
+              </a>{" "}
+              (MFJ, 2026–2030).
+            </p>
+          </div>
+        </details>
 
         <details className="group border-t border-[var(--gray-200)] pt-6">
           <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
