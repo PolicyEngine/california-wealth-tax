@@ -794,13 +794,9 @@ export default function Home() {
                   params={params}
                   update={update}
                   applyPreset={applyPreset}
-                  presets={PRESETS}
                   liveDate={LIVE_DATE}
                   paperDate={PAPER_DATE}
                   residencyAdjustments={RESIDENCY_ADJUSTMENTS}
-                  residencyOnlyExclusionIds={RESIDENCY_ONLY_EXCLUSION_IDS}
-                  preSnapshotExclusionIds={PRE_SNAPSHOT_EXCLUSION_IDS}
-                  normalizeResidencyExclusionIdsFn={normalizeResidencyExclusionIds}
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   onDone={() => setShowWizard(false)}
                   onPathChange={(p) => setWizardHasPath(!!p)}

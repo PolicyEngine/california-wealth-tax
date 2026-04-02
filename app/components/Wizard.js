@@ -11,15 +11,16 @@ import { useState, useMemo } from "react";
  * the parent's `update()` function applies immediately.
  *
  * Three paths:
- *   berkeley  — broad tax base, minimal behavioral response (3 steps)
- *   hoover    — narrower base with migration + PIT effects (5 steps)
- *   custom    — walk through everything (6 steps)
+ *   berkeley  — broad tax base, minimal behavioral response
+ *   hoover    — narrower base with migration + PIT effects
+ *   custom    — walk through the main assumptions explicitly
  */
 
 const STEPS = [
   { id: "path", showFor: () => true },
   { id: "snapshot", showFor: () => true },
   { id: "residency", showFor: (p) => p === "hoover" || p === "custom" },
+  { id: "mechanics", showFor: () => true },
   { id: "migration", showFor: (p) => p === "hoover" || p === "custom" },
   { id: "erosion", showFor: (p) => p === "berkeley" || p === "custom" },
   { id: "incomeTax", showFor: (p) => p === "hoover" || p === "custom" },
@@ -48,6 +49,22 @@ function OptionCard({ selected, onClick, title, description }) {
           {description}
         </p>
       )}
+    </button>
+  );
+}
+
+function ToggleChip({ selected, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+        selected
+          ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+          : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+      }`}
+    >
+      {children}
     </button>
   );
 }
@@ -85,13 +102,9 @@ export default function Wizard({
   params,
   update,
   applyPreset,
-  presets,
   liveDate,
   paperDate,
   residencyAdjustments,
-  residencyOnlyExclusionIds,
-  preSnapshotExclusionIds,
-  normalizeResidencyExclusionIdsFn,
   toggleResidencyExclusion,
   onDone,
   onPathChange,
@@ -108,15 +121,14 @@ export default function Wizard({
 
   function choosePath(p) {
     setPath(p);
-    // Berkeley/Hoover apply a preset immediately → show the number
-    // Custom resets to defaults → don't show until they start adjusting
+    // Berkeley/Hoover apply their named paper scenarios immediately.
+    // Custom resets to defaults and does not show a result until the user
+    // moves past the opening step.
     if (p === "berkeley") {
       applyPreset("saez");
-      update("snapshotDate", liveDate);
       onPathChange?.(true);
     } else if (p === "hoover") {
       applyPreset("rauh");
-      update("snapshotDate", liveDate);
       onPathChange?.(true);
     } else {
       onResetParams?.();
@@ -261,6 +273,101 @@ export default function Wizard({
           </StepShell>
         );
 
+      case "mechanics":
+        return (
+          <StepShell
+            stepIndex={step}
+            totalSteps={steps.length}
+            title="Stage 1 mechanics"
+            subtitle="These assumptions affect the one-time wealth-tax score directly."
+          >
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-[var(--gray-700)]">
+                Directly-held real estate
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <ToggleChip
+                  selected={params.excludeRealEstate}
+                  onClick={() => update("excludeRealEstate", true)}
+                >
+                  Exclude it
+                </ToggleChip>
+                <ToggleChip
+                  selected={!params.excludeRealEstate}
+                  onClick={() => update("excludeRealEstate", false)}
+                >
+                  Include it
+                </ToggleChip>
+              </div>
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                The ballot text excludes directly held real property from net
+                worth. Leaving it in gets you closer to the Berkeley-style
+                paper headline.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-[var(--gray-700)]">
+                Wealth-tax payment timing
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <ToggleChip
+                  selected={
+                    params.wealthTaxPaymentMode === "lumpSum"
+                  }
+                  onClick={() => update("wealthTaxPaymentMode", "lumpSum")}
+                >
+                  Lump sum
+                </ToggleChip>
+                <ToggleChip
+                  selected={
+                    params.wealthTaxPaymentMode === "installments"
+                  }
+                  onClick={() =>
+                    update("wealthTaxPaymentMode", "installments")
+                  }
+                >
+                  5 installments
+                </ToggleChip>
+              </div>
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Installments follow the initiative’s five-payment schedule with
+                a 7.5% nondeductible deferral charge on the remaining balance.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Nominal wealth growth to the tax date
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {(params.wealthGrowthRate * 100).toFixed(1)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={0.15}
+                step={0.005}
+                value={params.wealthGrowthRate}
+                onChange={(e) =>
+                  update("wealthGrowthRate", parseFloat(e.target.value))
+                }
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                <span>0%</span>
+                <span>15%</span>
+              </div>
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                This grows the selected Forbes wealth snapshot forward to the
+                December 31, 2026 valuation date used in the measure.
+              </p>
+            </div>
+          </StepShell>
+        );
+
       case "migration":
         return (
           <StepShell
@@ -269,36 +376,97 @@ export default function Wizard({
             title="Migration response"
             subtitle="Drag the slider and watch the estimate update."
           >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-[var(--gray-700)]">
-                  Additional departure share
-                </span>
-                <span className="text-sm font-semibold text-[var(--teal-700)]">
-                  {(params.unannouncedDepartureShare * 100).toFixed(0)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={params.unannouncedDepartureShare}
-                onChange={(e) =>
-                  update("unannouncedDepartureShare", parseFloat(e.target.value))
-                }
-                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-              />
-              <div className="flex justify-between text-xs text-[var(--gray-400)]">
-                <span>0% (no additional departures)</span>
-                <span>100%</span>
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-[var(--gray-700)]">
+                Modeling approach
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <ToggleChip
+                  selected={params.departureResponseMode === "share"}
+                  onClick={() => update("departureResponseMode", "share")}
+                >
+                  % of remaining base
+                </ToggleChip>
+                <ToggleChip
+                  selected={params.departureResponseMode === "elasticity"}
+                  onClick={() => update("departureResponseMode", "elasticity")}
+                >
+                  Elasticity
+                </ToggleChip>
               </div>
             </div>
-            <p className="text-xs leading-5 text-[var(--gray-500)]">
-              Rauh et al. use ~48% based on a literature-calibrated elasticity.
-              Saez/Galle use 0%. This is the share of billionaires who leave
-              <em> beyond</em> any announced departures checked above.
-            </p>
+
+            {params.departureResponseMode === "elasticity" ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Overall migration semi-elasticity
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {params.migrationSemiElasticity.toFixed(1)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={0.1}
+                    value={params.migrationSemiElasticity}
+                    onChange={(e) =>
+                      update(
+                        "migrationSemiElasticity",
+                        parseFloat(e.target.value)
+                      )
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                    <span>0</span>
+                    <span>20</span>
+                  </div>
+                </div>
+                <p className="text-xs leading-5 text-[var(--gray-500)]">
+                  Rauh et al. use 12.6 via a literature-based linear
+                  conversion. The calculator translates that into a loss share
+                  from the remaining base after any announced departures above.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Additional departure share
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {(params.unannouncedDepartureShare * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={params.unannouncedDepartureShare}
+                    onChange={(e) =>
+                      update("unannouncedDepartureShare", parseFloat(e.target.value))
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                    <span>0% (no additional departures)</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+                <p className="text-xs leading-5 text-[var(--gray-500)]">
+                  This is the share of billionaires who leave <em>beyond</em> any
+                  announced departures checked above. Rauh et al. use roughly 48%
+                  of the remaining base under their preferred calibration;
+                  Saez/Galle use 0%.
+                </p>
+              </>
+            )}
           </StepShell>
         );
 
@@ -349,20 +517,155 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Future income tax effects"
-            subtitle="Toggle and watch the estimate change."
+            subtitle="These assumptions are separate from the one-time wealth-tax score."
           >
-            <OptionCard
-              selected={params.includeIncomeTaxEffects}
-              onClick={() => update("includeIncomeTaxEffects", true)}
-              title="Include income tax effects"
-              description="Models the present value of future California PIT lost from departing billionaires. This is a separate causality assumption."
-            />
-            <OptionCard
-              selected={!params.includeIncomeTaxEffects}
-              onClick={() => update("includeIncomeTaxEffects", false)}
-              title="Wealth tax only"
-              description="Reports only the one-time wealth-tax score, without modeling future income tax losses."
-            />
+            <div className="flex flex-wrap gap-2">
+              <ToggleChip
+                selected={params.includeIncomeTaxEffects}
+                onClick={() => update("includeIncomeTaxEffects", true)}
+              >
+                Include PIT effects
+              </ToggleChip>
+              <ToggleChip
+                selected={!params.includeIncomeTaxEffects}
+                onClick={() => update("includeIncomeTaxEffects", false)}
+              >
+                Wealth tax only
+              </ToggleChip>
+            </div>
+
+            {!params.includeIncomeTaxEffects ? (
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Reports only the one-time wealth-tax score, without modeling
+                future California income-tax losses.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Share of mover PIT loss attributed to the tax
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {(params.incomeTaxAttributionRate * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={params.incomeTaxAttributionRate}
+                    onChange={(e) =>
+                      update(
+                        "incomeTaxAttributionRate",
+                        parseFloat(e.target.value)
+                      )
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Annual CA-taxable income / taxed wealth
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {(params.incomeYieldRate * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.005}
+                    max={0.05}
+                    step={0.001}
+                    value={params.incomeYieldRate}
+                    onChange={(e) =>
+                      update("incomeYieldRate", parseFloat(e.target.value))
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Share of remaining leavers who return each year
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {(params.annualReturnRate * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.5}
+                    step={0.01}
+                    value={params.annualReturnRate}
+                    onChange={(e) =>
+                      update("annualReturnRate", parseFloat(e.target.value))
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-[var(--gray-700)]">
+                    Income tax horizon
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <ToggleChip
+                      selected={params.horizonYears === 10}
+                      onClick={() => update("horizonYears", 10)}
+                    >
+                      10 years
+                    </ToggleChip>
+                    <ToggleChip
+                      selected={params.horizonYears === 30}
+                      onClick={() => update("horizonYears", 30)}
+                    >
+                      30 years
+                    </ToggleChip>
+                    <ToggleChip
+                      selected={params.horizonYears === Infinity}
+                      onClick={() => update("horizonYears", Infinity)}
+                    >
+                      Perpetuity
+                    </ToggleChip>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Real discount rate
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {(params.discountRate * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.05}
+                    step={0.005}
+                    value={params.discountRate}
+                    onChange={(e) =>
+                      update("discountRate", parseFloat(e.target.value))
+                    }
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                </div>
+
+                <p className="text-xs leading-5 text-[var(--gray-500)]">
+                  This stage models attributed future California PIT loss from
+                  movers. It is a separate causality layer on top of the
+                  one-time wealth-tax score, not part of the statutory tax
+                  itself.
+                </p>
+              </>
+            )}
           </StepShell>
         );
 
