@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   calculateFiscalImpact,
@@ -45,6 +46,11 @@ import residencyRosterData from "@/public/snapshots/2026-01-01.json";
 
 const BALLOT_MEASURE_URL =
   "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
+const POLICYENGINE_WEBSITE_ROOT = "https://www.policyengine.org/us";
+const APP_BASE_PATH =
+  process.env.NEXT_PUBLIC_BASE_PATH !== undefined
+    ? process.env.NEXT_PUBLIC_BASE_PATH
+    : "/us/california-wealth-tax/embed";
 
 // CBO CPI-U forecast via PolicyEngine: ~2.45% annualized 2026–2030.
 // Used to convert nominal wealth growth to real for PV discounting.
@@ -219,6 +225,49 @@ function InfoIcon({ className = "h-3.5 w-3.5" }) {
   );
 }
 
+function PolicyEngineSiteHeader() {
+  const navItems = [
+    { label: "Research", href: `${POLICYENGINE_WEBSITE_ROOT}/research` },
+    { label: "Model", href: `${POLICYENGINE_WEBSITE_ROOT}/model` },
+    { label: "API", href: `${POLICYENGINE_WEBSITE_ROOT}/api` },
+    { label: "About", href: `${POLICYENGINE_WEBSITE_ROOT}/team` },
+    { label: "Donate", href: `${POLICYENGINE_WEBSITE_ROOT}/donate` },
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-[var(--teal-700)] bg-[linear-gradient(to_right,var(--teal-700),var(--teal-600))] shadow-[0_2px_4px_-1px_rgba(16,24,40,0.05),0_4px_6px_-1px_rgba(16,24,40,0.1)]">
+      <div className="mx-auto flex h-[58px] w-full max-w-[1440px] items-center justify-between px-4 sm:px-6">
+        <a
+          href={POLICYENGINE_WEBSITE_ROOT}
+          className="flex items-center"
+          aria-label="PolicyEngine home"
+        >
+          <Image
+            src="/policyengine-logo.svg"
+            alt="PolicyEngine"
+            width={140}
+            height={29}
+            priority
+            className="h-6 w-auto brightness-0 invert"
+          />
+        </a>
+        <nav className="hidden items-center gap-2 lg:flex">
+          {navItems.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="rounded-md px-3.5 py-1.5 text-[15px] font-medium tracking-[0.01em] text-white transition-colors hover:bg-white/10"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="hidden lg:block" />
+      </div>
+    </header>
+  );
+}
+
 const WaterfallChart = dynamic(() => import("@/app/components/WaterfallChart"), {
   loading: () => <ChartLoading />,
 });
@@ -381,6 +430,9 @@ export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const showWizard = true;
+  const [showStandaloneHeader, setShowStandaloneHeader] = useState(
+    !APP_BASE_PATH.endsWith("/embed")
+  );
   const [wizardHasPath, setWizardHasPath] = useState(false);
   const [wizardPath, setWizardPath] = useState(null);
   const [wizardComplete, setWizardComplete] = useState(false);
@@ -652,6 +704,20 @@ export default function Home() {
         ? "Paper snapshot (2025-10-17)"
         : `Stored Forbes snapshot (${params.snapshotDate})`;
   useEffect(() => {
+    let isTopLevel = true;
+
+    try {
+      isTopLevel = window.top === window.self;
+    } catch {
+      isTopLevel = false;
+    }
+
+    setShowStandaloneHeader(
+      isTopLevel && !window.location.pathname.endsWith("/embed")
+    );
+  }, []);
+
+  useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
     const matchingPreset = getMatchingPresetKey(parsed);
@@ -748,6 +814,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
+      {showStandaloneHeader ? <PolicyEngineSiteHeader /> : null}
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
           <section className="rounded-[30px] border border-[var(--gray-200)] bg-white px-6 py-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
