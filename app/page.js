@@ -384,6 +384,7 @@ export default function Home() {
   const [wizardHasPath, setWizardHasPath] = useState(false);
   const [wizardPath, setWizardPath] = useState(null);
   const [wizardComplete, setWizardComplete] = useState(false);
+  const [activeTab, setActiveTab] = useState("calculator");
   const [copyStatus, setCopyStatus] = useState("idle");
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
   const realGrowthRate = useMemo(
@@ -763,29 +764,59 @@ export default function Home() {
                   future California income-tax effects from migration.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={paperWebHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--teal-200)] bg-[var(--teal-50)] px-4 py-2 text-sm font-medium text-[var(--teal-700)] transition-colors hover:border-[var(--teal-600)] hover:bg-white"
-                >
-                  View paper
-                  <ExternalLinkIcon className="h-3.5 w-3.5 opacity-75" />
-                </a>
+              <div className="inline-flex rounded-full border border-[var(--gray-200)] bg-[var(--gray-50)] p-1">
+                {[
+                  { key: "calculator", label: "Calculator" },
+                  { key: "paper", label: "Paper" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? "bg-[var(--teal-700)] text-white"
+                        : "text-[var(--gray-600)] hover:bg-white hover:text-[var(--teal-700)]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {activeTab === "paper" ? (
+            <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="max-w-3xl">
+                  <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
+                    Working paper
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
+                    This draft explains the calculator&apos;s structure, sources,
+                    and main modeling choices.
+                  </p>
+                </div>
                 <a
                   href={paperPdfHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
                 >
-                  PDF
+                  Open PDF
                   <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
                 </a>
               </div>
-            </div>
-          </section>
-
+              <div className="overflow-hidden rounded-[24px] border border-[var(--gray-200)] bg-white">
+                <iframe
+                  title="California wealth tax working paper"
+                  src={paperWebHref}
+                  className="h-[78vh] min-h-[720px] w-full"
+                />
+              </div>
+            </section>
+          ) : (
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
@@ -1505,6 +1536,7 @@ export default function Home() {
               )}
             </aside>
           </div>
+          )}
         </div>
       </main>
     </div>
