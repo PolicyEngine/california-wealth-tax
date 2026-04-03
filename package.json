@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "paper:html": "cd paper && quarto render california-wealth-tax-ssrn-draft.qmd --to html --output index.html --output-dir ../public/papers/web",
+    "paper:pdf": "cd paper && quarto render california-wealth-tax-ssrn-draft.qmd --to pdf --output california-wealth-tax-ssrn-draft.pdf --output-dir ../public/papers",
+    "paper:render": "npm run paper:html && npm run paper:pdf",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
