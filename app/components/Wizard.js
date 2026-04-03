@@ -675,33 +675,35 @@ export default function Wizard({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28">
       {renderStep()}
 
-      <div className="flex items-center justify-between pt-2">
-        <div>
-          {step > 0 && (
-            <button
-              type="button"
-              onClick={back}
-              className="rounded-full border border-[var(--gray-300)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-            >
-              Back
-            </button>
-          )}
+      <div className="sticky bottom-0 z-20 -mx-3 border-t border-[var(--gray-200)] bg-white/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={back}
+                className="rounded-full border border-[var(--gray-300)] bg-white px-5 py-2.5 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                Back
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canAdvance}
+            className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
+              canAdvance
+                ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-600)]"
+                : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
+            }`}
+          >
+            {isLastStep ? "Done" : "Next"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={next}
-          disabled={!canAdvance}
-          className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
-            canAdvance
-              ? "bg-[var(--teal-700)] text-white hover:bg-[var(--teal-600)]"
-              : "cursor-not-allowed bg-[var(--gray-200)] text-[var(--gray-400)]"
-          }`}
-        >
-          {isLastStep ? "Done" : "Next"}
-        </button>
       </div>
     </div>
   );
