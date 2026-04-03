@@ -593,6 +593,12 @@ export default function Home() {
     const href = buildScenarioHref(pathname, params, DEFAULT_PARAMS);
     return `${window.location.origin}${href}`;
   }, [hasSyncedUrlState, params]);
+  const embedBasePath =
+    typeof window === "undefined"
+      ? "/us/california-wealth-tax/embed"
+      : window.location.pathname.replace(/\/$/, "");
+  const paperWebHref = `${embedBasePath}/papers/web/index.html`;
+  const paperPdfHref = `${embedBasePath}/papers/california-wealth-tax-ssrn-draft.pdf`;
   const selectedResidencyAdjustments = useMemo(
     () =>
       RESIDENCY_ADJUSTMENTS.filter((adjustment) =>
@@ -741,16 +747,45 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <header className="bg-[var(--teal-700)] px-6 py-4 text-white">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-xl font-bold">
-            California wealth tax fiscal impact calculator
-          </h1>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
+          <section className="rounded-[30px] border border-[var(--gray-200)] bg-white px-6 py-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal-700)]">
+                  PolicyEngine tool
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--gray-700)]">
+                  California wealth tax fiscal impact calculator
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--gray-500)]">
+                  Compare one-time wealth-tax assumptions, then optionally add
+                  future California income-tax effects from migration.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={paperWebHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--teal-200)] bg-[var(--teal-50)] px-4 py-2 text-sm font-medium text-[var(--teal-700)] transition-colors hover:border-[var(--teal-600)] hover:bg-white"
+                >
+                  View paper
+                  <ExternalLinkIcon className="h-3.5 w-3.5 opacity-75" />
+                </a>
+                <a
+                  href={paperPdfHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                >
+                  PDF
+                  <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+                </a>
+              </div>
+            </div>
+          </section>
+
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
@@ -1548,7 +1583,7 @@ function WizardSummary({
             Selected assumptions
           </h3>
           <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-            The result on the right reflects this completed wizard setup.
+            Review the current setup or jump back in to edit it.
           </p>
         </div>
         <button
@@ -1665,7 +1700,7 @@ function WizardSummary({
                 Share
               </p>
               <p className="mt-1 text-sm text-[var(--gray-600)]">
-                Send this exact scenario link.
+                Copy a link to this exact scenario.
               </p>
             </div>
             <button
@@ -1676,12 +1711,6 @@ function WizardSummary({
               {copyStatus === "idle" ? "Copy link" : copyStatus}
             </button>
           </div>
-          <a
-            href={shareHref}
-            className="mt-4 block break-all text-sm font-medium text-[var(--teal-700)] underline-offset-4 hover:underline"
-          >
-            {shareHref}
-          </a>
         </div>
       )}
     </div>

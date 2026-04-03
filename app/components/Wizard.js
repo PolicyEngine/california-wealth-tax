@@ -501,7 +501,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Migration response"
-            subtitle="Drag the slider and watch the estimate update."
+            subtitle="Choose how much additional migration response to model."
           >
             <div className="space-y-3">
               <p className="text-sm font-semibold text-[var(--gray-700)]">
@@ -603,7 +603,7 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Non-migration erosion"
-            subtitle="Drag the slider and watch the estimate update."
+            subtitle="Choose how much non-migration erosion to apply."
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
