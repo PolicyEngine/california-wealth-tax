@@ -104,6 +104,10 @@ export default function Wizard({
   applyPreset,
   liveDate,
   paperDate,
+  customSnapshotDate,
+  snapshotDateMin,
+  snapshotDateMax,
+  resolveSnapshotDate,
   residencyAdjustments,
   toggleResidencyExclusion,
   onDone,
@@ -205,6 +209,45 @@ export default function Wizard({
               title="Paper snapshot (2025-10-17)"
               description="Matches the Forbes data used in Saez and Rauh papers, for replication."
             />
+            <OptionCard
+              selected={
+                params.snapshotDate !== liveDate &&
+                params.snapshotDate !== paperDate
+              }
+              onClick={() =>
+                update(
+                  "snapshotDate",
+                  params.snapshotDate !== liveDate &&
+                    params.snapshotDate !== paperDate
+                    ? params.snapshotDate
+                    : customSnapshotDate
+                )
+              }
+              title="Other stored snapshot"
+              description="Pick any stored Forbes snapshot date."
+            />
+            {params.snapshotDate !== liveDate &&
+              params.snapshotDate !== paperDate && (
+                <div className="space-y-2 rounded-2xl border border-[var(--gray-200)] bg-white px-4 py-3">
+                  <input
+                    type="date"
+                    value={params.snapshotDate}
+                    min={snapshotDateMin}
+                    max={snapshotDateMax}
+                    onChange={(e) =>
+                      update(
+                        "snapshotDate",
+                        resolveSnapshotDate(e.target.value)
+                      )
+                    }
+                    className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
+                  />
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    Loads the nearest stored daily snapshot on or before the
+                    selected date.
+                  </p>
+                </div>
+              )}
           </StepShell>
         );
 

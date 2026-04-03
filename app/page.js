@@ -15,10 +15,6 @@ import {
   estimateRealEstateHoldingsB,
   getBillionaireFlags,
 } from "@/lib/microModel";
-import {
-  buildAnnualCashFlows,
-  DEFAULT_CASH_FLOW_START_YEAR,
-} from "@/lib/cashFlow";
 import Slider from "@/app/components/Slider";
 import Wizard from "@/app/components/Wizard";
 import {
@@ -47,12 +43,6 @@ import liveMetadata from "@/data/billionaires_live_meta.json";
 import snapshotIndex from "@/public/snapshots/index.json";
 import residencyRosterData from "@/public/snapshots/2026-01-01.json";
 
-const BillionaireTable = dynamic(
-  () => import("@/app/components/BillionaireTable"),
-  { loading: () => <ChartLoading /> }
-);
-
-const CASH_FLOW_DISPLAY_YEARS = 30;
 const BALLOT_MEASURE_URL =
   "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
 
@@ -85,11 +75,6 @@ const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
       timeZoneName: "short",
     })
   : null;
-const BASE_PATH =
-  process.env.NEXT_PUBLIC_BASE_PATH ?? "/us/california-wealth-tax/embed";
-const PAPER_WEB_PATH = `${BASE_PATH}/papers/web/index.html`;
-const PAPER_PDF_PATH = `${BASE_PATH}/papers/california-wealth-tax-ssrn-draft.pdf`;
-
 function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
 }
@@ -233,10 +218,6 @@ function InfoIcon({ className = "h-3.5 w-3.5" }) {
     </svg>
   );
 }
-
-const CashFlowChart = dynamic(() => import("@/app/components/CashFlowChart"), {
-  loading: () => <ChartLoading />,
-});
 
 const WaterfallChart = dynamic(() => import("@/app/components/WaterfallChart"), {
   loading: () => <ChartLoading />,
@@ -396,11 +377,6 @@ function buildPresetDetails(params) {
   return { micro, result };
 }
 
-const PRESET_DETAILS = {
-  saez: buildPresetDetails(PRESETS.saez.params),
-  rauh: buildPresetDetails(PRESETS.rauh.params),
-};
-
 export default function Home() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
@@ -408,7 +384,6 @@ export default function Home() {
   const [wizardHasPath, setWizardHasPath] = useState(false);
   const [wizardComplete, setWizardComplete] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
-  const [paperExpanded, setPaperExpanded] = useState(false);
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
   const realGrowthRate = useMemo(
     () => toRealGrowthRate(params.wealthGrowthRate),
@@ -608,22 +583,6 @@ export default function Home() {
     : result.pvWealthTaxReceipts;
   const attributedMoverIncomeTaxB =
     micro.moverIncomeTaxB * params.incomeTaxAttributionRate;
-  const cashFlow = useMemo(
-    () =>
-      buildAnnualCashFlows({
-        wealthTaxCollected: result.wealthTaxCollected,
-        wealthTaxPaymentMode: params.wealthTaxPaymentMode,
-        annualIncomeTaxLost: result.annualIncomeTaxLost,
-        annualReturnRate: params.annualReturnRate,
-        discountRate: params.discountRate,
-        horizonYears: params.horizonYears,
-        displayYears: CASH_FLOW_DISPLAY_YEARS,
-        startYear: DEFAULT_CASH_FLOW_START_YEAR,
-        growthRate: realGrowthRate,
-      }),
-    [params, realGrowthRate, result]
-  );
-
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
@@ -791,6 +750,10 @@ export default function Home() {
                   applyPreset={applyPreset}
                   liveDate={LIVE_DATE}
                   paperDate={PAPER_DATE}
+                  customSnapshotDate={DEFAULT_CUSTOM_SNAPSHOT_DATE}
+                  snapshotDateMin={snapshotIndex[0]}
+                  snapshotDateMax={LIVE_DATE}
+                  resolveSnapshotDate={resolveSnapshotDate}
                   residencyAdjustments={RESIDENCY_ADJUSTMENTS}
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   onDone={() => setWizardComplete(true)}
@@ -1478,234 +1441,6 @@ export default function Home() {
             </aside>
           </div>
         </div>
-
-        {wizardComplete && (
-        <>
-        <details className="group border-t border-[var(--gray-200)] pt-6">
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
-            Year-by-year cash flow
-          </summary>
-          <div className="mt-4 space-y-4">
-            <p className="text-xs leading-5 text-[var(--gray-500)]">
-              {usesInstallments
-                ? `Wealth-tax receipts are shown as five annual installments with a ${formatPercent(WEALTH_TAX_INSTALLMENT_DEFERRAL_CHARGE_RATE, 1)} nondeductible deferral charge on the remaining unpaid balance.`
-                : "Wealth-tax receipts are shown as a lump sum at model start."}{" "}
-              {pitEffectsEnabled
-                ? "Attributed PIT losses grow in real terms using the implied growth rate above."
-                : "No PIT-loss series is included unless stage 2 is turned on."}
-            </p>
-            <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-              <CashFlowChart data={cashFlow.rows} />
-            </div>
-            {cashFlow.isTruncated && (
-              <p className="text-xs leading-5 text-[var(--gray-400)]">
-                The chart shows the first {cashFlow.displayedYears} years. The
-                headline PV still uses the full
-                {params.horizonYears === Infinity
-                  ? " perpetuity assumption."
-                  : ` ${params.horizonYears}-year horizon.`}
-              </p>
-            )}
-          </div>
-        </details>
-
-        <details className="group border-t border-[var(--gray-200)] pt-6">
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
-            Billionaire-level detail
-          </summary>
-          <div className="mt-4 space-y-4">
-            <div className="rounded-[28px] border border-[var(--gray-200)] bg-white p-5 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-              <BillionaireTable
-                rows={micro.rows}
-                avoidanceRate={params.avoidanceRate}
-                excludeRealEstate={params.excludeRealEstate}
-              />
-            </div>
-            <p className="text-xs leading-5 text-[var(--gray-400)]">
-              Names come from the January 1, 2026 Forbes California roster proxy;
-              wealth comes from the selected Forbes valuation snapshot, falling
-              back to January 1 values only when a name is missing from the
-              selected snapshot. Departure timing from Rauh et al. Tables 6 and
-              7; directly held real estate uses name-level values where available
-              and otherwise imputes 0.64% of net worth, matching the{" "}
-              <a
-                href={BALLOT_MEASURE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-[var(--teal-600)]"
-              >
-                ballot measure text
-              </a>
-              . Paper correction metadata from{" "}
-              <a
-                href="https://github.com/bjaros20/wealth_tax"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-[var(--teal-600)]"
-              >
-                Rauh et al.
-              </a>
-              . CA income tax from{" "}
-              <a
-                href="https://github.com/PolicyEngine/policyengine-us"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-[var(--teal-600)]"
-              >
-                PolicyEngine
-              </a>{" "}
-              (MFJ, 2026–2030).
-            </p>
-          </div>
-        </details>
-
-        <details className="group border-t border-[var(--gray-200)] pt-6">
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
-            Calibration notes
-          </summary>
-          <div className="mt-4 grid grid-cols-1 gap-4 text-sm leading-6 text-[var(--gray-600)] xl:grid-cols-2">
-            <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
-              <p className="font-semibold text-[var(--gray-700)]">
-                <a
-                  href={PRESETS.saez.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
-                >
-                  Galle, Gamage, Saez &amp; Shanske (2026)
-                </a>
-              </p>
-              <p>
-                Uses the raw Forbes California roster on{" "}
-                {RESIDENCY_ROSTER_DATE} for inclusion and the{" "}
-                {PRESETS.saez.params.snapshotDate} wealth snapshot for
-                valuation. The stage-1 checklist is left empty, so all{" "}
-                {PRESET_DETAILS.saez.micro.rawForbesRows.length} billionaires
-                stay in the one-time tax base.
-                After{" "}
-                {formatPercent(PRESETS.saez.params.avoidanceRate)} non-migration
-                erosion
-                the tax collects about{" "}
-                {formatBillions(PRESET_DETAILS.saez.result.wealthTaxCollected)},
-                close to the paper&apos;s roughly $100B headline.
-              </p>
-            </div>
-
-            <div className="space-y-2 rounded-[20px] bg-[var(--gray-50)] p-4">
-              <p className="font-semibold text-[var(--gray-700)]">
-                <a
-                  href={PRESETS.rauh.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline decoration-[var(--gray-300)] underline-offset-2 hover:decoration-[var(--teal-600)]"
-                >
-                  Rauh, Jaros, Kearney, Doran &amp; Cosso (2026)
-                </a>
-              </p>
-              <p>
-                Starts from the January 1, 2026 Forbes roster and checks all
-                listed residency and announced departure adjustments, removing{" "}
-                {PRESET_DETAILS.rauh.micro.preSnapshotDepartureRows.length}{" "}
-                announced departures from the wealth-tax base,
-                keeps{" "}
-                {PRESET_DETAILS.rauh.micro.postSnapshotDepartureRows.length +
-                  PRESET_DETAILS.rauh.micro.unconfirmedDepartureRows.length}{" "}
-                later / reported departures on the PIT-loss side, excludes
-                directly held real estate, and applies no additional
-                non-migration erosion. The preset books the wealth-tax inflow as
-                a lump sum.
-                The default migration input is{" "}
-                {formatPercent(PRESETS.rauh.params.unannouncedDepartureShare)}
-                {" "}
-                of the remaining base, corresponding to Rauh&apos;s 12.6
-                literature-calibrated elasticity under the paper&apos;s linear
-                conversion. Net wealth tax collected:{" "}
-                {formatBillions(PRESET_DETAILS.rauh.result.wealthTaxCollected)}.
-              </p>
-              <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Annual CA-taxable income / wealth of{" "}
-                {formatPercent(PRESETS.rauh.params.incomeYieldRate, 1)} is
-                backed out by this app to match the paper&apos;s roughly -$25B
-                Monte Carlo mean headline; Rauh et al. instead estimate annual
-                PIT from FTB data.{" "}
-                {formatPercent(PRESETS.rauh.params.discountRate, 1)} real
-                discount rate, {formatPercent(INFLATION_RATE, 1)} CBO
-                inflation forecast, perpetuity horizon.
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-4 text-xs leading-5 text-[var(--gray-500)]">
-            Both presets are simplified calibrations, not full replications.
-            Wealth growth is nominal; the real discount rate is adjusted by a{" "}
-            {formatPercent(INFLATION_RATE, 1)} inflation assumption (CBO
-            CPI-U forecast via PolicyEngine). CA income tax from
-            PolicyEngine (married filing jointly, 2026–2030). Elasticity mode
-            uses the exact semi-elasticity mapping{" "}
-            <span className="font-semibold text-[var(--gray-700)]">
-              1 - exp(-ε × Δτ)
-            </span>
-            , not the linear{" "}
-            <span className="font-semibold text-[var(--gray-700)]">
-              ε × Δτ
-            </span>{" "}
-            approximation.
-          </p>
-        </details>
-
-        <details
-          className="group border-t border-[var(--gray-200)] pt-6"
-          onToggle={(event) => setPaperExpanded(event.currentTarget.open)}
-        >
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--gray-600)] hover:text-[var(--teal-700)]">
-            Working paper (draft)
-          </summary>
-          <div className="mt-4 space-y-4">
-            <p className="text-sm leading-6 text-[var(--gray-600)]">
-              Draft SSRN-style paper describing the calculator methodology,
-              current baseline, and the main differences between the Berkeley,
-              Rauh, and Hoopes framings.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={PAPER_WEB_PATH}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-              >
-                Open web version
-                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
-              </a>
-              <a
-                href={PAPER_PDF_PATH}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-              >
-                Open PDF
-                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
-              </a>
-              <a
-                href={PAPER_PDF_PATH}
-                download
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-              >
-                Download PDF
-              </a>
-            </div>
-            {paperExpanded && (
-              <div className="overflow-hidden rounded-[28px] border border-[var(--gray-200)] bg-white shadow-[0_30px_80px_-48px_rgba(40,94,97,0.45)]">
-                <iframe
-                  src={PAPER_WEB_PATH}
-                  title="California wealth tax working paper draft"
-                  className="block h-[980px] w-full border-0 bg-white"
-                />
-              </div>
-            )}
-          </div>
-        </details>
-        </>
-        )}
       </main>
     </div>
   );
