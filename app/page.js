@@ -753,10 +753,7 @@ export default function Home() {
           <section className="rounded-[30px] border border-[var(--gray-200)] bg-white px-6 py-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="max-w-3xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal-700)]">
-                  PolicyEngine tool
-                </p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--gray-700)]">
+                <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--gray-700)]">
                   California wealth tax fiscal impact calculator
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--gray-500)]">
