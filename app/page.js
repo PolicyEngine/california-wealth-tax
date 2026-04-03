@@ -382,6 +382,7 @@ export default function Home() {
   const [hasSyncedUrlState, setHasSyncedUrlState] = useState(false);
   const showWizard = true;
   const [wizardHasPath, setWizardHasPath] = useState(false);
+  const [wizardPath, setWizardPath] = useState(null);
   const [wizardComplete, setWizardComplete] = useState(false);
   const [copyStatus, setCopyStatus] = useState("idle");
   const activePreset = useMemo(() => getMatchingPresetKey(params), [params]);
@@ -583,13 +584,81 @@ export default function Home() {
     : result.pvWealthTaxReceipts;
   const attributedMoverIncomeTaxB =
     micro.moverIncomeTaxB * params.incomeTaxAttributionRate;
+  const shareHref = useMemo(() => {
+    if (!hasSyncedUrlState || typeof window === "undefined") {
+      return "";
+    }
+
+    const pathname = canonicalScenarioPathname(window.location.pathname);
+    const href = buildScenarioHref(pathname, params, DEFAULT_PARAMS);
+    return `${window.location.origin}${href}`;
+  }, [hasSyncedUrlState, params]);
+  const selectedResidencyAdjustments = useMemo(
+    () =>
+      RESIDENCY_ADJUSTMENTS.filter((adjustment) =>
+        params.residencyExclusionIds.includes(adjustment.id)
+      ),
+    [params.residencyExclusionIds]
+  );
+  const startingPointMeta = useMemo(() => {
+    if (wizardPath === "berkeley") {
+      return {
+        label: "Berkeley (Saez et al.)",
+        href: PRESETS.saez.href,
+      };
+    }
+
+    if (wizardPath === "hoover") {
+      return {
+        label: "Hoover (Rauh et al.)",
+        href: PRESETS.rauh.href,
+      };
+    }
+
+    if (wizardPath === "custom") {
+      return {
+        label: "Custom",
+        href: null,
+      };
+    }
+
+    return {
+      label: activePreset === "saez"
+        ? "Berkeley (Saez et al.)"
+        : activePreset === "rauh"
+          ? "Hoover (Rauh et al.)"
+          : "Custom",
+      href:
+        activePreset === "saez"
+          ? PRESETS.saez.href
+          : activePreset === "rauh"
+            ? PRESETS.rauh.href
+            : null,
+    };
+  }, [activePreset, wizardPath]);
+  const snapshotSummaryLabel =
+    params.snapshotDate === LIVE_DATE
+      ? LIVE_SNAPSHOT_TIMESTAMP_LABEL
+        ? `Current Forbes snapshot (${LIVE_SNAPSHOT_TIMESTAMP_LABEL})`
+        : `Current Forbes snapshot (${LIVE_DATE})`
+      : params.snapshotDate === PAPER_DATE
+        ? "Paper snapshot (2025-10-17)"
+        : `Stored Forbes snapshot (${params.snapshotDate})`;
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
+    const matchingPreset = getMatchingPresetKey(parsed);
     setParams(parsed);
     setHasSyncedUrlState(true);
     // If URL has scenario params, keep the wizard visible but expose results.
     if (searchParams.toString().length > 0) {
+      setWizardPath(
+        matchingPreset === "saez"
+          ? "berkeley"
+          : matchingPreset === "rauh"
+            ? "hoover"
+            : "custom"
+      );
       setWizardHasPath(true);
       setWizardComplete(true);
     }
@@ -682,74 +751,31 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl p-6">
         <div className="space-y-8">
-          {wizardComplete && (
-          <div className="flex flex-wrap items-center gap-3 pb-2">
-            {Object.entries(PRESETS).map(([key, preset]) => (
-              <span
-                key={key}
-                className={`inline-flex items-center gap-1 rounded-full border p-1 ${
-                  activePreset === key
-                    ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
-                    : "border-[var(--gray-300)] bg-white"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => applyPreset(key)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    activePreset === key
-                      ? "bg-[var(--teal-700)] text-white"
-                      : "bg-white text-[var(--gray-700)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-                  }`}
-                  title={preset.description}
-                >
-                  {preset.label}
-                </button>
-                <a
-                  href={preset.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                    activePreset === key
-                      ? "text-[var(--teal-700)] hover:bg-white hover:text-[var(--teal-800)]"
-                      : "text-[var(--gray-500)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-                  }`}
-                  title="Read the paper"
-                >
-                  Read paper
-                  <ExternalLinkIcon className="h-3 w-3 opacity-75" />
-                </a>
-              </span>
-            ))}
-            <button
-              type="button"
-              onClick={copyScenarioLink}
-              className="rounded-full border border-[var(--teal-200)] bg-[var(--teal-50)] px-4 py-2 text-sm font-medium text-[var(--teal-700)] transition-colors hover:border-[var(--teal-600)] hover:bg-white"
-            >
-              {copyStatus === "idle" ? "Copy scenario link" : copyStatus}
-            </button>
-            <a
-              href={BALLOT_MEASURE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-            >
-              Ballot measure text
-              <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
-            </a>
-          </div>
-          )}
-
           <div className="grid grid-cols-1 gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-10">
 
-              {showWizard ? (
+              {wizardComplete ? (
+                <WizardSummary
+                  params={params}
+                  startingPointMeta={startingPointMeta}
+                  snapshotSummaryLabel={snapshotSummaryLabel}
+                  selectedResidencyAdjustments={selectedResidencyAdjustments}
+                  copyStatus={copyStatus}
+                  shareHref={shareHref}
+                  onCopyScenarioLink={copyScenarioLink}
+                  onEdit={() => setWizardComplete(false)}
+                />
+              ) : showWizard ? (
                 <Wizard
                   params={params}
                   update={update}
                   applyPreset={applyPreset}
+                  initialPath={wizardPath}
                   liveDate={LIVE_DATE}
                   paperDate={PAPER_DATE}
+                  ballotMeasureUrl={BALLOT_MEASURE_URL}
+                  berkeleyPaperUrl={PRESETS.saez.href}
+                  hooverPaperUrl={PRESETS.rauh.href}
                   customSnapshotDate={DEFAULT_CUSTOM_SNAPSHOT_DATE}
                   snapshotDateMin={snapshotIndex[0]}
                   snapshotDateMax={LIVE_DATE}
@@ -757,9 +783,13 @@ export default function Home() {
                   residencyAdjustments={RESIDENCY_ADJUSTMENTS}
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   onDone={() => setWizardComplete(true)}
-                  onPathChange={(p) => setWizardHasPath(!!p)}
+                  onPathChange={({ path, showResult }) => {
+                    setWizardPath(path ?? null);
+                    setWizardHasPath(!!showResult);
+                  }}
                   onResetParams={() => {
                     setParams(normalizeParams({ ...DEFAULT_PARAMS }));
+                    setWizardPath(null);
                     setWizardHasPath(false);
                     setWizardComplete(false);
                   }}
@@ -1454,5 +1484,206 @@ function AssumptionSection({ title, children }) {
       </h4>
       <div className="divide-y divide-[var(--gray-100)]">{children}</div>
     </section>
+  );
+}
+
+function SummarySection({ title, children }) {
+  return (
+    <section className="space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--gray-500)]">
+        {title}
+      </h4>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function SummaryItem({ label, value, note }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <span className="text-sm text-[var(--gray-500)]">{label}</span>
+        <span className="text-sm font-semibold text-[var(--gray-700)]">
+          {value}
+        </span>
+      </div>
+      {note && (
+        <p className="text-xs leading-5 text-[var(--gray-500)]">{note}</p>
+      )}
+    </div>
+  );
+}
+
+function WizardSummary({
+  params,
+  startingPointMeta,
+  snapshotSummaryLabel,
+  selectedResidencyAdjustments,
+  copyStatus,
+  shareHref,
+  onCopyScenarioLink,
+  onEdit,
+}) {
+  const residencySummary =
+    selectedResidencyAdjustments.length === 0
+      ? "Everyone included"
+      : `${selectedResidencyAdjustments.length} excluded`;
+  const residencyNote =
+    selectedResidencyAdjustments.length === 0
+      ? "No publicly reported moves or contested residency cases are excluded."
+      : selectedResidencyAdjustments.map((adjustment) => adjustment.name).join(", ");
+  const migrationSummary =
+    params.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY
+      ? `${params.migrationSemiElasticity.toFixed(1)} overall semi-elasticity`
+      : `${formatPercent(params.unannouncedDepartureShare)} of the remaining base`;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
+            Your setup
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
+            Selected assumptions
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
+            The result on the right reflects this completed wizard setup.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+        >
+          Edit selections
+        </button>
+      </div>
+
+      <div className="space-y-6 rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-50px_rgba(40,94,97,0.45)]">
+        <SummarySection title="Starting point">
+          <SummaryItem
+            label="Scenario"
+            value={startingPointMeta.label}
+            note={
+              startingPointMeta.href ? (
+                <a
+                  href={startingPointMeta.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-semibold text-[var(--teal-700)] hover:text-[var(--teal-800)]"
+                >
+                  Read paper
+                  <ExternalLinkIcon className="h-3 w-3" />
+                </a>
+              ) : null
+            }
+          />
+        </SummarySection>
+
+        <SummarySection title="Stage 1: one-time wealth tax">
+          <SummaryItem
+            label="Wealth snapshot"
+            value={snapshotSummaryLabel}
+            note={`Residency roster proxy stays fixed at ${RESIDENCY_ROSTER_DATE}.`}
+          />
+          <SummaryItem
+            label="Residency exclusions"
+            value={residencySummary}
+            note={residencyNote}
+          />
+          <SummaryItem
+            label="Directly held real estate"
+            value={params.excludeRealEstate ? "Excluded" : "Included"}
+          />
+          <SummaryItem
+            label="Payment timing"
+            value={
+              params.wealthTaxPaymentMode === WEALTH_TAX_PAYMENT_MODES.INSTALLMENTS
+                ? "5 installments"
+                : "Lump sum"
+            }
+          />
+          <SummaryItem
+            label="Nominal wealth growth"
+            value={formatPercent(params.wealthGrowthRate, 1)}
+          />
+          <SummaryItem
+            label="Non-migration erosion"
+            value={formatPercent(params.avoidanceRate)}
+          />
+          <SummaryItem
+            label="Additional migration response"
+            value={migrationSummary}
+          />
+        </SummarySection>
+
+        <SummarySection title="Stage 2: optional PIT effects">
+          {!params.includeIncomeTaxEffects ? (
+            <SummaryItem
+              label="Status"
+              value="Off"
+              note="The headline reports only the one-time wealth-tax score."
+            />
+          ) : (
+            <>
+              <SummaryItem
+                label="Status"
+                value="On"
+                note="The headline also includes attributed future California PIT losses."
+              />
+              <SummaryItem
+                label="Attribution to the tax"
+                value={formatPercent(params.incomeTaxAttributionRate)}
+              />
+              <SummaryItem
+                label="Annual CA-taxable income / taxed wealth"
+                value={formatPercent(params.incomeYieldRate, 1)}
+              />
+              <SummaryItem
+                label="Annual return share"
+                value={formatPercent(params.annualReturnRate)}
+              />
+              <SummaryItem
+                label="Income tax horizon"
+                value={formatYears(params.horizonYears)}
+              />
+              <SummaryItem
+                label="Real discount rate"
+                value={formatPercent(params.discountRate, 1)}
+              />
+            </>
+          )}
+        </SummarySection>
+      </div>
+
+      {shareHref && (
+        <div className="rounded-[24px] border border-[var(--gray-200)] bg-[var(--gray-50)] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--gray-500)]">
+                Share
+              </p>
+              <p className="mt-1 text-sm text-[var(--gray-600)]">
+                Send this exact scenario link.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCopyScenarioLink}
+              className="rounded-full border border-[var(--teal-200)] bg-white px-4 py-2 text-sm font-medium text-[var(--teal-700)] transition-colors hover:border-[var(--teal-600)] hover:bg-[var(--teal-50)]"
+            >
+              {copyStatus === "idle" ? "Copy link" : copyStatus}
+            </button>
+          </div>
+          <a
+            href={shareHref}
+            className="mt-4 block break-all text-sm font-medium text-[var(--teal-700)] underline-offset-4 hover:underline"
+          >
+            {shareHref}
+          </a>
+        </div>
+      )}
+    </div>
   );
 }

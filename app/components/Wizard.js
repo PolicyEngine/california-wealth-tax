@@ -17,6 +17,7 @@ import { useState, useMemo } from "react";
  */
 
 const STEPS = [
+  { id: "intro", showFor: () => true },
   { id: "path", showFor: () => true },
   { id: "snapshot", showFor: () => true },
   { id: "residency", showFor: (p) => p === "hoover" || p === "custom" },
@@ -30,26 +31,70 @@ function visibleSteps(path) {
   return STEPS.filter((s) => s.showFor(path));
 }
 
-function OptionCard({ selected, onClick, title, description }) {
+function ExternalLinkIcon({ className = "h-3 w-3" }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      className={className}
+    >
+      <path
+        d="M11.25 3.75H16.25V8.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.75 11.25L16.25 3.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.25 11.25V13.75C16.25 15.1307 15.1307 16.25 13.75 16.25H6.25C4.86929 16.25 3.75 15.1307 3.75 13.75V6.25C3.75 4.86929 4.86929 3.75 6.25 3.75H8.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function OptionCard({ selected, onClick, title, description, href }) {
+  return (
+    <div
       className={`w-full rounded-2xl border px-5 py-4 text-left transition-colors ${
         selected
           ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
           : "border-[var(--gray-200)] bg-white hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)]"
       }`}
     >
-      <span className="text-sm font-semibold text-[var(--gray-700)]">
-        {title}
-      </span>
-      {description && (
-        <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
-          {description}
-        </p>
+      <button type="button" onClick={onClick} className="w-full text-left">
+        <span className="text-sm font-semibold text-[var(--gray-700)]">
+          {title}
+        </span>
+        {description && (
+          <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+            {description}
+          </p>
+        )}
+      </button>
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--teal-700)] hover:text-[var(--teal-800)]"
+        >
+          Read paper
+          <ExternalLinkIcon />
+        </a>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -102,8 +147,12 @@ export default function Wizard({
   params,
   update,
   applyPreset,
+  initialPath,
   liveDate,
   paperDate,
+  ballotMeasureUrl,
+  berkeleyPaperUrl,
+  hooverPaperUrl,
   customSnapshotDate,
   snapshotDateMin,
   snapshotDateMax,
@@ -115,7 +164,7 @@ export default function Wizard({
   onResetParams,
 }) {
   const [step, setStep] = useState(0);
-  const [path, setPath] = useState(null);
+  const [path, setPath] = useState(initialPath ?? null);
   const hasPath = path !== null;
 
   const steps = useMemo(() => visibleSteps(path), [path]);
@@ -130,13 +179,13 @@ export default function Wizard({
     // moves past the opening step.
     if (p === "berkeley") {
       applyPreset("saez");
-      onPathChange?.(true);
+      onPathChange?.({ path: "berkeley", showResult: true });
     } else if (p === "hoover") {
       applyPreset("rauh");
-      onPathChange?.(true);
+      onPathChange?.({ path: "hoover", showResult: true });
     } else {
       onResetParams?.();
-      onPathChange?.(false);
+      onPathChange?.({ path: "custom", showResult: false });
     }
   }
 
@@ -147,7 +196,7 @@ export default function Wizard({
     }
     // Show the number once the custom user moves past the path step
     if (currentStep?.id === "path" && path === "custom") {
-      onPathChange?.(true);
+      onPathChange?.({ path: "custom", showResult: true });
     }
     setStep(step + 1);
   }
@@ -160,6 +209,39 @@ export default function Wizard({
     if (!currentStep) return null;
 
     switch (currentStep.id) {
+      case "intro":
+        return (
+          <StepShell
+            stepIndex={step}
+            totalSteps={steps.length}
+            title="What the ballot measure does"
+            subtitle="This wizard first scores the one-time wealth tax, then optionally adds future California income tax effects."
+          >
+            <div className="rounded-2xl border border-[var(--gray-200)] bg-white px-5 py-4 text-sm leading-6 text-[var(--gray-600)]">
+              <p>
+                The measure would impose a one-time 5% tax on net worth above
+                $1 billion for California residents as of January 1, 2026.
+                Wealth is measured on December 31, 2026.
+              </p>
+              <p className="mt-3">
+                It phases in from 0% at $1.0 billion to 5% at $1.1 billion,
+                excludes directly held real property from net worth, and lets
+                taxpayers either pay with the 2026 return or in five annual
+                installments with a 7.5% nondeductible deferral charge.
+              </p>
+            </div>
+            <a
+              href={ballotMeasureUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+            >
+              Ballot measure text
+              <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+            </a>
+          </StepShell>
+        );
+
       case "path":
         return (
           <StepShell
@@ -173,12 +255,14 @@ export default function Wizard({
               onClick={() => choosePath("berkeley")}
               title="Berkeley (Saez et al.)"
               description="Broad tax base, 10% avoidance haircut, no migration modeling. Closest to the ~$100B headline."
+              href={berkeleyPaperUrl}
             />
             <OptionCard
               selected={path === "hoover"}
               onClick={() => choosePath("hoover")}
               title="Hoover (Rauh et al.)"
               description="Narrower base with residency adjustments, migration response, and future income tax effects."
+              href={hooverPaperUrl}
             />
             <OptionCard
               selected={path === "custom"}
@@ -653,29 +737,36 @@ export default function Wizard({
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-[var(--gray-700)]">
-                    Income tax horizon
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <ToggleChip
-                      selected={params.horizonYears === 10}
-                      onClick={() => update("horizonYears", 10)}
-                    >
-                      10 years
-                    </ToggleChip>
-                    <ToggleChip
-                      selected={params.horizonYears === 30}
-                      onClick={() => update("horizonYears", 30)}
-                    >
-                      30 years
-                    </ToggleChip>
-                    <ToggleChip
-                      selected={params.horizonYears === Infinity}
-                      onClick={() => update("horizonYears", Infinity)}
-                    >
-                      Perpetuity
-                    </ToggleChip>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[var(--gray-700)]">
+                      Income tax horizon
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--teal-700)]">
+                      {params.horizonYears === Infinity
+                        ? "Perpetuity"
+                        : `${params.horizonYears} years`}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    step={5}
+                    value={
+                      params.horizonYears === Infinity
+                        ? 100
+                        : params.horizonYears
+                    }
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      update("horizonYears", value >= 100 ? Infinity : value);
+                    }}
+                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+                  />
+                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                    <span>5 years</span>
+                    <span>100 = perpetuity</span>
                   </div>
                 </div>
 
