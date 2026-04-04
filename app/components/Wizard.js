@@ -143,10 +143,24 @@ function StepShell({ stepIndex, totalSteps, title, subtitle, children }) {
   );
 }
 
+function formatBillions(value) {
+  const decimals = Math.abs(value) >= 100 ? 0 : 1;
+  return `$${value.toFixed(decimals)}B`;
+}
+
 export default function Wizard({
   params,
   update,
   applyPreset,
+  additionalExcludedWealthB,
+  additionalExcludedWealthMaxB,
+  additionalExcludedWealthStepB,
+  additionalExcludedWealthShare,
+  observedDepartureWealthB,
+  totalExcludedWealthB,
+  totalExcludedWealthShare,
+  impliedTotalMigrationElasticity,
+  updateAdditionalExcludedWealthB,
   initialPath,
   liveDate,
   paperDate,
@@ -466,7 +480,7 @@ export default function Wizard({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--gray-700)]">
-                  Nominal wealth growth to the tax date
+                  Annual nominal wealth growth
                 </span>
                 <span className="text-sm font-semibold text-[var(--teal-700)]">
                   {(params.wealthGrowthRate * 100).toFixed(1)}%
@@ -488,8 +502,8 @@ export default function Wizard({
                 <span>15%</span>
               </div>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                This grows the selected Forbes wealth snapshot forward to the
-                December 31, 2026 valuation date used in the measure.
+                Grows the Forbes snapshot to the December 31, 2026 valuation
+                date and compounds the income tax loss projection beyond it.
               </p>
             </div>
           </StepShell>
@@ -501,99 +515,68 @@ export default function Wizard({
             stepIndex={step}
             totalSteps={steps.length}
             title="Migration response"
-            subtitle="Choose how much additional migration response to model."
+            subtitle="Estimate how much additional billionaire wealth ends up outside the tax base beyond the named cases above."
           >
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-[var(--gray-700)]">
-                Modeling approach
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <ToggleChip
-                  selected={params.departureResponseMode === "share"}
-                  onClick={() => update("departureResponseMode", "share")}
-                >
-                  % of remaining base
-                </ToggleChip>
-                <ToggleChip
-                  selected={params.departureResponseMode === "elasticity"}
-                  onClick={() => update("departureResponseMode", "elasticity")}
-                >
-                  Elasticity
-                </ToggleChip>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Additional wealth outside the tax base
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {formatBillions(additionalExcludedWealthB)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={additionalExcludedWealthMaxB}
+                step={additionalExcludedWealthStepB}
+                value={Math.min(additionalExcludedWealthB, additionalExcludedWealthMaxB)}
+                onChange={(e) =>
+                  updateAdditionalExcludedWealthB(parseFloat(e.target.value))
+                }
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                <span>$0B</span>
+                <span>{formatBillions(additionalExcludedWealthMaxB)}</span>
               </div>
             </div>
 
-            {params.departureResponseMode === "elasticity" ? (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Overall migration semi-elasticity
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {params.migrationSemiElasticity.toFixed(1)}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={20}
-                    step={0.1}
-                    value={params.migrationSemiElasticity}
-                    onChange={(e) =>
-                      update(
-                        "migrationSemiElasticity",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
-                    <span>0</span>
-                    <span>20</span>
-                  </div>
-                </div>
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  Rauh et al. use 12.6 via a literature-based linear
-                  conversion. The calculator translates that into a loss share
-                  from the remaining base after any announced departures above.
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Additional departure share
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {(params.unannouncedDepartureShare * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={params.unannouncedDepartureShare}
-                    onChange={(e) =>
-                      update("unannouncedDepartureShare", parseFloat(e.target.value))
-                    }
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
-                    <span>0% (no additional departures)</span>
-                    <span>100%</span>
-                  </div>
-                </div>
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  This is the share of billionaires who leave <em>beyond</em> any
-                  announced departures checked above. Rauh et al. use roughly 48%
-                  of the remaining base under their preferred calibration;
-                  Saez/Galle use 0%.
-                </p>
-              </>
-            )}
+            <div className="rounded-2xl border border-[var(--gray-200)] bg-white px-4 py-3 text-xs leading-5 text-[var(--gray-500)]">
+              <p>
+                Named cases above already remove{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {formatBillions(observedDepartureWealthB)}
+                </span>
+                . Adding{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {formatBillions(additionalExcludedWealthB)}
+                </span>{" "}
+                beyond those names puts{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {formatBillions(totalExcludedWealthB)}
+                </span>{" "}
+                outside the tax base.
+              </p>
+              <p className="mt-2">
+                That equals{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {(additionalExcludedWealthShare * 100).toFixed(1)}%
+                </span>{" "}
+                of the remaining base,{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {(totalExcludedWealthShare * 100).toFixed(1)}%
+                </span>{" "}
+                of the total corrected base, and an implied total semi-elasticity of{" "}
+                <span className="font-semibold text-[var(--gray-700)]">
+                  {Number.isFinite(impliedTotalMigrationElasticity)
+                    ? impliedTotalMigrationElasticity.toFixed(1)
+                    : "∞"}
+                </span>
+                .
+              </p>
+            </div>
           </StepShell>
         );
 

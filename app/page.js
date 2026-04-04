@@ -79,6 +79,26 @@ function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
   return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
 }
 
+function impliedElasticityFromLossShare(lossShare, taxRateDelta = 0.05) {
+  if (taxRateDelta <= 0 || lossShare <= 0) {
+    return 0;
+  }
+
+  if (lossShare >= 1) {
+    return Infinity;
+  }
+
+  return -Math.log(1 - lossShare) / taxRateDelta;
+}
+
+function roundUpToNearest(value, step) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return step;
+  }
+
+  return Math.ceil(value / step) * step;
+}
+
 function getSnapshotRows(snapshotDate, data) {
   return annotateBillionaires({
     billionaires: data,
@@ -541,6 +561,23 @@ export default function Home() {
         : 0,
     [usesElasticityMode, params.migrationSemiElasticity, observedDepartureLossShare]
   );
+  const correctedBaseWealthB = useMemo(
+    () =>
+      baseMicro.correctedBaseRows.reduce((sum, row) => sum + row.netWorthB, 0),
+    [baseMicro.correctedBaseRows]
+  );
+  const observedDepartureWealthB = useMemo(
+    () =>
+      baseMicro.observedPreSnapshotDepartureRows.reduce(
+        (sum, row) => sum + row.netWorthB,
+        0
+      ),
+    [baseMicro.observedPreSnapshotDepartureRows]
+  );
+  const remainingResidentWealthB = useMemo(
+    () => baseMicro.stayers.reduce((sum, row) => sum + row.netWorthB, 0),
+    [baseMicro.stayers]
+  );
 
   const micro = useMemo(
     () =>
@@ -580,6 +617,49 @@ export default function Home() {
       }),
     [micro, params, realGrowthRate]
   );
+  const additionalExcludedWealthB = useMemo(
+    () => remainingResidentWealthB * modeledAdditionalDepartureShare,
+    [remainingResidentWealthB, modeledAdditionalDepartureShare]
+  );
+  const totalExcludedWealthB = useMemo(
+    () => observedDepartureWealthB + additionalExcludedWealthB,
+    [observedDepartureWealthB, additionalExcludedWealthB]
+  );
+  const additionalExcludedWealthShare = useMemo(
+    () =>
+      remainingResidentWealthB > 0
+        ? additionalExcludedWealthB / remainingResidentWealthB
+        : 0,
+    [additionalExcludedWealthB, remainingResidentWealthB]
+  );
+  const totalExcludedWealthShare = useMemo(
+    () =>
+      correctedBaseWealthB > 0 ? totalExcludedWealthB / correctedBaseWealthB : 0,
+    [correctedBaseWealthB, totalExcludedWealthB]
+  );
+  const impliedTotalMigrationElasticity = useMemo(
+    () => impliedElasticityFromLossShare(totalExcludedWealthShare),
+    [totalExcludedWealthShare]
+  );
+  const additionalExcludedWealthMaxB = useMemo(
+    () => roundUpToNearest(remainingResidentWealthB, 25),
+    [remainingResidentWealthB]
+  );
+  const additionalExcludedWealthStepB = useMemo(() => {
+    if (additionalExcludedWealthMaxB >= 1000) {
+      return 25;
+    }
+
+    if (additionalExcludedWealthMaxB >= 250) {
+      return 10;
+    }
+
+    if (additionalExcludedWealthMaxB >= 100) {
+      return 5;
+    }
+
+    return 1;
+  }, [additionalExcludedWealthMaxB]);
   const headlineValue = pitEffectsEnabled
     ? result.netFiscalImpact
     : result.pvWealthTaxReceipts;
@@ -714,6 +794,23 @@ export default function Home() {
     });
   }
 
+  function updateAdditionalExcludedWealthB(nextValue) {
+    const boundedValue = Math.max(
+      0,
+      Math.min(remainingResidentWealthB, nextValue)
+    );
+    const share =
+      remainingResidentWealthB > 0 ? boundedValue / remainingResidentWealthB : 0;
+
+    setParams((prev) =>
+      normalizeParams({
+        ...prev,
+        departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+        unannouncedDepartureShare: share,
+      })
+    );
+  }
+
   function updateSnapshotMode(nextMode) {
     if (nextMode === "paper") {
       update("snapshotDate", PAPER_DATE);
@@ -823,6 +920,11 @@ export default function Home() {
                   startingPointMeta={startingPointMeta}
                   snapshotSummaryLabel={snapshotSummaryLabel}
                   selectedResidencyAdjustments={selectedResidencyAdjustments}
+                  additionalExcludedWealthB={additionalExcludedWealthB}
+                  additionalExcludedWealthShare={additionalExcludedWealthShare}
+                  totalExcludedWealthShare={totalExcludedWealthShare}
+                  observedDepartureWealthB={observedDepartureWealthB}
+                  impliedTotalMigrationElasticity={impliedTotalMigrationElasticity}
                   copyStatus={copyStatus}
                   shareHref={shareHref}
                   onCopyScenarioLink={copyScenarioLink}
@@ -833,6 +935,15 @@ export default function Home() {
                   params={params}
                   update={update}
                   applyPreset={applyPreset}
+                  additionalExcludedWealthB={additionalExcludedWealthB}
+                  additionalExcludedWealthMaxB={additionalExcludedWealthMaxB}
+                  additionalExcludedWealthStepB={additionalExcludedWealthStepB}
+                  additionalExcludedWealthShare={additionalExcludedWealthShare}
+                  observedDepartureWealthB={observedDepartureWealthB}
+                  totalExcludedWealthB={totalExcludedWealthB}
+                  totalExcludedWealthShare={totalExcludedWealthShare}
+                  impliedTotalMigrationElasticity={impliedTotalMigrationElasticity}
+                  updateAdditionalExcludedWealthB={updateAdditionalExcludedWealthB}
                   initialPath={wizardPath}
                   liveDate={LIVE_DATE}
                   paperDate={PAPER_DATE}
@@ -1583,6 +1694,11 @@ function WizardSummary({
   startingPointMeta,
   snapshotSummaryLabel,
   selectedResidencyAdjustments,
+  additionalExcludedWealthB,
+  additionalExcludedWealthShare,
+  totalExcludedWealthShare,
+  observedDepartureWealthB,
+  impliedTotalMigrationElasticity,
   copyStatus,
   shareHref,
   onCopyScenarioLink,
@@ -1596,10 +1712,20 @@ function WizardSummary({
     selectedResidencyAdjustments.length === 0
       ? "No publicly reported moves or contested residency cases are excluded."
       : selectedResidencyAdjustments.map((adjustment) => adjustment.name).join(", ");
-  const migrationSummary =
-    params.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY
-      ? `${params.migrationSemiElasticity.toFixed(1)} overall semi-elasticity`
-      : `${formatPercent(params.unannouncedDepartureShare)} of the remaining base`;
+  const migrationSummary = formatBillions(additionalExcludedWealthB, {
+    decimals: additionalExcludedWealthB >= 100 ? 0 : 1,
+  });
+  const migrationNote = [
+    `Named cases already remove ${formatBillions(observedDepartureWealthB, {
+      decimals: observedDepartureWealthB >= 100 ? 0 : 1,
+    })}.`,
+    `${formatPercent(additionalExcludedWealthShare, 1)} of the remaining wealth base and ${formatPercent(totalExcludedWealthShare, 1)} of the total corrected base.`,
+    `Implied total semi-elasticity: ${
+      Number.isFinite(impliedTotalMigrationElasticity)
+        ? impliedTotalMigrationElasticity.toFixed(1)
+        : "∞"
+    }.`,
+  ].join(" ");
 
   return (
     <div className="space-y-6">
@@ -1677,8 +1803,9 @@ function WizardSummary({
             value={formatPercent(params.avoidanceRate)}
           />
           <SummaryItem
-            label="Additional migration response"
+            label="Additional wealth outside the tax base"
             value={migrationSummary}
+            note={migrationNote}
           />
         </SummarySection>
 
