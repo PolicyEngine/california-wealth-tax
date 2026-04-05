@@ -24,11 +24,13 @@ const STEPS = [
   { id: "mechanics", showFor: () => true },
   { id: "migration", showFor: (p) => p === "hoover" || p === "custom" },
   { id: "erosion", showFor: (p) => p === "berkeley" || p === "custom" },
-  { id: "incomeTax", showFor: (p) => p === "hoover" || p === "custom" },
+  { id: "pitToggle", showFor: (p) => p === "hoover" || p === "custom" },
+  { id: "pitStream", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
+  { id: "pitValuation", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
 ];
 
-function visibleSteps(path) {
-  return STEPS.filter((s) => s.showFor(path));
+function visibleSteps(path, params) {
+  return STEPS.filter((s) => s.showFor(path, params));
 }
 
 function ExternalLinkIcon({ className = "h-3 w-3" }) {
@@ -181,9 +183,10 @@ export default function Wizard({
   const [path, setPath] = useState(initialPath ?? null);
   const hasPath = path !== null;
 
-  const steps = useMemo(() => visibleSteps(path), [path]);
-  const currentStep = steps[step];
-  const isLastStep = step >= steps.length - 1;
+  const steps = useMemo(() => visibleSteps(path, params), [path, params]);
+  const clampedStep = Math.min(step, steps.length - 1);
+  const currentStep = steps[clampedStep];
+  const isLastStep = clampedStep >= steps.length - 1;
   const canAdvance = currentStep?.id === "path" ? path !== null : true;
 
   function choosePath(p) {
@@ -212,11 +215,11 @@ export default function Wizard({
     if (currentStep?.id === "path" && path === "custom") {
       onPathChange?.({ path: "custom", showResult: true });
     }
-    setStep(step + 1);
+    setStep(clampedStep + 1);
   }
 
   function back() {
-    if (step > 0) setStep(step - 1);
+    if (clampedStep > 0) setStep(clampedStep - 1);
   }
 
   function renderStep() {
@@ -226,7 +229,7 @@ export default function Wizard({
       case "intro":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="What the ballot measure does"
             subtitle="This wizard first scores the one-time wealth tax, then optionally adds future California income tax effects."
@@ -259,7 +262,7 @@ export default function Wizard({
       case "path":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Choose a starting point"
             subtitle="Each option uses different assumptions. The estimate updates live as you adjust."
@@ -290,7 +293,7 @@ export default function Wizard({
       case "snapshot":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Which wealth data?"
             subtitle="The estimate updates with each choice."
@@ -352,7 +355,7 @@ export default function Wizard({
       case "residency":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Residency adjustments"
             subtitle="Toggle names to see the estimate change. Whether these establish a legal change of domicile is debated."
@@ -417,7 +420,7 @@ export default function Wizard({
       case "mechanics":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Stage 1 mechanics"
             subtitle="These assumptions affect the one-time wealth-tax score directly."
@@ -512,7 +515,7 @@ export default function Wizard({
       case "migration":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Migration response"
             subtitle="Estimate how much additional billionaire wealth ends up outside the tax base beyond the named cases above."
@@ -583,7 +586,7 @@ export default function Wizard({
       case "erosion":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Non-migration erosion"
             subtitle="Choose how much non-migration erosion to apply."
@@ -621,13 +624,13 @@ export default function Wizard({
           </StepShell>
         );
 
-      case "incomeTax":
+      case "pitToggle":
         return (
           <StepShell
-            stepIndex={step}
+            stepIndex={clampedStep}
             totalSteps={steps.length}
-            title="Future income tax effects"
-            subtitle="These assumptions are separate from the one-time wealth-tax score."
+            title="Include income tax effects?"
+            subtitle="Should the estimate count future California income tax losses from migration?"
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip
@@ -654,7 +657,7 @@ export default function Wizard({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Share of mover PIT loss attributed to the tax
+                      Attribution rate
                     </span>
                     <span className="text-sm font-semibold text-[var(--teal-700)]">
                       {(params.incomeTaxAttributionRate * 100).toFixed(0)}%
@@ -674,115 +677,145 @@ export default function Wizard({
                     }
                     className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
                   />
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    What share of mover income tax loss is caused by the tax
+                    itself, versus moves that would have happened anyway?
+                  </p>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Annual CA-taxable income / taxed wealth
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {(params.incomeYieldRate * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.005}
-                    max={0.05}
-                    step={0.001}
-                    value={params.incomeYieldRate}
-                    onChange={(e) =>
-                      update("incomeYieldRate", parseFloat(e.target.value))
-                    }
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Share of remaining leavers who return each year
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {(params.annualReturnRate * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={0.5}
-                    step={0.01}
-                    value={params.annualReturnRate}
-                    onChange={(e) =>
-                      update("annualReturnRate", parseFloat(e.target.value))
-                    }
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Income tax horizon
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {params.horizonYears === Infinity
-                        ? "Perpetuity"
-                        : `${params.horizonYears} years`}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={100}
-                    step={5}
-                    value={
-                      params.horizonYears === Infinity
-                        ? 100
-                        : params.horizonYears
-                    }
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      update("horizonYears", value >= 100 ? Infinity : value);
-                    }}
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                  <div className="flex justify-between text-xs text-[var(--gray-400)]">
-                    <span>5 years</span>
-                    <span>100 = perpetuity</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--gray-700)]">
-                      Real discount rate
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--teal-700)]">
-                      {(params.discountRate * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={0.05}
-                    step={0.005}
-                    value={params.discountRate}
-                    onChange={(e) =>
-                      update("discountRate", parseFloat(e.target.value))
-                    }
-                    className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
-                  />
-                </div>
-
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  This stage models attributed future California PIT loss from
-                  movers. It is a separate causality layer on top of the
-                  one-time wealth-tax score, not part of the statutory tax
-                  itself.
-                </p>
               </>
             )}
+          </StepShell>
+        );
+
+      case "pitStream":
+        return (
+          <StepShell
+            stepIndex={clampedStep}
+            totalSteps={steps.length}
+            title="Income stream assumptions"
+            subtitle="How much California income tax is at stake from movers each year?"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Income yield (% of taxed wealth)
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {(params.incomeYieldRate * 100).toFixed(1)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0.005}
+                max={0.05}
+                step={0.001}
+                value={params.incomeYieldRate}
+                onChange={(e) =>
+                  update("incomeYieldRate", parseFloat(e.target.value))
+                }
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Rauh et al. estimate $3.3B–$5.8B/yr in CA PIT from this
+                cohort using FTB data. The 2% midpoint calibration is
+                the default.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Annual return rate
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {(params.annualReturnRate * 100).toFixed(0)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={0.5}
+                step={0.01}
+                value={params.annualReturnRate}
+                onChange={(e) =>
+                  update("annualReturnRate", parseFloat(e.target.value))
+                }
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Share of departed billionaires who return to California
+                each year, reducing the ongoing income tax loss.
+              </p>
+            </div>
+          </StepShell>
+        );
+
+      case "pitValuation":
+        return (
+          <StepShell
+            stepIndex={clampedStep}
+            totalSteps={steps.length}
+            title="Present value assumptions"
+            subtitle="How should future income tax losses be valued today?"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Income tax horizon
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {params.horizonYears === Infinity
+                    ? "Perpetuity"
+                    : `${params.horizonYears} years`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={100}
+                step={5}
+                value={
+                  params.horizonYears === Infinity
+                    ? 100
+                    : params.horizonYears
+                }
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  update("horizonYears", value >= 100 ? Infinity : value);
+                }}
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <div className="flex justify-between text-xs text-[var(--gray-400)]">
+                <span>5 years</span>
+                <span>100 = perpetuity</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--gray-700)]">
+                  Discount rate
+                </span>
+                <span className="text-sm font-semibold text-[var(--teal-700)]">
+                  {(params.discountRate * 100).toFixed(1)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={0.05}
+                step={0.005}
+                value={params.discountRate}
+                onChange={(e) =>
+                  update("discountRate", parseFloat(e.target.value))
+                }
+                className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
+              />
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Real discount rate for computing the present value of
+                future income tax losses. Rauh et al. use 1.5%–4.5%.
+              </p>
+            </div>
           </StepShell>
         );
 
@@ -798,7 +831,7 @@ export default function Wizard({
       <div className="sticky bottom-0 z-20 -mx-3 border-t border-[var(--gray-200)] bg-white/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div>
-            {step > 0 && (
+            {clampedStep > 0 && (
               <button
                 type="button"
                 onClick={back}

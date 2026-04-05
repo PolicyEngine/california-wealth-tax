@@ -305,7 +305,7 @@ const DEFAULT_PARAMS = {
   migrationSemiElasticity: 12.6,
   wealthGrowthRate: 0,
   annualReturnRate: 0,
-  incomeYieldRate: 0.01,
+  incomeYieldRate: 0.02,
   incomeTaxAttributionRate: 1,
   horizonYears: Infinity,
   discountRate: 0.03,
