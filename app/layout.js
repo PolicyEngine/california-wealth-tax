@@ -8,7 +8,7 @@ const basePath =
     ? process.env.NEXT_PUBLIC_BASE_PATH
     : "/us/california-wealth-tax/embed";
 
-const GA_ID = "G-91M4529HE7";
+const GA_ID = "G-2YHG89FY0N";
 const TOOL_NAME = "california-wealth-tax";
 
 export const metadata = {
