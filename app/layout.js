@@ -2,7 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 const basePath =
   process.env.NEXT_PUBLIC_BASE_PATH !== undefined
     ? process.env.NEXT_PUBLIC_BASE_PATH
@@ -11,17 +11,82 @@ const basePath =
 const GA_ID = "G-2YHG89FY0N";
 const TOOL_NAME = "california-wealth-tax";
 
+const SITE_URL = "https://policyengine.org/us/california-wealth-tax";
+const SITE_TITLE = "California Wealth Tax Calculator | PolicyEngine";
+const SITE_DESCRIPTION =
+  "Interactive tool analyzing fiscal impacts of California's proposed billionaire wealth tax under varying assumptions. Compare Berkeley and Hoover estimates with adjustable migration, avoidance, and income-tax parameters.";
+const OG_IMAGE = `${SITE_URL}/embed/policyengine-logo.svg`;
+
 export const metadata = {
-  title: "California wealth tax calculator | PolicyEngine",
-  description:
-    "Interactive tool analyzing fiscal impacts of California's proposed billionaire wealth tax under varying assumptions",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   icons: { icon: `${basePath}/favicon.svg` },
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: "PolicyEngine",
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 244,
+        height: 244,
+        alt: "PolicyEngine logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export const viewport = {
+  themeColor: "#2C7A7B",
+  width: "device-width",
+  initialScale: 1,
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  url: SITE_URL,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "All",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  creator: {
+    "@type": "Organization",
+    name: "PolicyEngine",
+    url: "https://policyengine.org",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
           strategy="afterInteractive"
