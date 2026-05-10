@@ -17,7 +17,7 @@ import { buildWaterfallData } from "@/lib/waterfall";
 const basePath =
   process.env.NEXT_PUBLIC_BASE_PATH !== undefined
     ? process.env.NEXT_PUBLIC_BASE_PATH
-    : "/us/california-wealth-tax/embed";
+    : "/us/california-wealth-tax";
 
 function WaterfallTooltip({ active, payload }) {
   if (!active || !payload?.length) {

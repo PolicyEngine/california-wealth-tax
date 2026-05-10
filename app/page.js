@@ -676,7 +676,7 @@ export default function Home() {
   }, [hasSyncedUrlState, params]);
   const embedBasePath =
     typeof window === "undefined"
-      ? "/us/california-wealth-tax/embed"
+      ? "/us/california-wealth-tax"
       : window.location.pathname.replace(/\/$/, "");
   const paperWebHref = `${embedBasePath}/papers/web/index.html`;
   const paperPdfHref = `${embedBasePath}/papers/california-wealth-tax-ssrn-draft.pdf`;

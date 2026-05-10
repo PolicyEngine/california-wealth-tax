@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"], display: "swap" });
 const basePath =
   process.env.NEXT_PUBLIC_BASE_PATH !== undefined
     ? process.env.NEXT_PUBLIC_BASE_PATH
-    : "/us/california-wealth-tax/embed";
+    : "/us/california-wealth-tax";
 
 const GA_ID = "G-2YHG89FY0N";
 const TOOL_NAME = "california-wealth-tax";
@@ -15,7 +15,7 @@ const SITE_URL = "https://policyengine.org/us/california-wealth-tax";
 const SITE_TITLE = "California Wealth Tax Calculator | PolicyEngine";
 const SITE_DESCRIPTION =
   "Interactive tool analyzing fiscal impacts of California's proposed billionaire wealth tax under varying assumptions. Compare Berkeley and Hoover estimates with adjustable migration, avoidance, and income-tax parameters.";
-const OG_IMAGE = `${SITE_URL}/embed/policyengine-logo.svg`;
+const OG_IMAGE = `${SITE_URL}/policyengine-logo.svg`;
 
 export const metadata = {
   title: SITE_TITLE,

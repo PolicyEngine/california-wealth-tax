@@ -3,13 +3,18 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/us/california-wealth-tax/embed",
+      "destination": "/us/california-wealth-tax",
       "permanent": false
     },
     {
-      "source": "/us/california-wealth-tax",
-      "destination": "/us/california-wealth-tax/embed",
-      "permanent": false
+      "source": "/us/california-wealth-tax/embed",
+      "destination": "/us/california-wealth-tax",
+      "permanent": true
+    },
+    {
+      "source": "/us/california-wealth-tax/embed/:path*",
+      "destination": "/us/california-wealth-tax/:path*",
+      "permanent": true
     }
   ]
 }
