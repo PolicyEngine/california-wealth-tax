@@ -63,6 +63,7 @@ const DEFAULT_CUSTOM_SNAPSHOT_DATE =
   [...snapshotIndex]
     .reverse()
     .find((date) => date !== LIVE_DATE && date !== PAPER_DATE) ?? LIVE_DATE;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
   ? new Date(liveMetadata.sourceTimestampIso).toLocaleString("en-US", {
@@ -440,7 +441,7 @@ export default function Home() {
       setSnapshotData(BUNDLED_SNAPSHOTS[date]);
       return;
     }
-    fetch(`/snapshots/${date}.json`)
+    fetch(`${BASE_PATH}/snapshots/${date}.json`)
       .then((r) => r.json())
       .then(setSnapshotData)
       .catch(() => setSnapshotData(liveData));
