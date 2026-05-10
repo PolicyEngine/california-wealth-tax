@@ -16,7 +16,7 @@ import { formatBillions } from "@/lib/format";
 const basePath =
   process.env.NEXT_PUBLIC_BASE_PATH !== undefined
     ? process.env.NEXT_PUBLIC_BASE_PATH
-    : "/us/california-wealth-tax/embed";
+    : "/us/california-wealth-tax";
 
 function CashFlowTooltip({ active, payload, label }) {
   if (!active || !payload?.length) {
