@@ -1,7 +1,6 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import Script from "next/script";
-import PolicyEngineHeader from "@/components/PolicyEngineHeader";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 const basePath =
@@ -145,10 +144,7 @@ export default function RootLayout({ children }) {
           `}
         </Script>
       </head>
-      <body className={inter.className}>
-        <PolicyEngineHeader />
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
