@@ -1,3 +1,6 @@
+import { PolicyEngineShell } from "@policyengine/ui-kit/layout";
+import "@policyengine/ui-kit/styles.css";
+
 import "./globals.css";
 import { Inter } from "next/font/google";
 import Script from "next/script";
@@ -144,7 +147,9 @@ export default function RootLayout({ children }) {
           `}
         </Script>
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <PolicyEngineShell country="us">{children}        </PolicyEngineShell>
+      </body>
     </html>
   );
 }
