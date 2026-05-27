@@ -67,29 +67,39 @@ function ExternalLinkIcon({ className = "h-3 w-3" }) {
 }
 
 function OptionCard({ selected, onClick, title, description, href }) {
+  function handleKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  }
   return (
     <div
-      className={`w-full rounded-2xl border px-5 py-4 text-left transition-colors ${
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      className={`w-full cursor-pointer rounded-2xl border px-5 py-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--teal-600)] focus-visible:ring-offset-2 ${
         selected
           ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
           : "border-[var(--gray-200)] bg-white hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)]"
       }`}
     >
-      <button type="button" onClick={onClick} className="w-full text-left">
-        <span className="text-sm font-semibold text-[var(--gray-700)]">
-          {title}
-        </span>
-        {description && (
-          <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
-            {description}
-          </p>
-        )}
-      </button>
+      <span className="block text-sm font-semibold text-[var(--gray-700)]">
+        {title}
+      </span>
+      {description && (
+        <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+          {description}
+        </p>
+      )}
       {href && (
         <a
           href={href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--teal-700)] hover:text-[var(--teal-800)]"
         >
           Read paper
