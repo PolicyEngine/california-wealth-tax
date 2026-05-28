@@ -25,8 +25,16 @@ const STEPS = [
   { id: "migration", showFor: (p) => p === "hoover" || p === "custom" },
   { id: "erosion", showFor: (p) => p === "berkeley" || p === "custom" },
   { id: "pitToggle", showFor: (p) => p === "hoover" || p === "custom" },
-  { id: "pitStream", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
-  { id: "pitValuation", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
+  {
+    id: "pitStream",
+    showFor: (p, params) =>
+      (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects,
+  },
+  {
+    id: "pitValuation",
+    showFor: (p, params) =>
+      (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects,
+  },
 ];
 
 function visibleSteps(path, params) {
@@ -67,29 +75,39 @@ function ExternalLinkIcon({ className = "h-3 w-3" }) {
 }
 
 function OptionCard({ selected, onClick, title, description, href }) {
+  function handleKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  }
   return (
     <div
-      className={`w-full rounded-2xl border px-5 py-4 text-left transition-colors ${
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      className={`w-full cursor-pointer rounded-2xl border px-5 py-4 text-left transition-colors ${
         selected
           ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
           : "border-[var(--gray-200)] bg-white hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)]"
       }`}
     >
-      <button type="button" onClick={onClick} className="w-full text-left">
-        <span className="text-sm font-semibold text-[var(--gray-700)]">
-          {title}
-        </span>
-        {description && (
-          <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
-            {description}
-          </p>
-        )}
-      </button>
+      <span className="text-sm font-semibold text-[var(--gray-700)]">
+        {title}
+      </span>
+      {description && (
+        <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+          {description}
+        </p>
+      )}
       {href && (
         <a
           href={href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--teal-700)] hover:text-[var(--teal-800)]"
         >
           Read paper
@@ -236,9 +254,9 @@ export default function Wizard({
           >
             <div className="rounded-2xl border border-[var(--gray-200)] bg-white px-5 py-4 text-sm leading-6 text-[var(--gray-600)]">
               <p>
-                The measure would impose a one-time 5% tax on net worth above
-                $1 billion for California residents as of January 1, 2026.
-                Wealth is measured on December 31, 2026.
+                The measure would impose a one-time 5% tax on net worth above $1
+                billion for California residents as of January 1, 2026. Wealth
+                is measured on December 31, 2026.
               </p>
               <p className="mt-3">
                 It phases in from 0% at $1.0 billion to 5% at $1.1 billion,
@@ -321,7 +339,7 @@ export default function Wizard({
                   params.snapshotDate !== liveDate &&
                     params.snapshotDate !== paperDate
                     ? params.snapshotDate
-                    : customSnapshotDate
+                    : customSnapshotDate,
                 )
               }
               title="Other stored snapshot"
@@ -338,7 +356,7 @@ export default function Wizard({
                     onChange={(e) =>
                       update(
                         "snapshotDate",
-                        resolveSnapshotDate(e.target.value)
+                        resolveSnapshotDate(e.target.value),
                       )
                     }
                     className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
@@ -365,14 +383,14 @@ export default function Wizard({
                 key: "residency",
                 title: "Contested residency",
                 items: residencyAdjustments.filter(
-                  (a) => a.category === "residency"
+                  (a) => a.category === "residency",
                 ),
               },
               {
                 key: "pre_snapshot_departure",
                 title: "Announced departures",
                 items: residencyAdjustments.filter(
-                  (a) => a.category === "pre_snapshot_departure"
+                  (a) => a.category === "pre_snapshot_departure",
                 ),
               },
             ].map((group) => (
@@ -381,7 +399,9 @@ export default function Wizard({
                   {group.title}
                 </p>
                 {group.items.map((adj) => {
-                  const excluded = params.residencyExclusionIds.includes(adj.id);
+                  const excluded = params.residencyExclusionIds.includes(
+                    adj.id,
+                  );
                   return (
                     <div
                       key={adj.id}
@@ -445,8 +465,8 @@ export default function Wizard({
               </div>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
                 The ballot text excludes directly held real property from net
-                worth. Leaving it in gets you closer to the Berkeley-style
-                paper headline.
+                worth. Leaving it in gets you closer to the Berkeley-style paper
+                headline.
               </p>
             </div>
 
@@ -456,20 +476,14 @@ export default function Wizard({
               </p>
               <div className="flex flex-wrap gap-2">
                 <ToggleChip
-                  selected={
-                    params.wealthTaxPaymentMode === "lumpSum"
-                  }
+                  selected={params.wealthTaxPaymentMode === "lumpSum"}
                   onClick={() => update("wealthTaxPaymentMode", "lumpSum")}
                 >
                   Lump sum
                 </ToggleChip>
                 <ToggleChip
-                  selected={
-                    params.wealthTaxPaymentMode === "installments"
-                  }
-                  onClick={() =>
-                    update("wealthTaxPaymentMode", "installments")
-                  }
+                  selected={params.wealthTaxPaymentMode === "installments"}
+                  onClick={() => update("wealthTaxPaymentMode", "installments")}
                 >
                   5 installments
                 </ToggleChip>
@@ -534,7 +548,10 @@ export default function Wizard({
                 min={0}
                 max={additionalExcludedWealthMaxB}
                 step={additionalExcludedWealthStepB}
-                value={Math.min(additionalExcludedWealthB, additionalExcludedWealthMaxB)}
+                value={Math.min(
+                  additionalExcludedWealthB,
+                  additionalExcludedWealthMaxB,
+                )}
                 onChange={(e) =>
                   updateAdditionalExcludedWealthB(parseFloat(e.target.value))
                 }
@@ -571,7 +588,8 @@ export default function Wizard({
                 <span className="font-semibold text-[var(--gray-700)]">
                   {(totalExcludedWealthShare * 100).toFixed(1)}%
                 </span>{" "}
-                of the total corrected base, and an implied total semi-elasticity of{" "}
+                of the total corrected base, and an implied total
+                semi-elasticity of{" "}
                 <span className="font-semibold text-[var(--gray-700)]">
                   {Number.isFinite(impliedTotalMigrationElasticity)
                     ? impliedTotalMigrationElasticity.toFixed(1)
@@ -617,9 +635,9 @@ export default function Wizard({
               </div>
             </div>
             <p className="text-xs leading-5 text-[var(--gray-500)]">
-              Saez et al. apply a 10% haircut. This reduces one-time
-              wealth-tax collections only; it does not model migration or
-              future income tax effects.
+              Saez et al. apply a 10% haircut. This reduces one-time wealth-tax
+              collections only; it does not model migration or future income tax
+              effects.
             </p>
           </StepShell>
         );
@@ -672,7 +690,7 @@ export default function Wizard({
                     onChange={(e) =>
                       update(
                         "incomeTaxAttributionRate",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value),
                       )
                     }
                     className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
@@ -716,9 +734,8 @@ export default function Wizard({
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Rauh et al. estimate $3.3B–$5.8B/yr in CA PIT from this
-                cohort using FTB data. The 2% midpoint calibration is
-                the default.
+                Rauh et al. estimate $3.3B–$5.8B/yr in CA PIT from this cohort
+                using FTB data. The 2% midpoint calibration is the default.
               </p>
             </div>
 
@@ -743,8 +760,8 @@ export default function Wizard({
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Share of departed billionaires who return to California
-                each year, reducing the ongoing income tax loss.
+                Share of departed billionaires who return to California each
+                year, reducing the ongoing income tax loss.
               </p>
             </div>
           </StepShell>
@@ -775,9 +792,7 @@ export default function Wizard({
                 max={100}
                 step={5}
                 value={
-                  params.horizonYears === Infinity
-                    ? 100
-                    : params.horizonYears
+                  params.horizonYears === Infinity ? 100 : params.horizonYears
                 }
                 onChange={(e) => {
                   const value = parseFloat(e.target.value);
@@ -812,8 +827,8 @@ export default function Wizard({
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Real discount rate for computing the present value of
-                future income tax losses. Rauh et al. use 1.5%–4.5%.
+                Real discount rate for computing the present value of future
+                income tax losses. Rauh et al. use 1.5%–4.5%.
               </p>
             </div>
           </StepShell>
