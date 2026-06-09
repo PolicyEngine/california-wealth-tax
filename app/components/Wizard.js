@@ -12,7 +12,7 @@ import { useState, useMemo } from "react";
  *
  * Three paths:
  *   berkeley  — broad tax base, minimal behavioral response
- *   hoover    — narrower base with migration + PIT effects
+ *   hoover    — narrower base with migration + income-tax effects
  *   custom    — walk through the main assumptions explicitly
  */
 
@@ -25,6 +25,7 @@ const STEPS = [
   { id: "migration", showFor: (p) => p === "hoover" || p === "custom" },
   { id: "erosion", showFor: (p) => p === "berkeley" || p === "custom" },
   { id: "pitToggle", showFor: (p) => p === "hoover" || p === "custom" },
+  { id: "pitMovers", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
   { id: "pitStream", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
   { id: "pitValuation", showFor: (p, params) => (p === "hoover" || p === "custom") && params?.includeIncomeTaxEffects },
 ];
@@ -165,6 +166,7 @@ export default function Wizard({
   updateAdditionalExcludedWealthB,
   initialPath,
   liveDate,
+  liveSnapshotLabel,
   paperDate,
   ballotMeasureUrl,
   berkeleyPaperUrl,
@@ -175,6 +177,8 @@ export default function Wizard({
   resolveSnapshotDate,
   residencyAdjustments,
   toggleResidencyExclusion,
+  incomeTaxMoverAdjustments,
+  toggleIncomeTaxMover,
   onDone,
   onPathChange,
   onResetParams,
@@ -301,7 +305,7 @@ export default function Wizard({
             <OptionCard
               selected={params.snapshotDate === liveDate}
               onClick={() => update("snapshotDate", liveDate)}
-              title={`Current Forbes data (${liveDate})`}
+              title={`Current Forbes data (${liveSnapshotLabel ?? liveDate})`}
               description="Uses the latest daily Forbes billionaire snapshot."
             />
             <OptionCard
@@ -603,7 +607,7 @@ export default function Wizard({
               <input
                 type="range"
                 min={0}
-                max={0.5}
+                max={1}
                 step={0.01}
                 value={params.avoidanceRate}
                 onChange={(e) =>
@@ -613,7 +617,7 @@ export default function Wizard({
               />
               <div className="flex justify-between text-xs text-[var(--gray-400)]">
                 <span>0%</span>
-                <span>50%</span>
+                <span>100%</span>
               </div>
             </div>
             <p className="text-xs leading-5 text-[var(--gray-500)]">
@@ -637,7 +641,7 @@ export default function Wizard({
                 selected={params.includeIncomeTaxEffects}
                 onClick={() => update("includeIncomeTaxEffects", true)}
               >
-                Include PIT effects
+                Include income tax effects
               </ToggleChip>
               <ToggleChip
                 selected={!params.includeIncomeTaxEffects}
@@ -687,6 +691,73 @@ export default function Wizard({
           </StepShell>
         );
 
+      case "pitMovers":
+        return (
+          <StepShell
+            stepIndex={clampedStep}
+            totalSteps={steps.length}
+            title="Which movers affect income tax?"
+            subtitle="These choices only affect future California income tax loss. They do not decide who is liable for the one-time wealth tax."
+          >
+            {[
+              {
+                key: "pre_snapshot_departure",
+                title: "Announced pre-snapshot departures",
+                items: incomeTaxMoverAdjustments.filter(
+                  (a) => a.category === "pre_snapshot_departure"
+                ),
+              },
+              {
+                key: "post_or_reported",
+                title: "Post-snapshot or reported departures",
+                items: incomeTaxMoverAdjustments.filter(
+                  (a) => a.category !== "pre_snapshot_departure"
+                ),
+              },
+            ].map((group) => (
+              <div key={group.key} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
+                  {group.title}
+                </p>
+                {group.items.map((adj) => {
+                  const counted = params.incomeTaxMoverIds.includes(adj.id);
+                  return (
+                    <div
+                      key={adj.id}
+                      className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                        counted
+                          ? "border-[var(--teal-600)] bg-[var(--teal-50)]"
+                          : "border-[var(--gray-200)] bg-white"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-[var(--gray-700)]">
+                          {adj.name}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+                          {adj.summary}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleIncomeTaxMover(adj.id)}
+                        aria-pressed={counted}
+                        className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          counted
+                            ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"
+                            : "border-[var(--gray-300)] bg-white text-[var(--gray-600)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                        }`}
+                      >
+                        {counted ? "Counted" : "Ignored"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </StepShell>
+        );
+
       case "pitStream":
         return (
           <StepShell
@@ -716,9 +787,9 @@ export default function Wizard({
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Rauh et al. estimate $3.3B–$5.8B/yr in CA PIT from this
-                cohort using FTB data. The 2% midpoint calibration is
-                the default.
+                Rauh et al. estimate $3.3B–$5.8B/yr in California
+                personal income tax from this cohort using FTB data. The
+                2% midpoint calibration is the default.
               </p>
             </div>
 
