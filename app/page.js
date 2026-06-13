@@ -11,6 +11,8 @@ import {
   annotateBillionaires,
   buildResidencyRosterValuationRows,
   computeMicroResults,
+  FTB_AGGREGATE_INCOME_TAX_RANGE_B,
+  INCOME_TAX_MODES,
 } from "@/lib/microModel";
 import Wizard from "@/app/components/Wizard";
 import BillionaireTable from "@/app/components/BillionaireTable";
@@ -207,7 +209,9 @@ const PRESETS = {
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
+      incomeTaxMode: INCOME_TAX_MODES.YIELD,
       incomeYieldRate: 0.01,
+      aggregateAnnualIncomeTaxB: FTB_AGGREGATE_INCOME_TAX_RANGE_B.midpoint,
       incomeTaxAttributionRate: 1,
       horizonYears: Infinity,
       discountRate: 0.03,
@@ -233,7 +237,9 @@ const PRESETS = {
       migrationSemiElasticity: 12.6,
       wealthGrowthRate: 0,
       annualReturnRate: 0,
+      incomeTaxMode: INCOME_TAX_MODES.FTB_AGGREGATE,
       incomeYieldRate: 0.02,
+      aggregateAnnualIncomeTaxB: FTB_AGGREGATE_INCOME_TAX_RANGE_B.midpoint,
       incomeTaxAttributionRate: 1,
       horizonYears: Infinity,
       discountRate: 0.03,
@@ -254,7 +260,9 @@ const DEFAULT_PARAMS = {
   migrationSemiElasticity: 12.6,
   wealthGrowthRate: 0,
   annualReturnRate: 0,
+  incomeTaxMode: INCOME_TAX_MODES.YIELD,
   incomeYieldRate: 0.02,
+  aggregateAnnualIncomeTaxB: FTB_AGGREGATE_INCOME_TAX_RANGE_B.midpoint,
   incomeTaxAttributionRate: 1,
   horizonYears: Infinity,
   discountRate: 0.03,
@@ -307,6 +315,8 @@ function buildPresetDetails(params) {
     incomeTaxMoverNames,
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
+    incomeTaxMode: params.incomeTaxMode,
+    aggregateAnnualIncomeTaxB: params.aggregateAnnualIncomeTaxB,
     wealthGrowthRate: params.wealthGrowthRate,
     unannouncedDepartureShare: 0,
     sourceDate,
@@ -329,6 +339,8 @@ function buildPresetDetails(params) {
     incomeTaxMoverNames,
     excludeRealEstate: params.excludeRealEstate,
     incomeYieldRate: params.incomeYieldRate,
+    incomeTaxMode: params.incomeTaxMode,
+    aggregateAnnualIncomeTaxB: params.aggregateAnnualIncomeTaxB,
     wealthGrowthRate: params.wealthGrowthRate,
     unannouncedDepartureShare: modeledAdditionalDepartureShare,
     sourceDate,
@@ -424,6 +436,8 @@ export default function Home() {
         incomeTaxMoverNames,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
+        incomeTaxMode: params.incomeTaxMode,
+        aggregateAnnualIncomeTaxB: params.aggregateAnnualIncomeTaxB,
         wealthGrowthRate: params.wealthGrowthRate,
         unannouncedDepartureShare: 0,
         sourceDate,
@@ -435,6 +449,8 @@ export default function Home() {
       incomeTaxMoverNames,
       params.excludeRealEstate,
       params.incomeYieldRate,
+      params.incomeTaxMode,
+      params.aggregateAnnualIncomeTaxB,
       params.wealthGrowthRate,
     ]
   );
@@ -496,6 +512,8 @@ export default function Home() {
         incomeTaxMoverNames,
         excludeRealEstate: params.excludeRealEstate,
         incomeYieldRate: params.incomeYieldRate,
+        incomeTaxMode: params.incomeTaxMode,
+        aggregateAnnualIncomeTaxB: params.aggregateAnnualIncomeTaxB,
         wealthGrowthRate: params.wealthGrowthRate,
         unannouncedDepartureShare: modeledAdditionalDepartureShare,
         sourceDate,
@@ -507,6 +525,8 @@ export default function Home() {
       incomeTaxMoverNames,
       params.excludeRealEstate,
       params.incomeYieldRate,
+      params.incomeTaxMode,
+      params.aggregateAnnualIncomeTaxB,
       params.wealthGrowthRate,
       modeledAdditionalDepartureShare,
     ]
@@ -893,6 +913,10 @@ export default function Home() {
                   toggleResidencyExclusion={toggleResidencyExclusion}
                   incomeTaxMoverAdjustments={INCOME_TAX_MOVER_ADJUSTMENTS}
                   toggleIncomeTaxMover={toggleIncomeTaxMover}
+                  impliedAggregateIncomeTaxB={
+                    micro.incomeTaxUniverseAnnualIncomeTaxB
+                  }
+                  realGrowthRate={realGrowthRate}
                   onDone={() => setWizardComplete(true)}
                   onPathChange={({ path, showResult }) => {
                     setWizardPath(path ?? null);
@@ -942,6 +966,13 @@ export default function Home() {
                   ? "Includes the optional present value of attributed future California income-tax losses."
                   : "Excludes future California income-tax losses and reports the present value of one-time wealth-tax receipts only."}
               </p>
+              {!Number.isFinite(headlineValue) && (
+                <p className="mt-2 text-xs font-semibold leading-5 text-[var(--gray-700)]">
+                  Income growth at or above the discount rate makes a
+                  perpetual income-tax loss unbounded. Set a finite horizon, a
+                  higher discount rate, or lower growth in the wizard.
+                </p>
+              )}
 
               <div className="mt-8">
                 <WaterfallChart waterfall={result.waterfall} />
@@ -1194,10 +1225,19 @@ function WizardSummary({
                 value={incomeTaxMoverSummary}
                 note={incomeTaxMoverNote}
               />
-              <SummaryItem
-                label="Annual CA-taxable income / taxed wealth"
-                value={formatPercent(params.incomeYieldRate, 1)}
-              />
+              {params.incomeTaxMode === INCOME_TAX_MODES.FTB_AGGREGATE ? (
+                <SummaryItem
+                  label="Annual CA income tax from the roster"
+                  value={`$${params.aggregateAnnualIncomeTaxB.toFixed(2)}B/yr`}
+                  note="FTB aggregate method (Rauh et al.), allocated across billionaires by wealth share."
+                />
+              ) : (
+                <SummaryItem
+                  label="Annual CA-taxable income / taxed wealth"
+                  value={formatPercent(params.incomeYieldRate, 1)}
+                  note="Wealth-yield method: income taxed with PolicyEngine's California rates."
+                />
+              )}
               <SummaryItem
                 label="Annual return share"
                 value={formatPercent(params.annualReturnRate)}
@@ -1209,6 +1249,10 @@ function WizardSummary({
               <SummaryItem
                 label="Real discount rate"
                 value={formatPercent(params.discountRate, 1)}
+                note={`Implied r − g: ${formatPercent(
+                  params.discountRate - toRealGrowthRate(params.wealthGrowthRate),
+                  1
+                )} (Rauh et al. consider 1.5%–4.5%).`}
               />
             </>
           )}
