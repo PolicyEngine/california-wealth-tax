@@ -178,19 +178,24 @@ of lost California income taxes.
 
 ## California income tax loss
 
-The current calculator maps California income tax loss through PolicyEngine's
-California income tax model rather than directly reproducing Rauh's Franchise
-Tax Board-based estimate. Annual California-taxable income is modeled as a
-share of taxed wealth, and California income tax is then estimated from a
-precomputed lookup at billionaire-scale incomes.
+The calculator supports two income-stream methods. The wealth-yield method
+maps California income tax loss through PolicyEngine's California income tax
+model: annual California-taxable income is modeled as a share of taxed wealth,
+and California income tax is then estimated from a precomputed lookup at
+billionaire-scale incomes. The FTB aggregate method instead takes the
+roster's total annual California personal income tax directly — Rauh et al.
+estimate $3.3 billion to $5.8 billion per year from the relevant billionaire
+cohort using a Pareto-tail fit to Franchise Tax Board data [@rauh2026] — and
+allocates it across billionaires in proportion to net worth, so the mover
+loss reproduces the paper's product of the departure fraction and the
+aggregate income tax.
 
-This is an explicit methodological choice, not a replication claim. Rauh et
-al. estimate a $3.3 billion to $5.8 billion annual California personal income
-tax contribution from the relevant billionaire cohort using a Pareto-tail fit
-to Franchise Tax Board data [@rauh2026]. The PolicyEngine implementation
-instead uses a structural income-to-tax mapping. The benefit is consistency
-across scenarios. The cost is that the Rauh path in the calculator is best
-understood as Rauh-calibrated rather than as a direct FTB-data implementation.
+Neither method is a replication claim on its own. The wealth-yield method
+offers a structural income-to-tax mapping that stays consistent across
+scenarios, and the calculator reports the aggregate annual income tax it
+implies next to the Rauh range. The FTB aggregate method anchors the level to
+tax-return data; the Rauh-style starting point uses it at the $4.55 billion
+midpoint.
 
 More importantly, any California income tax module embeds a causality
 assumption. Once a departure is included in the personal income tax loss
@@ -206,8 +211,10 @@ mover status, timing, legal effectiveness, and causal attribution.
 The calculator separates nominal wealth growth from the real discount rate and
 converts nominal growth into real growth using a 2.5 percent inflation
 assumption. This is more transparent than collapsing discounting and growth
-into a single spread, though users may still compare their implied values with
-the Rauh paper's 1.5 percent to 4.5 percent range.
+into a single spread, and the interface reports the implied $r - g$ alongside
+the Rauh paper's 1.5 percent to 4.5 percent range. When growth at or above
+the discount-plus-return rate makes a perpetual-horizon loss unbounded, the
+calculator says so explicitly rather than reporting a finite number.
 
 The calculator also lets users compare lump-sum payment with the initiative's
 five-installment option. Because installments carry a 7.5 percent charge on

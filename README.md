@@ -14,8 +14,11 @@ The app separates the score into two stages:
   statutory phase-in, payment timing, non-migration erosion, and modeled wealth
   outside the tax base.
 - Stage 2 optionally subtracts future California personal income tax losses from
-  selected movers, with explicit assumptions for causal attribution, income
-  yield, return migration, horizon, and discounting.
+  selected movers, with explicit assumptions for causal attribution, the income
+  stream (a wealth-yield method run through PolicyEngine's California rates, or
+  Rauh et al.'s FTB-based aggregate allocated by wealth share), return
+  migration, horizon, and discounting. The present-value step reports the
+  implied r − g for comparison with the Rauh paper's 1.5%–4.5% range.
 
 The named starting points are reference scenarios, not endorsements:
 
@@ -23,7 +26,8 @@ The named starting points are reference scenarios, not endorsements:
   base, 10% non-migration erosion, and no future income-tax effects.
 - **Hoover (Rauh et al.)** uses the paper-date Forbes snapshot, contested
   residency and departure exclusions, real-estate exclusion, additional
-  migration response, and future income-tax effects.
+  migration response, and future income-tax effects via the FTB aggregate
+  method at the paper's $4.55B/yr midpoint.
 - **Custom** starts from current Forbes data and walks through each assumption.
 
 ## Data
