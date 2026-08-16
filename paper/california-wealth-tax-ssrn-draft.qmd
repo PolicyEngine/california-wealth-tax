@@ -3,7 +3,7 @@ title: "Scoring California's proposed Billionaire Tax Act: a transparent compari
 author:
   - name: "Max Ghenis"
     affiliation: "PolicyEngine"
-date: "March 31, 2026"
+date: "April 24, 2026"
 bibliography: references.bib
 abstract: |
   California's proposed Billionaire Tax Act would impose a one-time 5 percent
@@ -18,14 +18,14 @@ abstract: |
   one-time wealth tax receipts. The second optionally adds future California
   income tax losses, which requires separate assumptions about which
   departures are legally effective and which are causally attributable to the
-  tax itself. Using the stored March 30, 2026 Forbes snapshot, the
-  calculator's current corrected static baseline yields a gross one-time
-  wealth tax score of about $70.6 billion. If one also attributes the future
-  California income tax losses of already-observed movers to the policy, the
-  current net fiscal effect is about $53.8 billion. The paper's main claim is
-  narrow. The most useful public contribution is not another opaque point
-  estimate, but a transparent framework that shows how each modeling choice
-  changes the score.
+  tax itself. Using the stored March 30, 2026 Forbes snapshot as an
+  illustration, a corrected static baseline yields a gross one-time wealth tax
+  score of about $70.6 billion. If one also attributes the future California
+  income tax losses of already-observed movers to the policy, that illustrative
+  net fiscal effect is about $53.8 billion. The paper's main claim is narrow.
+  The most useful public contribution is not another opaque point estimate, but
+  a transparent framework that shows how each modeling choice changes the
+  score.
 ---
 
 # Introduction
@@ -161,8 +161,9 @@ distinguish at least four cases: announced pre-January 1 departures, unannounced
 pre-January 1 departures, post-January 1 but pre-vote departures whose effect
 on wealth-tax liability depends on retroactivity litigation, and later
 departures that can affect future California income tax without changing the
-one-time wealth tax. The current calculator only partially separates these
-cases.
+one-time wealth tax. The calculator therefore treats one-time wealth-tax
+liability and future California income-tax mover status as separate scenario
+choices.
 
 Additional modeled migration can be entered either as a direct share of the
 remaining base or via a migration semi-elasticity. The calculator therefore
@@ -177,57 +178,63 @@ of lost California income taxes.
 
 ## California income tax loss
 
-The current calculator maps California income tax loss through PolicyEngine's
-California income tax model rather than directly reproducing Rauh's Franchise
-Tax Board-based estimate. Annual California-taxable income is modeled as a
-share of taxed wealth, and California income tax is then estimated from a
-precomputed lookup at billionaire-scale incomes.
+The calculator supports two income-stream methods. The wealth-yield method
+maps California income tax loss through PolicyEngine's California income tax
+model: annual California-taxable income is modeled as a share of taxed wealth,
+and California income tax is then estimated from a precomputed lookup at
+billionaire-scale incomes. The FTB aggregate method instead takes the
+roster's total annual California personal income tax directly — Rauh et al.
+estimate $3.3 billion to $5.8 billion per year from the relevant billionaire
+cohort using a Pareto-tail fit to Franchise Tax Board data [@rauh2026] — and
+allocates it across billionaires in proportion to net worth, so the mover
+loss reproduces the paper's product of the departure fraction and the
+aggregate income tax.
 
-This is an explicit methodological choice, not a replication claim. Rauh et
-al. estimate a $3.3 billion to $5.8 billion annual California personal income
-tax contribution from the relevant billionaire cohort using a Pareto-tail fit
-to Franchise Tax Board data [@rauh2026]. The PolicyEngine implementation
-instead uses a structural income-to-tax mapping. The benefit is consistency
-across scenarios. The cost is that the Rauh path in the calculator is best
-understood as Rauh-calibrated rather than as a direct FTB-data implementation.
+Neither method is a replication claim on its own. The wealth-yield method
+offers a structural income-to-tax mapping that stays consistent across
+scenarios, and the calculator reports the aggregate annual income tax it
+implies next to the Rauh range. The FTB aggregate method anchors the level to
+tax-return data; the Rauh-style starting point uses it at the $4.55 billion
+midpoint.
 
 More importantly, any California income tax module embeds a causality
-assumption. Once a departure is included in the PIT-loss calculation, the
-calculator is effectively attributing that future income tax loss to the tax
-episode. That is a much stronger claim than simply observing that a billionaire
-left the state. A clearer public design is therefore to present California
-income tax effects as an optional second-stage analysis after the wealth tax
-base is defined, with explicit assumptions about timing, legal effectiveness,
-and causal attribution.
+assumption. Once a departure is included in the personal income tax loss
+calculation and assigned a positive attribution rate, the calculator attributes
+some future income tax loss to the tax episode. That is a much stronger claim
+than simply observing that a billionaire left the state. The public interface
+therefore presents California income tax effects as an optional second-stage
+analysis after the wealth tax base is defined, with explicit assumptions about
+mover status, timing, legal effectiveness, and causal attribution.
 
 ## Discounting and payment timing
 
 The calculator separates nominal wealth growth from the real discount rate and
 converts nominal growth into real growth using a 2.5 percent inflation
 assumption. This is more transparent than collapsing discounting and growth
-into a single spread, though users may still compare their implied values with
-the Rauh paper's 1.5 percent to 4.5 percent range.
+into a single spread, and the interface reports the implied $r - g$ alongside
+the Rauh paper's 1.5 percent to 4.5 percent range. When growth at or above
+the discount-plus-return rate makes a perpetual-horizon loss unbounded, the
+calculator says so explicitly rather than reporting a finite number.
 
 The calculator also lets users compare lump-sum payment with the initiative's
 five-installment option. Because installments carry a 7.5 percent charge on
 the unpaid balance, payment timing changes the present value of receipts as
 well as the nominal amount collected.
 
-# What the calculator shows today
+# Illustrative output at the draft snapshot
 
-As of the stored Forbes snapshot for March 30, 2026, the calculator's default
-opening state is an unnamed corrected-current baseline. It uses the latest
-Forbes data, the adjusted base after announced departures, excludes directly
-held real estate, and adds no extra non-migration erosion or additional modeled
-departures.
+Using the stored Forbes snapshot for March 30, 2026, an illustrative corrected
+baseline uses that snapshot's Forbes data, the adjusted base after announced
+departures, excludes directly held real estate, and adds no extra
+non-migration erosion or additional modeled departures.
 
-Under that baseline, the calculator reports:
+Under that illustrative baseline, the calculator reports:
 
 - gross one-time wealth tax of about $70.6 billion
 - if one attributes already-observed movers to the policy, annual California
   income tax loss of about $0.9 billion
-- a net fiscal effect of about $53.8 billion under the current discounting
-  setup and current PIT attribution assumptions
+- a net fiscal effect of about $53.8 billion under those discounting and
+  personal income tax attribution assumptions
 
 The named presets remain reference points rather than default claims. The
 Berkeley-style preset keeps the paper-date raw Forbes base, leaves real estate
@@ -258,9 +265,10 @@ migration question.
 
 This draft has five clear limitations.
 
-First, the calculator still combines wealth-tax base construction and
-California income tax attribution more tightly than it should. A cleaner
-public interface would stage those two questions separately.
+First, the calculator still uses a simplified public-data representation of
+California income tax exposure. It now lets users choose which named movers
+enter that second-stage calculation, but it does not observe each taxpayer's
+actual Franchise Tax Board income-tax liability.
 
 Second, the calculator does not yet expose a direct Rauh-style Franchise Tax
 Board income tax range as a user-facing alternative to the PolicyEngine-derived
