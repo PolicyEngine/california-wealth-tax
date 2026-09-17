@@ -1,50 +1,56 @@
 ---
-title: "Scoring California's proposed Billionaire Tax Act: a transparent comparison of static, migration, and valuation assumptions"
+title: "Scoring California's Proposition 40 billionaire tax: one model for the static, migration, and valuation assumptions"
 author:
   - name: "Max Ghenis"
     affiliation: "PolicyEngine"
-date: "March 31, 2026"
+date: "September 17, 2026"
 bibliography: references.bib
 abstract: |
-  California's proposed Billionaire Tax Act would impose a one-time 5 percent
-  tax on net worth above $1 billion for California residents as of January 1,
-  2026. Public estimates of its fiscal effect differ sharply. A Berkeley team
-  reports a roughly $100 billion static score, while Rauh et al. estimate a
-  much smaller revenue range and a negative mean net present value once future
-  California income tax losses are included. This paper documents the
-  assumptions behind a new PolicyEngine calculator designed to make those
-  disagreements explicit. The paper argues that the public analysis should be
-  staged in two parts. The first defines the taxable wealth base and computes
-  one-time wealth tax receipts. The second optionally adds future California
-  income tax losses, which requires separate assumptions about which
-  departures are legally effective and which are causally attributable to the
-  tax itself. Using the stored March 30, 2026 Forbes snapshot, the
-  calculator's current corrected static baseline yields a gross one-time
-  wealth tax score of about $70.6 billion. If one also attributes the future
-  California income tax losses of already-observed movers to the policy, the
-  current net fiscal effect is about $53.8 billion. The paper's main claim is
-  narrow. The most useful public contribution is not another opaque point
-  estimate, but a transparent framework that shows how each modeling choice
-  changes the score.
+  Proposition 40, on California's November 3, 2026 ballot, would impose a
+  one-time tax of 5 percent of the entire net worth of residents (as of January
+  1, 2026) worth $1 billion or more, valued on December 31, 2026. Public
+  estimates of its fiscal effect run from roughly $100 billion in revenue to a
+  negative net present value once future California income tax losses are
+  counted. This paper documents a PolicyEngine calculator that scores the
+  measure person by person from current Forbes data and exposes each contested
+  assumption as a setting inside one model, so that the Berkeley and Hoover
+  estimates become two parameterizations of the same calculation. The analysis
+  has two stages. The first defines the taxable base and computes one-time
+  receipts. The second optionally adds future California income tax losses,
+  which requires separate assumptions about which departures are legally
+  effective and which are attributable to the tax. On the September 17, 2026
+  Forbes snapshot, the baseline covers 246 people and yields $119.1 billion of
+  one-time revenue. Treating every documented pre-2026 departure and contested
+  residency claim as effective removes $30.6 billion, leaving $88.5 billion.
+  Adding the present value of those movers' California income tax under a 2
+  percent income yield and a 3 percent real discount rate reduces the net
+  present value to $9.7 billion; the income tax assumption, which published
+  estimates place between $0.15 billion and $4.5 billion a year, decides the
+  sign. Every figure in this paper is computed by the calculator's code from a
+  dated snapshot.
 ---
 
 # Introduction
 
-California's proposed Billionaire Tax Act has produced one of the widest gaps
-in recent state tax scoring. Galle et al. [-@galle2025] report a roughly
-$100 billion static score using Forbes data and a 10 percent haircut for
-avoidance or evasion. Rauh et al. build a person-level base,
-adjust the residency roster, model departures, and estimate that the policy may
-have negative net present value once foregone California income tax is counted
-[@rauh2026]. The Legislative Analyst's Office describes the effect only as
-being in the "tens of billions of dollars" [@lao2026].
+California's Proposition 40, the 2026 Billionaire Tax Act, has produced one of
+the widest gaps in recent state tax scoring. Galle et al. [-@galle2025;
+-@galle2026july] report a roughly $100 billion static score using Forbes data
+and a 10 percent haircut for avoidance or evasion. Rauh et al. build a
+person-level base, adjust the residency roster, model departures, and estimate
+that the policy may have negative net present value once foregone California
+income tax is counted [@rauh2026]. The Legislative Analyst's Office expects
+revenue in the "tens of billions of dollars spread over several years" and a
+"possible ongoing decrease of less than $1 billion per year" in income tax
+[@lao2026prop40].
 
-This paper documents a public calculator built at PolicyEngine to make those
-disagreements transparent [@policyengine2026]. The calculator is not a full
-replication of any one paper. It is a common framework that lets users change
-the assumptions that matter most: the billionaire base, contested residency
-classifications, directly held real estate, observed and modeled departures,
-California income tax exposure, payment timing, growth, and discounting.
+This paper documents a public calculator built at PolicyEngine
+[@policyengine2026]. The calculator is one model with its own baseline: the
+statutory base applied person by person, one residency standard applied to
+everyone, and receipts and losses dated and discounted on the same clock. The
+assumptions behind each published estimate are settings inside that model: the
+billionaire base, contested residency claims, directly held real estate,
+observed and modeled departures, California income tax exposure, payment
+timing, growth, and discounting.
 
 The paper's argument is narrow. The main disagreement is not about arithmetic
 inside a shared model. It is about a short list of modeling choices. A useful
@@ -53,19 +59,35 @@ them behind a single headline number.
 
 # The measure and existing estimates
 
-The initiative ties residency to January 1, 2026 and valuation to December 31,
-2026 [@ballot2026]. It phases the tax in from 0 percent at $1.0 billion to 5
-percent at $1.1 billion, excludes directly held real property from net worth,
-and allows either payment with the 2026 return or payment in five annual
+The measure qualified for the November 3, 2026 ballot as Proposition 40
+[@sos2026]. It fixes residency on January 1, 2026 and values net worth on
+December 31, 2026 [@ballot2026]. The tax is 5 percent of the entire net worth
+of an individual worth $1 billion or more; for net worth below $1.1 billion
+the rate falls by 0.1 percentage point for each $2 million of shortfall,
+reaching zero at $1.0 billion (Revenue and Taxation Code section 50301(b) as
+proposed). Real property held directly or through a revocable trust is
+excluded from net worth; real estate held through a business is not. The tax
+is due with the 2026 return, in 2027, either in full or in five annual
 installments with a 7.5 percent nondeductible deferral charge on the unpaid
-balance.
+balance. Receipts go to a reserve fund that is legally separate from the
+General Fund. Propositions 41 and 42, on the same ballot, are drafted so that
+Proposition 40 "could be stopped from becoming law even if it gets yes votes
+from a majority of voters" if either receives more yes votes
+[@lao2026prop40].
 
 The Berkeley estimate takes the broadest and simplest approach. It uses 204
 California billionaires from the October 17, 2025 Forbes list, reports $2.19
 trillion of wealth, multiplies by 5 percent, and applies a 10 percent haircut
 to reach a roughly $100 billion figure in Galle et al. [-@galle2025]. That is a static revenue
 score. It does not separately model departures or future California income tax
-losses.
+losses. The authors' July 2026 update removes Larry Ellison as very likely a
+Florida resident, adds 24 California residents who are not US citizens and
+whom Forbes does not place in a state, and reaches $104 billion on a $2,307
+billion base [@galle2026july]. Boll, Saez and Zucman [-@bsz2026] extend that
+work: they estimate that California billionaires pay about $3 billion a year
+in state income tax, score the measure at $89 billion to $128 billion across
+four scenarios, and put the annual income tax loss from mobility at $0.15
+billion to $0.56 billion.
 
 Rauh et al. construct a narrower and more behaviorally responsive base
 [@rauh2026]. Their paper adjusts the Forbes residency roster, adds an omitted
@@ -75,6 +97,14 @@ billion no-behavior baseline, a $67.5 billion score after six announced
 departures, and a preferred revenue range of roughly $35 billion to $46
 billion once additional migration response is included. The
 paper's Monte Carlo exercise yields a mean net present value of -$24.7 billion.
+Their migration response applies a semi-elasticity of 10.32 per percentage
+point, which Walczak [-@walczak2026] and Boll, Saez and Zucman [-@bsz2026]
+both trace to Brülhart et al.'s Swiss estimate for a permanent annual wealth
+tax, to the measure's 5 percentage points. Galle et al. [-@galle2026response]
+object that this counts a permanent behavioral response against one-time
+revenue; Rauh and Jaros [-@rauhjaros2026] reply that taxpayers respond to the
+expected future tax regime, of which a first levy is evidence. Walczak estimates ongoing
+income tax losses of $3.5 billion to $4.5 billion a year.
 
 Galle et al. [-@itep2026] later published an explainer arguing that most
 publicly discussed billionaire moves should not be treated as legally
@@ -107,31 +137,40 @@ score alone: which departures are legally effective, which departures occur
 early enough to matter for the one-time tax, and what share of observed or
 modeled migration should be attributed to the tax itself.
 
-## Wealth base options
+## The tax base
 
-The model supports three wealth bases.
+The measure taxes people who were California residents on January 1, 2026 on
+their net worth on December 31, 2026. The calculator therefore keeps two
+lists apart. The residency roster is the set of people Forbes placed in
+California on January 1, 2026. The valuation is the latest Forbes estimate
+for each of them, wherever Forbes places them now. A roster member whom Forbes
+has since moved to another state keeps a current valuation and stays in the
+base. A roster member who no longer appears on the Forbes list, which starts
+at $1 billion, is below the threshold and leaves it. People on Forbes's
+California list today who were not yet billionaires on January 1 are added,
+with their January 1 residency inferred from their current listing; on the
+September 17, 2026 snapshot there are 48 people in this group holding $255
+billion. Names are joined on a normalized key, because Forbes adds and drops
+"& family" from display names.
 
-The first is the raw Forbes California list. This best approximates the
-Berkeley static framing. It intentionally keeps the public Forbes
-classification even when later evidence suggests some names are not California
-residents.
+One person is excluded from every base. Forbes lists Larry Ellison in
+Manalapan, Florida, and both Galle et al. [-@galle2026july] and Rauh et al.
+[-@rauh2026] now exclude him.
 
-The second is an alternative base that follows the Rauh or Jaros treatment of
-contested residency cases. Here the model removes names that the Rauh or Jaros
-work identifies as outside the California resident base and adds David Sacks,
-who is omitted from the Forbes California list used in the paper. Whether
-these classifications reflect legally effective changes in domicile is
-contested; Galle et al. [-@itep2026] argue that California's totality-of-ties standard
-makes most of these reclassifications unlikely to hold. This
-should be read as a scenario assumption, not an adjudicated statement of legal
-residency.
+The baseline keeps everyone else on the roster. Eight documented claims that a
+roster member was not a California resident on January 1, 2026 are offered as
+individual adjustments, each shown with its evidence and source: two contested
+residency classifications from Rauh et al., and six reported departures before
+January 1, five of them from Rauh et al.'s Table 6 plus Travis Kalanick, who
+has said on the record that he moved to Texas on December 18, 2025. California
+domicile turns on a closest-connection test, and none of these claims has been
+tested. Galle et al. [-@galle2026response] argue that none of them changes
+residency; Rauh et al. treat all of theirs as effective. The calculator takes
+no position beyond the baseline and reports what each one is worth.
 
-The third is the alternative base after announced departures. This retains the
-contested-residency pool above but also removes names that Rauh and Jaros
-treat as having left California before the January 1, 2026 residency cutoff.
-In the paper-date replication, this means six announced departures. In the
-live calculator, the same structure is applied to the latest stored Forbes
-snapshot using the same metadata overlay.
+Forbes leaves the state blank for most people who are not US citizens, so the
+24 such California residents that Galle et al. count, holding about $150
+billion, are absent from this base.
 
 ## Real estate exclusion and phase-in
 
@@ -142,11 +181,14 @@ For missing cases, it imputes directly held real estate at 0.64 percent of net
 worth, following the median-share approach described by Rauh et al.
 [@rauh2026].
 
-This matters because the initiative does not simply impose a flat 5 percent on
-all reported billionaire wealth. It first excludes directly held real estate
-and then phases the rate in between $1.0 billion and $1.1 billion. A
-person-level application of the statutory rule therefore gives a better answer
-than an aggregate multiplication.
+Both provisions are small in dollars today. Nobody on the September 17, 2026
+roster falls between $1.0 billion and $1.1 billion, so the rate ramp changes
+the score by nothing, and the real estate exclusion as measured is worth $0.41
+billion. The measured exclusion is a lower bound: the underlying data record
+personal residences, and several fortunes built on real estate carry a zero.
+The person-level structure matters for a different reason. Residency claims,
+valuation, and income tax exposure all attach to individuals, and four people
+hold about 40 percent of the base.
 
 ## Behavioral erosion, migration, and timing
 
@@ -161,13 +203,23 @@ distinguish at least four cases: announced pre-January 1 departures, unannounced
 pre-January 1 departures, post-January 1 but pre-vote departures whose effect
 on wealth-tax liability depends on retroactivity litigation, and later
 departures that can affect future California income tax without changing the
-one-time wealth tax. The current calculator only partially separates these
-cases.
+one-time wealth tax. The calculator separates the first and last of these and
+leaves the retroactivity case to the user's choice of adjustments.
 
 Additional modeled migration can be entered either as a direct share of the
 remaining base or via a migration semi-elasticity. The calculator therefore
 lets users compare the paper's linearized share-loss framing with an exact
 finite-change semi-elasticity mapping of `1 - exp(-epsilon times tau)`.
+
+A semi-elasticity estimated on a permanent annual wealth tax does not map
+directly onto a one-time levy. A one-time 5 percent tax has the same present
+value as a permanent annual tax of 5 percent times the discount rate, or 0.075
+to 0.225 percentage points a year at real rates of 1.5 to 4.5 percent; at a
+semi-elasticity of 10.32 that implies a base loss of 0.8 to 2.3 percent rather
+than 51.6 percent. The larger figure follows if taxpayers expect the levy to
+recur at the full rate indefinitely. Expected recurrence is therefore the
+parameter in dispute, and the calculator's migration input should be read as
+a statement about it.
 
 This distinction is central to interpreting the Berkeley and Hoover estimates.
 The Berkeley score embeds a reduced-form haircut in a static wealth tax
@@ -190,6 +242,12 @@ to Franchise Tax Board data [@rauh2026]. The PolicyEngine implementation
 instead uses a structural income-to-tax mapping. The benefit is consistency
 across scenarios. The cost is that the Rauh path in the calculator is best
 understood as Rauh-calibrated rather than as a direct FTB-data implementation.
+The default income yield of 2 percent reproduces the level of Rauh et al.'s
+estimate. Boll, Saez and Zucman [-@bsz2026] measure about 1.5 percent for
+California billionaires as a group and about 0.3 percent for Page, Brin, and
+Zuckerberg, whose wealth is mostly unrealized gains and who account for most
+of the wealth in the reported departures. A single yield therefore overstates
+the income tax at stake from the largest movers.
 
 More importantly, any California income tax module embeds a causality
 assumption. Once a departure is included in the PIT-loss calculation, the
@@ -202,41 +260,50 @@ and causal attribution.
 
 ## Discounting and payment timing
 
+Cash flows are indexed in years from 2026, the valuation year. The tax is due
+with the 2026 return, and the measure contemplates estimated payments in April
+2027 and final payments in October 2027, so the first receipt arrives in year
+one; the first lost income tax return is filed in the same year. With stage
+two off, the calculator reports nominal receipts, as a budget table would.
+With stage two on, both legs move to present value as of 2026.
+
 The calculator separates nominal wealth growth from the real discount rate and
 converts nominal growth into real growth using a 2.5 percent inflation
-assumption. This is more transparent than collapsing discounting and growth
-into a single spread, though users may still compare their implied values with
-the Rauh paper's 1.5 percent to 4.5 percent range.
+assumption, so users can compare their implied spread with Rauh et al.'s 1.5
+percent to 4.5 percent range.
 
-The calculator also lets users compare lump-sum payment with the initiative's
-five-installment option. Because installments carry a 7.5 percent charge on
-the unpaid balance, payment timing changes the present value of receipts as
-well as the nominal amount collected.
+Installments carry a 7.5 percent charge on the unpaid balance. Per $100 of
+liability they return $115 in nominal receipts, and because the charge exceeds
+any plausible discount rate they are worth more to the state in present value
+than the lump sum.
 
-# What the calculator shows today
+# What the calculator shows
 
-As of the stored Forbes snapshot for March 30, 2026, the calculator's default
-opening state is an unnamed corrected-current baseline. It uses the latest
-Forbes data, the adjusted base after announced departures, excludes directly
-held real estate, and adds no extra non-migration erosion or additional modeled
-departures.
+All figures use the Forbes snapshot for September 17, 2026 and are written by
+`scripts/paper_numbers.mjs`; a test fails if this text and the code disagree.
 
-Under that baseline, the calculator reports:
+The baseline covers 246 people with combined net worth of $2,389 billion and
+yields $119.1 billion of one-time revenue, or $107.2 billion after a 10
+percent erosion haircut of the kind Galle et al. apply.
 
-- gross one-time wealth tax of about $70.6 billion
-- if one attributes already-observed movers to the policy, annual California
-  income tax loss of about $0.9 billion
-- a net fiscal effect of about $53.8 billion under the current discounting
-  setup and current PIT attribution assumptions
+Applying all eight residency adjustments removes $30.6 billion, leaving $88.5
+billion from 238 people. Two people, Larry Page and Sergey Brin, account for
+most of that difference.
 
-The named presets remain reference points rather than default claims. The
-Berkeley-style preset keeps the paper-date raw Forbes base, leaves real estate
-in the base, and applies a 10 percent non-migration haircut. The Rauh-style
-preset uses the contested-residency paper-date base after announced
-departures, excludes directly held real estate, and carries
-additional migration through to future California income tax losses. The
-calculator does not claim either preset is the correct answer. Its purpose is
-to show which assumptions move the result.
+Stage two, on the adjusted base: with a 2 percent income yield, full
+attribution of the movers' income tax to the measure, a 3 percent real
+discount rate, no growth, no return migration, and a perpetual horizon, the
+movers' California income tax is $2.29 billion a year. Receipts are worth
+$85.9 billion in present value and the lost income tax $76.2 billion, for a
+net present value of $9.7 billion. At the Legislative Analyst's ceiling of $1
+billion a year the same base nets about $53 billion; at Walczak's $4.5 billion
+it is negative by more than $60 billion. Within this model the income tax
+assumption decides the sign.
+
+The Berkeley and Hoover starting points in the calculator apply those papers'
+assumptions to this roster. They do not reproduce the papers' rosters: Galle
+et al.'s includes non-citizen residents that Forbes does not place in a
+state, and Rauh et al.'s is fixed at October 17, 2025.
 
 # Valuation remains the largest open issue
 
@@ -256,32 +323,40 @@ migration question.
 
 # Limitations and extensions
 
-This draft has five clear limitations.
+First, several provisions of the measure are not modeled: optional deferral
+accounts for taxpayers whose tax exceeds their publicly traded assets, which
+defer tax without interest until assets are distributed; the alternative
+apportionment petition with its 25 percent floor; the presumptive valuation of
+private businesses at book value plus 7.5 times average profits; limits on
+deductible debt; aggregation of spouses; and the flat 5 percent rate on
+certain trusts. The first of these changes the timing of receipts from
+founders of private companies.
 
-First, the calculator still combines wealth-tax base construction and
-California income tax attribution more tightly than it should. A cleaner
-public interface would stage those two questions separately.
+Second, the base omits California residents who are not US citizens, because
+Forbes does not place them in a state.
 
-Second, the calculator does not yet expose a direct Rauh-style Franchise Tax
-Board income tax range as a user-facing alternative to the PolicyEngine-derived
-income tax path.
+Third, the real estate data record personal residences, so the exclusion is a
+lower bound.
 
-Third, the model does not yet isolate a separate valuation wedge between
-Forbes-measured wealth and tax-reported wealth.
+Fourth, the calculator does not separate a valuation wedge between Forbes
+estimates and values reported to the Franchise Tax Board, in either direction,
+from the erosion haircut, and it holds wealth at the snapshot value unless the
+user sets a growth rate to December 31, 2026.
 
-Fourth, the model does not attempt to forecast litigation or constitutional
-outcomes around the initiative's retroactive structure except through rough
-scenario choices.
+Fifth, a single income yield is applied to everyone, which overstates the
+income tax at stake from founders whose wealth is unrealized.
 
-Fifth, this paper is a methods note built around a public tool. It does not
-claim to settle the correct revenue score for California's proposed wealth tax.
-Its narrower goal is to identify the assumptions that drive the result and make
-them inspectable.
+Sixth, the headline nets reserve fund receipts against General Fund income
+tax. The measure makes those funds legally separate, and only the income tax
+side enters the state's school funding guarantee.
+
+Seventh, the model does not forecast the outcome of Propositions 41 and 42,
+the validation action the measure provides for, or later litigation.
 
 # Conclusion
 
-California's proposed Billionaire Tax Act should not be summarized by a single
-number without showing the assumptions underneath it. Reasonable choices about
+Proposition 40 should not be summarized by a single number without showing the
+assumptions underneath it. Reasonable choices about
 the billionaire base, contested residency cases, directly held real estate,
 migration, income tax exposure, valuation, and discounting are enough to move
 the estimate from a roughly $100 billion static score to a much smaller figure
