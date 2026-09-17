@@ -179,6 +179,7 @@ export default function Wizard({
   ballotMeasureUrl,
   berkeleyPaperUrl,
   hooverPaperUrl,
+  laoAnalysisUrl,
   customSnapshotDate,
   snapshotDateMin,
   snapshotDateMax,
@@ -241,31 +242,53 @@ export default function Wizard({
           <StepShell
             stepIndex={clampedStep}
             totalSteps={steps.length}
-            title="What the ballot measure does"
+            title="What Proposition 40 does"
             subtitle="This wizard first scores the one-time wealth tax, then optionally adds future California income tax effects."
           >
             <div className="rounded-2xl border border-[var(--gray-200)] bg-white px-5 py-4 text-sm leading-6 text-[var(--gray-600)]">
               <p>
-                The measure would impose a one-time 5% tax on net worth above
-                $1 billion for California residents as of January 1, 2026.
-                Wealth is measured on December 31, 2026.
+                Proposition 40, on the November 3, 2026 ballot, imposes a
+                one-time tax of 5% of the entire net worth of California
+                residents (as of January 1, 2026) whose net worth is $1 billion
+                or more. Wealth is measured on December 31, 2026.
               </p>
               <p className="mt-3">
-                It phases in from 0% at $1.0 billion to 5% at $1.1 billion,
-                excludes directly held real property from net worth, and lets
-                taxpayers either pay with the 2026 return or in five annual
-                installments with a 7.5% nondeductible deferral charge.
+                Between $1.0 billion and $1.1 billion the rate ramps from 0% to
+                5% (0.1 point per $2 million, RTC §50301(b)). Directly held
+                real property is excluded from net worth. The tax is due with
+                the 2026 return in 2027, in full or in five annual
+                installments with a 7.5% nondeductible charge on the unpaid
+                balance.
+              </p>
+              <p className="mt-3">
+                Propositions 41 and 42, on the same ballot, are drafted to
+                block Proposition 40 if either receives more yes votes. The
+                Legislative Analyst&apos;s Office expects revenue in the
+                &ldquo;tens of billions of dollars spread over several
+                years&rdquo; and a possible ongoing income-tax decrease of
+                &ldquo;less than $1 billion per year.&rdquo;
               </p>
             </div>
-            <a
-              href={ballotMeasureUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-            >
-              Ballot measure text
-              <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={ballotMeasureUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                Measure text
+                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+              </a>
+              <a
+                href={laoAnalysisUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+              >
+                LAO analysis
+                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-70" />
+              </a>
+            </div>
           </StepShell>
         );
 
@@ -275,27 +298,27 @@ export default function Wizard({
             stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Choose a starting point"
-            subtitle="Each option uses different assumptions. The estimate updates live as you adjust."
+            subtitle="One model, three sets of assumptions. The estimate updates live as you adjust."
           >
+            <OptionCard
+              selected={path === "custom"}
+              onClick={() => choosePath("custom")}
+              title="PolicyEngine baseline"
+              description="Current Forbes data, everyone listed in California on January 1, 2026, directly held real estate excluded, no behavioral response. Walk through each assumption and set your own."
+            />
             <OptionCard
               selected={path === "berkeley"}
               onClick={() => choosePath("berkeley")}
-              title="Berkeley (Saez et al.)"
-              description="Broad tax base, 10% avoidance haircut, no migration modeling. Closest to the ~$100B headline."
+              title="Berkeley assumptions (Galle, Gamage, Saez, Shanske)"
+              description="Their October 2025 Forbes list, real estate left in, a 10% avoidance haircut, no migration response. Their own July 2026 roster adds 24 non-citizen residents and reaches about $104B."
               href={berkeleyPaperUrl}
             />
             <OptionCard
               selected={path === "hoover"}
               onClick={() => choosePath("hoover")}
-              title="Hoover (Rauh et al.)"
-              description="Narrower base with residency adjustments, migration response, and future income tax effects."
+              title="Hoover assumptions (Rauh et al.)"
+              description="Their October 2025 list, every documented pre-January 1 departure treated as effective, further migration, and future income-tax losses in present value."
               href={hooverPaperUrl}
-            />
-            <OptionCard
-              selected={path === "custom"}
-              onClick={() => choosePath("custom")}
-              title="Custom"
-              description="Walk through each assumption and set your own values."
             />
           </StepShell>
         );
@@ -318,7 +341,7 @@ export default function Wizard({
               selected={params.snapshotDate === paperDate}
               onClick={() => update("snapshotDate", paperDate)}
               title="Paper snapshot (2025-10-17)"
-              description="Matches the Forbes data used in Saez and Rauh papers, for replication."
+              description="The Forbes list the Berkeley and Hoover papers scored, for replication."
             />
             <OptionCard
               selected={
@@ -368,7 +391,7 @@ export default function Wizard({
             stepIndex={clampedStep}
             totalSteps={steps.length}
             title="Residency adjustments"
-            subtitle="Toggle names to see the estimate change. Whether these establish a legal change of domicile is debated."
+            subtitle="The baseline keeps everyone Forbes listed in California on January 1, 2026. Each item below is a documented claim that someone was not a resident that day; remove them to see the effect."
           >
             {[
               {
@@ -401,8 +424,23 @@ export default function Wizard({
                           : "border-[var(--gray-200)] bg-white"
                       }`}
                     >
-                      <span className="text-sm font-semibold text-[var(--gray-700)]">
-                        {adj.name}
+                      <span className="min-w-0 text-sm">
+                        <span className="font-semibold text-[var(--gray-700)]">
+                          {adj.name}
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-[var(--gray-500)]">
+                          {adj.summary}{" "}
+                          {adj.sourceUrl && (
+                            <a
+                              href={adj.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-[var(--teal-600)] hover:text-[var(--teal-700)]"
+                            >
+                              Source
+                            </a>
+                          )}
+                        </span>
                       </span>
                       <button
                         type="button"
@@ -421,8 +459,11 @@ export default function Wizard({
               </div>
             ))}
             <p className="text-xs leading-5 text-[var(--gray-500)]">
-              Default includes all. Galle et al. argue none should be excluded;
-              Rauh &amp; Jaros exclude the full list.
+              California domicile turns on a closest-connection test, and none
+              of these claims has been tested. Galle, Gamage, Saez and Shanske
+              argue none changes residency; Rauh et al. treat all of them as
+              effective. Larry Ellison is out of every base: Forbes lists him in
+              Florida and both published estimates now exclude him.
             </p>
           </StepShell>
         );
@@ -454,9 +495,10 @@ export default function Wizard({
                 </ToggleChip>
               </div>
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                The ballot text excludes directly held real property from net
-                worth. Leaving it in gets you closer to the Berkeley-style
-                paper headline.
+                The measure excludes real property held directly or through a
+                revocable trust (RTC §50303(c)(4)); real estate held through a
+                business stays in. The exclusion as measured here is small:
+                about 0.35% of the base. The Berkeley estimate leaves it in.
               </p>
             </div>
 
@@ -716,7 +758,7 @@ export default function Wizard({
               </div>
               <input
                 type="range"
-                min={0.005}
+                min={0.001}
                 max={0.05}
                 step={0.001}
                 value={params.incomeYieldRate}
@@ -726,9 +768,14 @@ export default function Wizard({
                 className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--gray-100)] accent-[var(--teal-600)]"
               />
               <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Rauh et al. estimate $3.3B–$5.8B/yr in CA PIT from this
-                cohort using FTB data. The 2% midpoint calibration is
-                the default.
+                Taxable income as a share of wealth, taxed at
+                PolicyEngine&apos;s California rates. Reference points for all
+                California billionaires together: Rauh et al. extrapolate
+                $3.3B–$5.8B a year from FTB data (about 2% of wealth as
+                income); Boll, Saez and Zucman measure about $3B (about 1.5%),
+                and $269M in 2025 for Page, Brin and Zuckerberg combined (about
+                0.3%), whose wealth is mostly unrealized gains. The Legislative
+                Analyst expects an ongoing loss below $1B a year.
               </p>
             </div>
 

@@ -42,9 +42,12 @@ import liveData from "@/data/billionaires_live.json";
 import liveMetadata from "@/data/billionaires_live_meta.json";
 import snapshotIndex from "@/public/snapshots/index.json";
 import residencyRosterData from "@/public/snapshots/2026-01-01.json";
+import rosterValuations from "@/data/roster_valuations.json";
 
 const BALLOT_MEASURE_URL =
   "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
+const LAO_ANALYSIS_URL =
+  "https://lao.ca.gov/BallotAnalysis/Proposition?number=40&year=2026";
 
 // CBO CPI-U forecast via PolicyEngine: ~2.45% annualized 2026–2030.
 // Used to convert nominal wealth growth to real for PV discounting.
@@ -246,9 +249,10 @@ const WaterfallChart = dynamic(() => import("@/app/components/WaterfallChart"), 
 
 const PRESETS = {
   saez: {
-    label: "Saez headline",
-    description: "Applies Saez-style static assumptions to the calculator.",
-    href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxDec25.pdf",
+    label: "Berkeley assumptions",
+    description:
+      "Applies the Galle, Gamage, Saez and Shanske static assumptions to this calculator's roster.",
+    href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxJuly26.pdf",
     params: {
       snapshotDate: PAPER_DATE,
       residencyExclusionIds: [],
@@ -268,9 +272,10 @@ const PRESETS = {
     },
   },
   rauh: {
-    label: "Rauh headline",
-    description: "Applies Rauh-style departures and PIT assumptions.",
-    href: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6340778",
+    label: "Hoover assumptions",
+    description:
+      "Applies the Rauh et al. departure and income-tax assumptions to this calculator's roster.",
+    href: "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed",
     params: {
       snapshotDate: PAPER_DATE,
       residencyExclusionIds: normalizeResidencyExclusionIds([
@@ -469,8 +474,19 @@ export default function Home() {
       buildResidencyRosterValuationRows({
         residencyRows: residencySnapshotRows,
         valuationRows: valuationSnapshotRows,
+        // The all-states valuations are fetched with the live snapshot, so
+        // they only describe that date.
+        rosterValuations:
+          params.snapshotDate === LIVE_DATE &&
+          rosterValuations.sourceDate === LIVE_DATE
+            ? rosterValuations
+            : null,
+        // People who crossed $1 billion after January 1, 2026 owe the tax if
+        // they were residents that day; before the roster date the concept
+        // does not apply.
+        includeNewEntrants: params.snapshotDate > RESIDENCY_ROSTER_DATE,
       }),
-    [residencySnapshotRows, valuationSnapshotRows]
+    [residencySnapshotRows, valuationSnapshotRows, params.snapshotDate]
   );
   const excludedNames = useMemo(
     () => residencyExcludedNamesFromIds(params.residencyExclusionIds),
@@ -661,9 +677,7 @@ export default function Home() {
 
     return 1;
   }, [additionalExcludedWealthMaxB]);
-  const headlineValue = pitEffectsEnabled
-    ? result.netFiscalImpact
-    : result.pvWealthTaxReceipts;
+  const headlineValue = result.headlineValue;
   const attributedMoverIncomeTaxB =
     micro.moverIncomeTaxB * params.incomeTaxAttributionRate;
   const shareHref = useMemo(() => {
@@ -691,31 +705,31 @@ export default function Home() {
   const startingPointMeta = useMemo(() => {
     if (wizardPath === "berkeley") {
       return {
-        label: "Berkeley (Saez et al.)",
+        label: "Berkeley assumptions",
         href: PRESETS.saez.href,
       };
     }
 
     if (wizardPath === "hoover") {
       return {
-        label: "Hoover (Rauh et al.)",
+        label: "Hoover assumptions",
         href: PRESETS.rauh.href,
       };
     }
 
     if (wizardPath === "custom") {
       return {
-        label: "Custom",
+        label: "PolicyEngine baseline",
         href: null,
       };
     }
 
     return {
       label: activePreset === "saez"
-        ? "Berkeley (Saez et al.)"
+        ? "Berkeley assumptions"
         : activePreset === "rauh"
-          ? "Hoover (Rauh et al.)"
-          : "Custom",
+          ? "Hoover assumptions"
+          : "PolicyEngine baseline",
       href:
         activePreset === "saez"
           ? PRESETS.saez.href
@@ -852,11 +866,14 @@ export default function Home() {
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="max-w-3xl">
                 <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--gray-700)]">
-                  California wealth tax fiscal impact calculator
+                  California Proposition 40 billionaire tax calculator
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--gray-500)]">
-                  Compare one-time wealth-tax assumptions, then optionally add
-                  future California income-tax effects from migration.
+                  Scores the one-time tax on the November 3, 2026 ballot
+                  person by person from current Forbes data, then optionally
+                  adds future California income-tax effects from migration.
+                  Every assumption is adjustable, including the ones behind
+                  the Berkeley and Hoover estimates.
                 </p>
               </div>
               <div className="inline-flex rounded-full border border-[var(--gray-200)] bg-[var(--gray-50)] p-1">
@@ -949,6 +966,7 @@ export default function Home() {
                   liveDate={LIVE_DATE}
                   paperDate={PAPER_DATE}
                   ballotMeasureUrl={BALLOT_MEASURE_URL}
+                  laoAnalysisUrl={LAO_ANALYSIS_URL}
                   berkeleyPaperUrl={PRESETS.saez.href}
                   hooverPaperUrl={PRESETS.rauh.href}
                   customSnapshotDate={DEFAULT_CUSTOM_SNAPSHOT_DATE}
@@ -1546,24 +1564,11 @@ export default function Home() {
             </div>
 
             <aside className="self-start rounded-[28px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_30px_80px_-48px_rgba(40,94,97,0.55)] xl:sticky xl:top-6">
-              {!wizardHasPath ? (
-                <>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
-                    Estimated fiscal impact
-                  </p>
-                  <div className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-[var(--gray-300)]">
-                    Select a starting point
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
-                    Choose Berkeley, Hoover, or Custom to see the estimated fiscal impact update in real time.
-                  </p>
-                </>
-              ) : (
               <>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
                 {pitEffectsEnabled
-                  ? "Net fiscal impact"
-                  : "One-time wealth-tax score"}
+                  ? "Net fiscal impact (present value)"
+                  : "One-time wealth-tax revenue"}
               </p>
               <div
                 className={`mt-6 text-5xl font-semibold tracking-[-0.05em] ${
@@ -1576,17 +1581,24 @@ export default function Home() {
               </div>
               <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
                 {pitEffectsEnabled
-                  ? "Includes the optional present value of attributed future California income-tax losses."
-                  : "Excludes future California income-tax losses and reports the present value of one-time wealth-tax receipts only."}
+                  ? "Wealth-tax receipts less attributed future California income-tax losses, both in present value as of 2026. Receipts go to a reserve fund that is legally separate from the General Fund, where income tax is collected."
+                  : "Nominal receipts, first due with 2026 returns in 2027. Excludes future California income-tax losses."}
               </p>
+              {!wizardHasPath && (
+                <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
+                  PolicyEngine baseline: Forbes data as of {LIVE_DATE}, everyone
+                  Forbes listed in California on January 1, 2026 plus residents
+                  who have since crossed $1 billion, directly held real estate
+                  excluded, no behavioral response. Pick a starting point to
+                  change any of it.
+                </p>
+              )}
 
               <div className="mt-8">
                 <WaterfallChart waterfall={result.waterfall} />
               </div>
               </>
-              )}
 
-              {wizardHasPath && (
               <details className="mt-6 text-sm text-[var(--gray-600)]">
                 <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
                   Derivation
@@ -1619,7 +1631,13 @@ export default function Home() {
                     </div>
                   )}
                   <div className="flex items-center justify-between py-2">
-                    <span>PV of wealth-tax receipts</span>
+                    <span>People in the tax base</span>
+                    <span className="font-semibold text-[var(--gray-700)]">
+                      {micro.wealthTaxBaseRows.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span>PV of wealth-tax receipts (as of 2026)</span>
                     <span className="font-semibold text-[var(--gray-700)]">
                       {formatBillions(result.pvWealthTaxReceipts)}
                     </span>
@@ -1641,14 +1659,54 @@ export default function Home() {
                   </>
                   )}
                 </div>
+                <BaseNotes notes={micro.baseNotes} />
               </details>
-              )}
             </aside>
           </div>
           )}
         </div>
       </main>
     </div>
+  );
+}
+
+function BaseNotes({ notes }) {
+  const lines = [];
+
+  if (notes.assumedResidencyCount > 0) {
+    lines.push(
+      `${notes.assumedResidencyCount} people (${formatBillions(notes.assumedResidencyWealthB)}) crossed $1 billion after January 1, 2026. They are on Forbes' California list now and are assumed to have been residents that day.`
+    );
+  }
+
+  if (notes.anyStateValuedCount > 0) {
+    lines.push(
+      `${notes.anyStateValuedCount} people (${formatBillions(notes.anyStateValuedWealthB)}) were on Forbes' California list on January 1, 2026 and are listed elsewhere now. They stay in the base at their current Forbes worth unless removed under residency adjustments.`
+    );
+  }
+
+  if (notes.offForbesListCount > 0) {
+    lines.push(
+      `${notes.offForbesListCount} people from the January 1 list are no longer on the Forbes list, which starts at $1 billion. They owe nothing under the rate ramp and are out of the base.`
+    );
+  }
+
+  if (notes.frozenRosterCount > 0) {
+    lines.push(
+      `${notes.frozenRosterCount} people (${formatBillions(notes.frozenRosterWealthB)}) are missing from this snapshot and are carried at their January 1, 2026 value.`
+    );
+  }
+
+  lines.push(
+    "Forbes leaves the state blank for most non-US citizens. Galle, Gamage, Saez and Shanske count 24 such California residents holding about $150 billion; they are not in this base."
+  );
+
+  return (
+    <ul className="mt-4 space-y-2 border-t border-[var(--gray-100)] pt-4 text-xs leading-5 text-[var(--gray-500)]">
+      {lines.map((line) => (
+        <li key={line}>{line}</li>
+      ))}
+    </ul>
   );
 }
 
