@@ -5,9 +5,9 @@ import { formatBillions } from "@/lib/format";
 
 export default function AssumptionBridge({ bridge, snapshotDate }) {
   const waterfall = [
-    { label: "Berkeley assumptions", value: bridge.startValue },
+    { label: "Berkeley", value: bridge.startValue },
     ...bridge.contributions.map((step) => ({
-      label: step.label,
+      label: step.shortLabel,
       value: step.value,
     })),
   ];
@@ -36,7 +36,7 @@ export default function AssumptionBridge({ bridge, snapshotDate }) {
 
       <WaterfallChart
         waterfall={waterfall}
-        totalLabel="Hoover assumptions"
+        totalLabel="Hoover"
         height={380}
       />
 
