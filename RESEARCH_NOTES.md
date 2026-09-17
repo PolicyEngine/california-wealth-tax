@@ -1,19 +1,28 @@
 # Research notes: California wealth tax fiscal impact model
 
-## The bill
+## The measure
 
-The 2026 California Billionaire Tax Act (Initiative 25-0024) proposes a one-time 5% excise tax on worldwide net worth exceeding $1 billion for California residents as of January 1, 2026.
+Proposition 40 on the November 3, 2026 ballot (Initiative 25-0024A1, the 2026 Billionaire Tax Act; eligible June 17, certified June 25, 2026). It imposes a one-time tax of 5% of the **entire** net worth of California residents (as of January 1, 2026) worth $1 billion or more. There is no exemption for the first $1 billion: RTC §50301(b) as proposed reduces the *rate* by 0.1 percentage point per $2 million by which net worth falls below $1.1 billion, reaching 0% at $1.0 billion.
 
-Official filing:
-- **[Initiative text (Amdt. 1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
+Official sources:
+- **[Measure text (25-0024A1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
+- **[LAO ballot analysis](https://lao.ca.gov/BallotAnalysis/Proposition?number=40&year=2026)**: "tens of billions of dollars spread over several years"; "possible ongoing decrease of less than $1 billion per year" in income tax
+- Propositions 41 and 42 on the same ballot can stop Proposition 40 from becoming law if either receives more yes votes (LAO).
 
 Key provisions:
-- **Valuation date**: December 31, 2026 (not the Forbes snapshot date)
-- **Phase-in**: Rate ramps linearly from 0% at $1B to 5% at $1.1B net worth
-- **Real estate exclusion**: Directly held real property is excluded (already subject to property tax)
-- **Threshold excludes directly held RE**: The initiative excludes directly held real property from "net worth," so the phase-in applies after that exclusion
-- **Payment**: Payable in annual installments of 1%/year over 5 years (with deferral charge)
-- **Residency**: Based on CA resident/part-year resident status as of January 1, 2026; residency is determined by subjective and objective factors, not a simple address change
+- **Residency date**: January 1, 2026 (§50308(n)). Apportionment is 100% with no part-year proration (§50306(a)); §50306(b) allows a petition for alternative apportionment with a 25% floor. Not modeled.
+- **Valuation date**: December 31, 2026 (§50308(o)), not the Forbes snapshot date
+- **Rate ramp**: 0% at $1.0B to 5% at $1.1B, applied to the whole net worth
+- **Real property exclusion**: held directly or through a revocable trust only (§50303(c)(4)); real estate held through a business is taxable. Applied before the ramp.
+- **Payment**: due with the 2026 return in 2027 (§50312(i) contemplates April 2027 estimates and October 2027 final payments), in full or in five equal annual installments with a 7.5% nondeductible charge on the remaining unpaid balance (§50301(c))
+- **Not modeled**: optional deferral accounts (§50304), the private-business valuation presumption (book value + 7.5 × three-year average profits, §50303(c)(3)), debt limits (§50302), spousal aggregation (§50301(a), §50308(f)), trusts at a flat 5% (§50308(b)), the $5M personal-asset and retirement exclusions
+- **Funds**: receipts go to a reserve fund legally separate from the General Fund (Art. XIII §37(e)–(g))
+
+## What changed after the two papers (as of September 17, 2026)
+
+- **Berkeley**: July 20, 2026 [expert report](https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxJuly26.pdf) removes Ellison, adds 24 non-citizen residents (~$150B), $2,307B base, $104B after a 10% haircut. [Response to Rauh et al.](https://eml.berkeley.edu/~saez/responsetorauh26.pdf) (March 17). [Boll, Saez and Zucman, NBER 35218](https://eml.berkeley.edu/~saez/BSZ26CAbillionaires.pdf): $89–128B across four scenarios, income tax loss $0.15–0.56B/yr, cites this calculator in footnote 21. Daily tracker at cabillionairetracker.org.
+- **Hoover**: NPV paper unchanged since March 17. June 2026 2% supplement in the [replication repo](https://github.com/bjaros20/wealth_tax); [reply on expected recurrence](https://fiscalrealitycheck.substack.com/p/the-commitment-problem-at-the-heart) (April 17). The 10.32 semi-elasticity is Brülhart et al.'s permanent-annual-tax estimate (43% per point × 24% migration share) applied to 5 points.
+- **CalTax (Walczak)**: [ongoing loss $3.53–4.49B/yr](https://www.caltax.org/foundation/reports/Revenue-Implications-of-Billionaire-Tax-Act.pdf) (April 22).
 
 ## Two papers
 
