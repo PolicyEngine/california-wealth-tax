@@ -538,7 +538,9 @@ export default function Home() {
   );
   // With no documented departure applied, the modeled response takes the same
   // proportional slice of everyone's income tax under either division, so the
-  // two grids coincide; the division only changes what leaves with named movers.
+  // two grids coincide to display precision (they differ by a few million
+  // through cohort members outside the reachable base); the division only
+  // changes what leaves with named movers.
   const heatmapsCoincide = useMemo(
     () =>
       HEATMAP_SHARES.every((share) =>
@@ -547,7 +549,7 @@ export default function Home() {
             Math.abs(
               heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
                 heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
-            ) < 1e-6
+            ) < 0.05
         )
       ),
     [heatmapEvaluators]
