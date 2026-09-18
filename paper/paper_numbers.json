@@ -21,35 +21,74 @@
   "adjustedGrossB": 90.2,
   "residencyAdjustmentsTaxB": 30.7,
   "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
-  "adjustedAnnualIncomeTaxLostB": 2.32,
+  "adjustedAnnualIncomeTaxLostB": 0.45,
   "adjustedPvReceiptsB": 87.6,
-  "adjustedPvIncomeTaxLostB": 77.4,
-  "adjustedNetB": 10.2,
+  "adjustedPvIncomeTaxLostB": 15,
+  "adjustedNetB": 72.6,
   "adjustedNetAtLaoCeilingB": 54.3,
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
   "installmentReceiptsPer100": 115,
+  "hooverAnnualIncomeTaxLostB": 2.83,
+  "hooverFromFilingsAnnualIncomeTaxLostB": 2.15,
+  "hooverFromFilingsNetB": -15,
+  "fourLargestWealthSharePct": 39.8,
+  "fourLargestByWealthM": 1812,
+  "fourLargestFromFilingsM": 252,
+  "fourLargest": [
+    {
+      "name": "Larry Page",
+      "wealthSharePct": 11.7,
+      "byWealthM": 531,
+      "fromFilingsM": 57
+    },
+    {
+      "name": "Sergey Brin",
+      "wealthSharePct": 10.7,
+      "byWealthM": 489,
+      "fromFilingsM": 37
+    },
+    {
+      "name": "Mark Zuckerberg",
+      "wealthSharePct": 9.6,
+      "byWealthM": 437,
+      "fromFilingsM": 101
+    },
+    {
+      "name": "Jensen Huang",
+      "wealthSharePct": 7.8,
+      "byWealthM": 355,
+      "fromFilingsM": 57
+    }
+  ],
   "bridgeStartB": 106.1,
-  "bridgeEndB": -77.4,
+  "bridgeEndB": -37.8,
   "bridge": [
     {
       "id": "residency",
       "label": "Residency: documented departures",
-      "valueB": -34.6,
-      "minB": -106.9,
-      "maxB": -0.2
+      "valueB": -23.4,
+      "minB": -84.2,
+      "maxB": 5.7
     },
     {
       "id": "migration",
       "label": "Further migration before valuation",
-      "valueB": -80.9,
-      "minB": -172,
-      "maxB": -28
+      "valueB": -70.4,
+      "minB": -139,
+      "maxB": -27.9
     },
     {
       "id": "incomeTax",
-      "label": "Movers' future income tax",
-      "valueB": -76.1,
-      "minB": -134.6,
+      "label": "Count movers' future income tax",
+      "valueB": -47.7,
+      "minB": -94.6,
+      "maxB": 0
+    },
+    {
+      "id": "incomeAllocation",
+      "label": "Who pays the cohort's income tax",
+      "valueB": -10.3,
+      "minB": -39.3,
       "maxB": 0
     },
     {
@@ -62,9 +101,9 @@
     {
       "id": "valuation",
       "label": "Real estate exclusion and growth to valuation",
-      "valueB": -0.1,
+      "valueB": -0.3,
       "minB": -0.4,
-      "maxB": 0.4
+      "maxB": 0
     }
   ]
 }

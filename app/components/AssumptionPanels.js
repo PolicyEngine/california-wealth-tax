@@ -3,6 +3,7 @@
 import Slider from "@/app/components/Slider";
 import { formatBillions } from "@/lib/format";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
+import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 
 const SET_LABELS = {
@@ -80,7 +81,13 @@ export default function AssumptionPanel({
   context,
   onClose,
 }) {
-  const { residencyAdjustments, remainingResidentWealthB, modeledAdditionalDepartureShare, snapshotDate } = context;
+  const {
+    residencyAdjustments,
+    remainingResidentWealthB,
+    modeledAdditionalDepartureShare,
+    snapshotDate,
+    allocationComparison = [],
+  } = context;
 
   let body = null;
 
@@ -286,28 +293,6 @@ export default function AssumptionPanel({
           {params.includeIncomeTaxEffects && (
             <>
               <Slider
-                label="Taxable income as a share of wealth"
-                value={params.incomeYieldRate}
-                onChange={(value) => update("incomeYieldRate", value)}
-                min={0.001}
-                max={0.05}
-                step={0.001}
-                format={percent(1)}
-                quickPicks={[
-                  { label: "Page, Brin, Zuckerberg per SEC filings 0.3%", value: 0.003 },
-                  { label: "All CA billionaires, Boll–Saez–Zucman 1.5%", value: 0.015 },
-                  { label: "Rauh et al. 2%", value: 0.02 },
-                ]}
-              />
-              <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Taxed at PolicyEngine&apos;s California rates. Rauh et al.
-                extrapolate $3.3B–$5.8B a year for the cohort from FTB data;
-                Boll, Saez and Zucman measure about $3B, and $269M in 2025 for
-                Page, Brin and Zuckerberg combined, whose wealth is mostly
-                unrealized gains. The Legislative Analyst expects an ongoing
-                loss below $1B a year.
-              </p>
-              <Slider
                 label="Share of movers' lost income tax caused by the measure"
                 value={params.incomeTaxAttributionRate}
                 onChange={(value) => update("incomeTaxAttributionRate", value)}
@@ -362,6 +347,106 @@ export default function AssumptionPanel({
         </div>
       );
       break;
+
+    case "incomeAllocation": {
+      const method = params.incomeTaxMethod;
+      const usesCohortTotal = method !== INCOME_TAX_METHODS.YIELD;
+
+      body = (
+        <div className="space-y-5">
+          <p className="text-sm leading-6 text-[var(--gray-600)]">
+            The two teams agree on roughly how much California income tax the
+            state&apos;s billionaires pay in total: Rauh et al. estimate $3.3B to
+            $5.8B a year from Franchise Tax Board data, and Boll, Saez and
+            Zucman estimate $4.3B for 2025. They disagree about who pays it,
+            and that decides how much leaves with the people who move.
+          </p>
+          <Field title="How the total is divided">
+            <div className="flex flex-wrap gap-2">
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.FILINGS}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.FILINGS)}
+              >
+                Filings for the four largest, wealth for the rest
+              </ToggleChip>
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.WEALTH}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.WEALTH)}
+              >
+                By wealth (Rauh et al.)
+              </ToggleChip>
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.YIELD}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.YIELD)}
+              >
+                Uniform yield on wealth
+              </ToggleChip>
+            </div>
+          </Field>
+          {usesCohortTotal ? (
+            <Slider
+              label="California income tax paid by the cohort, a year"
+              value={params.cohortIncomeTaxB}
+              onChange={(value) => update("cohortIncomeTaxB", value)}
+              min={1}
+              max={8}
+              step={0.05}
+              format={(value) => `$${value.toFixed(2)}B`}
+              quickPicks={[
+                { label: "Rauh low $3.3B", value: 3.3 },
+                { label: "Boll–Saez–Zucman 2025 $4.3B", value: 4.3 },
+                { label: "Rauh midpoint $4.55B", value: 4.55 },
+                { label: "Rauh high $5.8B", value: 5.8 },
+              ]}
+            />
+          ) : (
+            <Slider
+              label="Taxable income as a share of wealth"
+              value={params.incomeYieldRate}
+              onChange={(value) => update("incomeYieldRate", value)}
+              min={0.001}
+              max={0.05}
+              step={0.001}
+              format={percent(1)}
+            />
+          )}
+          {allocationComparison.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--gray-200)] text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
+                    <th className="py-2 pr-4">California income tax a year</th>
+                    <th className="px-2 py-2 text-right">Share of cohort wealth</th>
+                    <th className="px-2 py-2 text-right">If divided by wealth</th>
+                    <th className="px-2 py-2 text-right">From SEC filings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocationComparison.map((row) => (
+                    <tr key={row.name} className="border-b border-[var(--gray-100)]">
+                      <td className="py-2 pr-4 font-medium text-[var(--gray-700)]">{row.name}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{(row.wealthShare * 100).toFixed(1)}%</td>
+                      <td className="px-2 py-2 text-right tabular-nums">${(row.byWealthB * 1000).toFixed(0)}M</td>
+                      <td className="px-2 py-2 text-right tabular-nums">${(row.filingsB * 1000).toFixed(0)}M</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs leading-5 text-[var(--gray-500)]">
+            Filings figures are Boll, Saez and Zucman&apos;s estimates from SEC
+            disclosures of stock sales, donations and option exercises plus
+            dividends and compensation, averaged over 2023–2025 (their Table 3).
+            Founders whose wealth is unrealized stock report little taxable
+            income relative to it. Dividing the total by wealth instead is Rauh
+            et al.&apos;s f × C: a mover&apos;s loss is their wealth share of the
+            cohort total.
+          </p>
+        </div>
+      );
+      break;
+    }
 
     case "erosion":
       body = (

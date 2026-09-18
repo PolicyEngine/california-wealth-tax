@@ -20,15 +20,15 @@ abstract: |
   which requires separate assumptions about which departures are legally
   effective and which are attributable to the tax. On the September 18, 2026
   Forbes snapshot, the baseline covers 269 people and yields $120.9 billion of
-  one-time revenue. Treating every documented departure and contested
-  residency claim as effective removes $30.7 billion of tax, leaving $90.2
-  billion, and counting the present value of those movers' California income
-  tax under a 2 percent income yield and a 3 percent real discount rate
-  reduces the net present value to $10.2 billion; the income tax assumption,
-  which published estimates place between $0.15 billion and $3.1 billion a
-  year, decides the
-  sign. Every figure in this paper is computed by the calculator's code from a
-  dated snapshot.
+  one-time revenue. Inside one model the Berkeley assumptions give a net
+  present value of $106.1 billion and the Hoover assumptions -$37.8 billion.
+  The two teams agree on roughly how much California income tax the state's
+  billionaires pay in total. They disagree on who pays it. Dividing that total
+  by wealth assigns the four largest fortunes $1,812 million a year; estimates
+  from their securities filings put them at $252 million. Changing that one
+  assumption moves the Hoover case from -$37.8 billion to -$15 billion. Every
+  figure in this paper is computed by the calculator's code from a dated
+  snapshot.
 ---
 
 # Introduction
@@ -260,40 +260,45 @@ of lost California income taxes.
 
 ## California income tax loss
 
-The current calculator maps California income tax loss through PolicyEngine's
-California income tax model rather than directly reproducing Rauh's Franchise
-Tax Board-based estimate. Annual California-taxable income is modeled as a
-share of taxed wealth, and California income tax is then estimated from a
-precomputed lookup at billionaire-scale incomes.
+The two teams' estimates of what California's billionaires pay in state income
+tax overlap. Rauh et al. fit a Pareto tail to Franchise Tax Board data and
+report $3.3 billion to $5.8 billion a year [@rauh2026]. Boll, Saez and Zucman
+[-@bsz2026] combine the same tabulations with an adjustment for the fact that
+top wealth holders are not top income earners and report $2.0 billion to $4.5
+billion across 2019 to 2025, with $4.3 billion in 2025. The calculator takes
+the cohort total as an input, $4.3 billion by default.
 
-This is an explicit methodological choice, not a replication claim. Rauh et
-al. estimate a $3.3 billion to $5.8 billion annual California personal income
-tax contribution from the relevant billionaire cohort using a Pareto-tail fit
-to Franchise Tax Board data, and back out an implied income yield on wealth of
-1.3 to 2.3 percent [@rauh2026]. The PolicyEngine implementation instead uses a
-structural income-to-tax mapping. The benefit is consistency across scenarios.
-The cost is that the Hoover assumption set in the calculator is best
-understood as Rauh-calibrated rather than as a direct FTB-data implementation.
-The default income yield of 2 percent sits inside Rauh et al.'s implied range,
-but this roster is larger than theirs: at 2 percent the baseline cohort pays
-$6.4 billion a year, above their $3.3 billion to $5.8 billion and about double
-the $3 billion a year that Boll, Saez and Zucman [-@bsz2026] measure for 2019
-to 2025 ($4.3 billion in 2025). Boll, Saez and Zucman do not report an income
-yield. They report California income tax of about 0.2 percent of wealth for
-the group and 0.07 percent for the top four, which at the 13.3 percent top
-rate imply yields near 1.5 and 0.5 percent, and one direct ratio: fiscal
-income equal to 0.38 percent of public stock wealth for Page, Brin, and
-Zuckerberg, whose wealth is mostly unrealized gains and who account for most
-of the wealth in the reported departures. A single yield therefore overstates
-the income tax at stake from the largest movers.
+The disagreement is over who pays it. Rauh et al. multiply the cohort total by
+the share of the wealth tax base that departs, so a mover's income tax is
+their share of the cohort's wealth. Boll, Saez and Zucman estimate the
+payments of the four largest fortunes from securities filings: stock sales,
+donations, option exercises, dividends, and compensation. On this roster those
+four people hold 39.8 percent of the cohort's wealth. Dividing a $4.55 billion
+total by wealth assigns them $1,812 million a year; the filings-based
+estimates, averaged over 2023 to 2025, total $252 million. Founders whose
+wealth is unrealized stock report little taxable income relative to it: Boll,
+Saez and Zucman put the fiscal income of Page, Brin, and Zuckerberg at 0.38
+percent of their public stock wealth in 2025.
 
-More importantly, any California income tax module embeds a causality
-assumption. Once a departure is included in the PIT-loss calculation, the
-calculator is effectively attributing that future income tax loss to the tax
-episode. That is a much stronger claim than simply observing that a billionaire
-left the state. The calculator therefore presents California income tax
-effects as an optional second stage after the wealth tax base is defined, with
-its own settings for timing, legal effectiveness, and causal attribution.
+The calculator offers both divisions inside the same model. Under the filings
+method, people with filings-based estimates are assigned those amounts and the
+rest of the cohort total is divided among everyone else by wealth. Under the
+wealth method, the whole total is divided by wealth, which reproduces Rauh et
+al.'s product of the departure fraction and the cohort total. The default
+uses the filings method because it uses person-level evidence where that
+evidence exists. A third method, a uniform income yield taxed at
+PolicyEngine's California rates, remains for links shared before this change;
+at the 2 percent yield those links carried, this roster's cohort pays $6.4
+billion a year, above both teams' totals, because the roster is larger than
+either paper's and the yield ignores who holds the wealth.
+
+Any income tax module also embeds a causality assumption. Counting a
+departure's income tax as lost attributes it to the measure, which is a
+stronger claim than observing that someone left. The calculator therefore
+keeps income tax effects as an optional second stage, ties the loss to the
+user's residency choices so that anyone kept in the base is a resident who
+keeps paying, and exposes attribution, horizon, return migration, and growth
+as separate settings.
 
 ## Discounting and payment timing
 
@@ -330,15 +335,15 @@ Applying all twelve documented departure claims removes $30.7 billion of tax,
 leaving $90.2 billion from 261 people. Two people, Larry Page and Sergey
 Brin, account for most of that difference.
 
-Stage two on the same scenario: with a 2 percent income yield, full
-attribution of the movers' income tax to the measure, a 3 percent real
-discount rate, no growth, no return migration, and a perpetual horizon, the
-movers' California income tax is $2.32 billion a year. Receipts are worth
-$87.6 billion in present value and the lost income tax $77.4 billion, for a
-net present value of $10.2 billion. At the Legislative Analyst's ceiling of $1
-billion a year the same base nets $54.3 billion; at Walczak's $3.1 billion of
-income tax it is -$15.4 billion. Within this model the income tax assumption
-decides the sign.
+Stage two on the same scenario, with the cohort paying $4.3 billion a year
+divided by the filings method, full attribution, a 3 percent real discount
+rate, no growth, no return migration, and a perpetual horizon: the movers'
+California income tax is $0.45 billion a year. Receipts are worth $87.6
+billion in present value and the lost income tax $15 billion, for a net
+present value of $72.6 billion. The annual loss is the assumption that
+decides the sign: at the Legislative Analyst's ceiling of $1 billion a year
+the same base nets $54.3 billion, and at Walczak's $3.1 billion of income tax
+it is -$15.4 billion.
 
 The Berkeley and Hoover starting points in the calculator apply those papers'
 assumptions to this roster. They do not reproduce the papers' rosters: Galle
@@ -351,13 +356,9 @@ calculator holds as its October 17, 2025 snapshot.
 Scoring both sets of assumptions inside one model, on the same people and the
 same data, turns the disagreement into arithmetic. On the September 18, 2026
 snapshot the Berkeley assumptions give a net present value of $106.1 billion
-and the Hoover assumptions give -$77.4 billion. Five assumptions separate
-them. Neither figure is the paper's own: the Berkeley roster adds non-citizen
-residents Forbes does not place in a state, and Rauh et al. score a smaller
-2025 list with fewer named movers and a smaller income-tax base, which is why
-their published mean of -$24.7 billion sits well above this model's reading
-of their assumptions. Because assumptions interact, the value of each depends
-on the order in
+and the Hoover assumptions give -$37.8 billion; Rauh et al. report a mean of
+-$24.7 billion from their own smaller roster. Six assumptions separate the
+two. Because assumptions interact, the value of each depends on the order in
 which they are applied, so the table reports Shapley values: each assumption's
 marginal effect averaged over every ordering. The contributions sum exactly to
 the gap. The last column gives the smallest and largest marginal effect across
@@ -365,21 +366,41 @@ orderings.
 
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
-| Further migration before valuation | -$80.9 | -$172.0 to -$28.0 |
-| Movers' future income tax | -$76.1 | -$134.6 to +$0.0 |
-| Residency: documented departures | -$34.6 | -$106.9 to -$0.2 |
+| Further migration before valuation | -$70.4 | -$139.0 to -$27.9 |
+| Count movers' future income tax | -$47.7 | -$94.6 to +$0.0 |
+| Residency: documented departures | -$23.4 | -$84.2 to +$5.7 |
+| Who pays the cohort's income tax | -$10.3 | -$39.3 to +$0.0 |
 | Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
-| Real estate exclusion and growth to valuation | -$0.1 | -$0.4 to +$0.4 |
+| Real estate exclusion and growth to valuation | -$0.3 | -$0.4 to +$0.0 |
 
 : Bridge from the Berkeley assumptions to the Hoover assumptions, net present value as of 2026 {#tbl-bridge}
 
-Three assumptions carry the gap, and all three concern migration: whether
-reported departures before January 1, 2026 are legally effective, how much
-more wealth leaves before the valuation date, and how much California income
-tax the movers would otherwise have paid. The last two interact, which is why
-their ranges are wide: each additional person assumed to leave also takes an
-income tax stream. The avoidance haircut and the real estate exclusion, which
-occupy much of the public argument about the static score, are small.
+The large steps all concern migration: whether reported departures are
+legally effective, how much more wealth leaves before the valuation date, and
+what income tax leaves with the movers. The avoidance haircut and the real
+estate exclusion, which occupy much of the public argument about the static
+score, are small.
+
+The income tax steps rest on one assumption that the data can speak to.
+@tbl-allocation compares the two divisions of the cohort's income tax for the
+four largest fortunes.
+
+| | Share of cohort wealth | Divided by wealth | From securities filings |
+|---|---|---|---|
+| Larry Page | 11.7% | $531 million | $57 million |
+| Sergey Brin | 10.7% | $489 million | $37 million |
+| Mark Zuckerberg | 9.6% | $437 million | $101 million |
+| Jensen Huang | 7.8% | $355 million | $57 million |
+
+: California income tax a year assigned to the four largest fortunes, with a cohort total of $4.55 billion {#tbl-allocation}
+
+Holding every other Hoover assumption fixed and changing only this division,
+the movers' lost income tax falls from $2.83 billion to $2.15 billion a year
+and the net present value moves from -$37.8 billion to -$15 billion. The
+division is worth more than the avoidance haircut and the real estate
+exclusion together. It does not by itself change the sign of the Hoover
+estimate; the migration response and the decision to count income tax at all
+do that.
 
 # Valuation remains the largest open issue
 
@@ -425,8 +446,10 @@ estimates and values reported to the Franchise Tax Board, in either direction,
 from the erosion haircut, and it holds wealth at the snapshot value unless the
 user sets a growth rate to December 31, 2026.
 
-Fifth, a single income yield is applied to everyone, which overstates the
-income tax at stake from founders whose wealth is unrealized.
+Fifth, filings-based income tax estimates exist for four people. Everyone
+else is assigned a share of the remaining cohort total in proportion to
+wealth, which the same evidence suggests overstates founders and understates
+people whose wealth throws off taxable income.
 
 Sixth, the headline nets reserve fund receipts against General Fund income
 tax. The measure makes those funds legally separate, and only the income tax

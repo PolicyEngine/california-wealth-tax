@@ -9,6 +9,7 @@ import ResultStrip from "@/app/components/ResultStrip";
 import { ASSUMPTION_GROUPS, ASSUMPTION_GROUP_BY_ID, scenarioBridge } from "@/lib/bridge";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
+import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { formatBillions } from "@/lib/format";
 import {
   annotateBillionaires,
@@ -75,7 +76,8 @@ const SET_LABELS = {
 };
 const DEFAULT_PARAMS = { snapshotDate: LIVE_DATE, ...BASELINE_ASSUMPTIONS };
 const HEATMAP_SHARES = Array.from({ length: 17 }, (_, i) => i * 0.05);
-const HEATMAP_YIELDS = Array.from({ length: 15 }, (_, i) => (i + 1) * 0.002);
+const HEATMAP_COHORT_TAX_B = Array.from({ length: 11 }, (_, i) => 1 + i * 0.5);
+const FOUR_LARGEST = ["Larry Page", "Sergey Brin", "Mark Zuckerberg", "Jensen Huang"];
 
 function sameValue(a, b) {
   return Array.isArray(a) && Array.isArray(b)
@@ -153,8 +155,12 @@ function summarizeGroup(group, assumptions, context) {
           : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the remaining base leaves (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
-        ? `Counted: income ${(assumptions.incomeYieldRate * 100).toFixed(1)}% of wealth, ${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
+        ? `Counted: ${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
         : "Wealth tax only";
+    case "incomeAllocation":
+      return assumptions.incomeTaxMethod === INCOME_TAX_METHODS.YIELD
+        ? `Uniform yield: income ${(assumptions.incomeYieldRate * 100).toFixed(1)}% of wealth`
+        : `$${assumptions.cohortIncomeTaxB.toFixed(2)}B a year, ${assumptions.incomeTaxMethod === INCOME_TAX_METHODS.WEALTH ? "divided by wealth" : "filings for the four largest, the rest by wealth"}`;
     case "erosion":
       return assumptions.avoidanceRate === 0
         ? "No haircut"
@@ -405,31 +411,76 @@ export default function Home() {
       stroke: "var(--gray-400)",
     });
   }
-  const heatmapEvaluate = useMemo(
-    () => (share, yieldRate) =>
-      score({
-        ...assumptions,
-        includeIncomeTaxEffects: true,
-        departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-        unannouncedDepartureShare: share,
-        incomeYieldRate: yieldRate,
-      }).result.netFiscalImpact,
+  const heatmapEvaluators = useMemo(
+    () =>
+      Object.fromEntries(
+        [INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].map((method) => [
+          method,
+          (share, cohortIncomeTaxB) =>
+            score({
+              ...assumptions,
+              includeIncomeTaxEffects: true,
+              departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+              unannouncedDepartureShare: share,
+              incomeTaxMethod: method,
+              cohortIncomeTaxB,
+            }).result.netFiscalImpact,
+        ])
+      ),
     [score, assumptions]
   );
-  const heatmapMarks = [
-    { label: "Hoover", share: HOOVER_ASSUMPTIONS.unannouncedDepartureShare, yieldRate: HOOVER_ASSUMPTIONS.incomeYieldRate },
-  ];
-  if (
-    assumptions.includeIncomeTaxEffects &&
-    assumptions.departureResponseMode === DEPARTURE_RESPONSE_MODES.SHARE &&
-    activeSet !== "hoover"
-  ) {
-    heatmapMarks.push({
-      label: "Your scenario",
-      share: Math.min(assumptions.unannouncedDepartureShare, HEATMAP_SHARES.at(-1)),
-      yieldRate: Math.min(Math.max(assumptions.incomeYieldRate, HEATMAP_YIELDS[0]), HEATMAP_YIELDS.at(-1)),
+  const heatmapExtent = useMemo(
+    () =>
+      Math.max(
+        1,
+        ...[INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].flatMap((method) =>
+          [HEATMAP_SHARES[0], HEATMAP_SHARES.at(-1)].flatMap((share) =>
+            [HEATMAP_COHORT_TAX_B[0], HEATMAP_COHORT_TAX_B.at(-1)].map((tax) =>
+              Math.abs(heatmapEvaluators[method](share, tax))
+            )
+          )
+        )
+      ),
+    [heatmapEvaluators]
+  );
+  const heatmapMarksFor = (method) =>
+    assumptions.includeIncomeTaxEffects && assumptions.incomeTaxMethod === method
+      ? [
+          {
+            label: "Your scenario",
+            x: Math.min(current.modeledAdditionalDepartureShare, HEATMAP_SHARES.at(-1)),
+            y: Math.min(
+              Math.max(assumptions.cohortIncomeTaxB, HEATMAP_COHORT_TAX_B[0]),
+              HEATMAP_COHORT_TAX_B.at(-1)
+            ),
+          },
+        ]
+      : [];
+  const allocationComparison = useMemo(() => {
+    const byMethod = (method) =>
+      score({ ...assumptions, incomeTaxMethod: method }).micro.rows;
+    const byWealth = byMethod(INCOME_TAX_METHODS.WEALTH);
+    const filings = byMethod(INCOME_TAX_METHODS.FILINGS);
+    const cohortWealthB = byWealth
+      .filter((row) => row.includeInRawForbes && row.netWorthB > 0)
+      .reduce((sum, row) => sum + row.netWorthB, 0);
+
+    return FOUR_LARGEST.flatMap((name) => {
+      const wealthRow = byWealth.find((row) => row.name === name);
+      const filingsRow = filings.find((row) => row.name === name);
+
+      return wealthRow && filingsRow
+        ? [
+            {
+              name,
+              wealthShare: cohortWealthB > 0 ? wealthRow.netWorthB / cohortWealthB : 0,
+              byWealthB: wealthRow.annualIncomeTaxB,
+              filingsB: filingsRow.annualIncomeTaxB,
+            },
+          ]
+        : [];
     });
-  }
+  }, [score, assumptions]);
 
   const snapshotLabel =
     params.snapshotDate === LIVE_DATE
@@ -685,6 +736,7 @@ export default function Home() {
                     remainingResidentWealthB,
                     modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
                     snapshotDate: params.snapshotDate,
+                    allocationComparison,
                   }}
                   onClose={() => setActiveGroup(null)}
                 />
@@ -693,24 +745,47 @@ export default function Home() {
               <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
                 <div className="max-w-3xl">
                   <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
-                    The two assumptions that carry the spread
+                    Who pays the income tax decides the sign
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-                    Net present value as of 2026 with income-tax effects counted,
-                    across how much more wealth leaves before the valuation date
-                    and how much taxable income the movers report relative to
-                    their wealth. Other assumptions as in your scenario. Rauh et
-                    al. sit at 48% and 2%; SEC filings put Page, Brin and
-                    Zuckerberg near 0.3%; Boll, Saez and Zucman put all
-                    California billionaires near 1.5%.
+                    Net present value as of 2026 with income-tax effects
+                    counted, across how much more wealth leaves before the
+                    valuation date and how much California income tax the
+                    cohort pays in total. Same axes, same colors, two ways of
+                    dividing that total among people. Other assumptions as in
+                    your scenario.
                   </p>
                 </div>
-                <Heatmap
-                  evaluate={heatmapEvaluate}
-                  shares={HEATMAP_SHARES}
-                  yields={HEATMAP_YIELDS}
-                  marks={heatmapMarks}
-                />
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {[
+                    {
+                      method: INCOME_TAX_METHODS.WEALTH,
+                      title: "Divided by wealth (Rauh et al.)",
+                    },
+                    {
+                      method: INCOME_TAX_METHODS.FILINGS,
+                      title: "Filings for the four largest fortunes, the rest by wealth",
+                    },
+                  ].map((panel) => (
+                    <div key={panel.method} className="space-y-2">
+                      <p className="text-sm font-semibold text-[var(--gray-700)]">{panel.title}</p>
+                      <Heatmap
+                        evaluate={heatmapEvaluators[panel.method]}
+                        xs={HEATMAP_SHARES}
+                        ys={HEATMAP_COHORT_TAX_B}
+                        marks={heatmapMarksFor(panel.method)}
+                        extent={heatmapExtent}
+                        cellW={26}
+                        cellH={20}
+                        xLabel="Further wealth leaving before valuation (share of remaining base)"
+                        yLabel="Cohort income tax, $B a year"
+                        formatX={(value) => `${(value * 100).toFixed(0)}%`}
+                        formatY={(value) => `$${value.toFixed(1)}B`}
+                        ariaLabel={`Net present value by further migration share and cohort income tax: ${panel.title}`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </section>
 
               <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">

@@ -1,0 +1,16 @@
+{
+  "_about": "California income tax paid on company wealth by the four largest California fortunes, 2019-2025, nominal $ millions, as estimated by Boll, Saez and Zucman from SEC disclosures of stock sales, donations and option exercises, plus Compustat dividends and executive compensation. Company wealth is 97% of their Forbes wealth at the end of 2025. The model uses the 2023-2025 average.",
+  "source": "Boll, Saez and Zucman (2026), NBER Working Paper 35218 (revised August 2026), Table 3",
+  "url": "https://eml.berkeley.edu/~saez/BSZ26CAbillionaires.pdf",
+  "averageYears": [2023, 2024, 2025],
+  "cohort": {
+    "_about": "Same paper, Table 2: estimated California income tax paid by all California billionaires, nominal $ billions.",
+    "byYear": { "2019": 2.0, "2020": 2.8, "2021": 4.5, "2022": 2.3, "2023": 2.5, "2024": 3.0, "2025": 4.3 }
+  },
+  "people": {
+    "Larry Page": { "2019": 0, "2020": 0, "2021": 241, "2022": 120, "2023": 0, "2024": 83, "2025": 87 },
+    "Sergey Brin": { "2019": 0, "2020": 0, "2021": 168, "2022": 84, "2023": 0, "2024": 54, "2025": 56 },
+    "Mark Zuckerberg": { "2019": 26, "2020": 35, "2021": 299, "2022": 3, "2023": 11, "2024": 166, "2025": 126 },
+    "Jensen Huang": { "2019": 6, "2020": 20, "2021": 59, "2022": 61, "2023": 28, "2024": 55, "2025": 89 }
+  }
+}
