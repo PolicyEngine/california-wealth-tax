@@ -209,7 +209,7 @@ export default function AssumptionPanel({
         <div className="space-y-5">
           <Field
             title="How to set it"
-            note="A share removes that fraction of the remaining base before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05); Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.51."
+            note="A share removes that fraction of the remaining base before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05); Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5."
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip selected={usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.SHARE)}>
@@ -250,7 +250,7 @@ export default function AssumptionPanel({
               quickPicks={[
                 { label: "Jakobsen et al. 2", value: 2 },
                 { label: "Brülhart et al. 10.32", value: 10.32 },
-                { label: "Rauh et al.'s 51.6% total: 14.51", value: 14.51 },
+                { label: "Rauh et al.'s 51.6% total: 14.5", value: 14.5 },
               ]}
             />
           )}

@@ -14,56 +14,57 @@
   "lastListedPeople": 9,
   "lastListedWealthB": 24,
   "belowThresholdPeople": 5,
-  "baseExclusionCount": 1,
-  "residencyAdjustmentCount": 8,
+  "excludedFromEveryBase": 1,
+  "residencyAdjustmentCount": 12,
+  "baseExclusionCount": 8,
   "adjustedPeople": 261,
   "adjustedGrossB": 90.2,
   "residencyAdjustmentsTaxB": 30.7,
   "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
-  "adjustedAnnualIncomeTaxLostB": 2.3,
+  "adjustedAnnualIncomeTaxLostB": 2.32,
   "adjustedPvReceiptsB": 87.6,
-  "adjustedPvIncomeTaxLostB": 76.5,
-  "adjustedNetB": 11.1,
+  "adjustedPvIncomeTaxLostB": 77.4,
+  "adjustedNetB": 10.2,
   "adjustedNetAtLaoCeilingB": 54.3,
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
   "installmentReceiptsPer100": 115,
   "bridgeStartB": 106.1,
-  "bridgeEndB": -26.9,
+  "bridgeEndB": -77.4,
   "bridge": [
     {
       "id": "residency",
-      "label": "Treat documented departures as effective",
-      "valueB": -21.2,
-      "minB": -29.7,
-      "maxB": -13.6
+      "label": "Residency: documented departures",
+      "valueB": -34.7,
+      "minB": -107.3,
+      "maxB": -0.2
     },
     {
       "id": "migration",
       "label": "Further migration before valuation",
-      "valueB": -59.3,
-      "minB": -87.4,
-      "maxB": -32.5
+      "valueB": -80.8,
+      "minB": -172,
+      "maxB": -27.9
     },
     {
       "id": "incomeTax",
-      "label": "Count movers' future income tax",
-      "valueB": -60.5,
-      "minB": -79.1,
-      "maxB": -42.2
+      "label": "Movers' future income tax",
+      "valueB": -76.1,
+      "minB": -134.6,
+      "maxB": 0
     },
     {
       "id": "erosion",
-      "label": "Drop the 10% avoidance haircut",
+      "label": "Avoidance and valuation haircut",
       "valueB": 8.2,
-      "minB": 5.2,
+      "minB": 5.7,
       "maxB": 11.8
     },
     {
-      "id": "realEstate",
-      "label": "Exclude directly held real estate",
-      "valueB": -0.2,
+      "id": "valuation",
+      "label": "Real estate exclusion and growth to valuation",
+      "valueB": -0.1,
       "minB": -0.4,
-      "maxB": 0.1
+      "maxB": 0.4
     }
   ]
 }
