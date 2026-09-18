@@ -28,21 +28,21 @@
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
   "installmentReceiptsPer100": 115,
   "bridgeStartB": 106.1,
-  "bridgeEndB": -27,
+  "bridgeEndB": -26.9,
   "bridge": [
     {
       "id": "residency",
       "label": "Treat documented departures as effective",
-      "valueB": -21.3,
-      "minB": -29.8,
-      "maxB": -13.7
+      "valueB": -21.2,
+      "minB": -29.7,
+      "maxB": -13.6
     },
     {
       "id": "migration",
       "label": "Further migration before valuation",
       "valueB": -59.3,
       "minB": -87.4,
-      "maxB": -32.4
+      "maxB": -32.5
     },
     {
       "id": "incomeTax",

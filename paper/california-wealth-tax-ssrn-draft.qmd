@@ -342,7 +342,7 @@ calculator holds as its October 17, 2025 snapshot.
 Scoring both sets of assumptions inside one model, on the same people and the
 same data, turns the disagreement into arithmetic. On the September 18, 2026
 snapshot the Berkeley assumptions give a net present value of $106.1 billion
-and the Hoover assumptions give -$27 billion. Five assumptions separate
+and the Hoover assumptions give -$26.9 billion. Five assumptions separate
 them. Because assumptions interact, the value of each depends on the order in
 which they are applied, so the table reports Shapley values: each assumption's
 marginal effect averaged over every ordering. The contributions sum exactly to
@@ -352,8 +352,8 @@ orderings.
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
 | Count movers' future income tax | -$60.5 | -$79.1 to -$42.2 |
-| Further migration before valuation | -$59.3 | -$87.4 to -$32.4 |
-| Treat documented departures as effective | -$21.3 | -$29.8 to -$13.7 |
+| Further migration before valuation | -$59.3 | -$87.4 to -$32.5 |
+| Treat documented departures as effective | -$21.2 | -$29.7 to -$13.6 |
 | Drop the 10% avoidance haircut | +$8.2 | +$5.2 to +$11.8 |
 | Exclude directly held real estate | -$0.2 | -$0.4 to +$0.1 |
 
