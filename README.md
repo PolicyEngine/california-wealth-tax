@@ -23,10 +23,15 @@ One model, scored person by person, in two stages.
   and the payment election (lump sum due in 2027, or five installments with a
   7.5% charge on the unpaid balance). With stage 2 off, the headline is
   nominal receipts.
-- **Stage 2 (optional): future California income tax.** Movers' income is
-  modeled as a yield on their wealth and taxed with PolicyEngine's California
-  rates; the loss stream is attributed, grown, discounted, and netted against
-  receipts, both in present value as of 2026.
+- **Stage 2 (optional): future California income tax.** The cohort's total
+  California income tax is an input ($4.3B a year by default; Rauh et al. and
+  Boll, Saez and Zucman overlap on it). It is divided among people either by
+  wealth (Rauh et al.'s f × C) or, by default, with filings-based estimates for
+  the four largest fortunes (`data/income_tax_filings.json`, from Boll, Saez and
+  Zucman's Table 3) and the rest by wealth. A mover's share is the loss; the
+  stream is attributed, grown, discounted, and netted against receipts, both in
+  present value as of 2026. Someone kept in the base is a resident who keeps
+  paying.
 
 The baseline takes no position on contested residency. Eight documented claims
 that a roster member was not a resident on January 1, 2026 are individual
@@ -51,27 +56,37 @@ of those papers' rosters.
 - `data/billionaire_metadata.json`: per-person residency evidence with sources.
 - `data/billionaires_rauh.json`: the October 17, 2025 list with Rauh et al.'s
   directly held real estate values (personal residences; a lower bound).
+- `data/income_tax_filings.json`: filings-based California income tax for the
+  four largest fortunes, 2019-2025, with source.
 - `data/income_tax_lookup.json`: California income tax at billionaire-scale
-  incomes, precomputed from PolicyEngine.
+  incomes, precomputed from PolicyEngine (used by the uniform-yield method).
 
 `.github/workflows/update-forbes.yml` refreshes the Forbes data daily. It runs
 the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
 before anything is committed. Names are joined on a normalized key (aliases,
 trailing "& family", case), because Forbes changes display names.
 
-Known gap: Forbes leaves the state blank for most non-US citizens, so
-California residents who are not citizens are missing from the base.
+Known gap: the January 1, 2026 list is a backfill of US-citizen Forbes
+profiles, so non-US citizens Forbes places in California enter the base only
+through the current list, with their January 1 residency assumed.
 
 ## Architecture
 
 ```text
 app/
-├── page.js                  # Calculator shell, scenario state, summary panel
+├── page.js                  # Scenario state, URL sync, data loading, layout
 ├── components/
-│   ├── Wizard.js            # Guided assumption flow
-│   ├── BillionaireTable.js  # Person-level table with valuation source flags
-│   └── WaterfallChart.js    # Fiscal-impact waterfall
+│   ├── LiveBridge.js        # The bridge between two assumption sets (hero)
+│   ├── WaterfallChart.js    # The bridge's waterfall
+│   ├── ResultStrip.js       # Your scenario's number, start-from sets, data, link
+│   ├── AssumptionPanels.js  # One panel per assumption group
+│   ├── Slider.js            # Slider with sourced quick picks
+│   ├── Heatmap.js           # Net present value over two assumptions
+│   └── BillionaireTable.js  # Person-level table with valuation source flags
 lib/
+├── scenario.js              # One scorer: parameters in, results out
+├── presets.js               # The statutory, Berkeley and Hoover assumption sets
+├── bridge.js                # Assumption groups and the Shapley bridge
 ├── calculator.js            # Receipt schedule, present values, headline
 ├── microModel.js            # Roster join, person-level tax and income tax
 ├── residencyAdjustments.js  # Documented residency claims with sources

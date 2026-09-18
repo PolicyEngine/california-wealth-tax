@@ -4,7 +4,7 @@ import WaterfallChart from "@/app/components/WaterfallChart";
 import { formatBillions } from "@/lib/format";
 
 export const BRIDGE_ENDPOINTS = {
-  baseline: "PolicyEngine baseline",
+  baseline: "Statutory score, no behavior",
   berkeley: "Berkeley assumptions",
   hoover: "Hoover assumptions",
   your: "Your scenario",
@@ -61,14 +61,20 @@ export default function LiveBridge({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl">
           <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
-            What each assumption is worth
+            {from === "berkeley" && to === "hoover"
+              ? "What separates the published estimates"
+              : "What each assumption is worth"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-            Same model, same people, Forbes data as of {snapshotDate}. Net
-            present value as of 2026. Each bar is one assumption&apos;s worth,
-            averaged over every order the assumptions could be applied in, so
-            the bars sum exactly to the gap. Click a bar to change that
-            assumption.
+            <span className="font-medium text-[var(--gray-700)]">
+              {BRIDGE_ENDPOINTS[from]} {formatBillions(bridge.startValue, { showPlus: true })}
+              {" \u2192 "}
+              {BRIDGE_ENDPOINTS[to]} {formatBillions(bridge.endValue, { showPlus: true })}
+            </span>
+            , on the same people, Forbes data as of {snapshotDate}, net present
+            value as of 2026. Each bar is one assumption&apos;s worth, averaged
+            over every order the assumptions could be applied in, so the bars
+            sum exactly to the gap. Click a bar to change that assumption.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--gray-600)]">
@@ -79,12 +85,19 @@ export default function LiveBridge({
         </div>
       </div>
 
-      {bridge.contributions.length === 0 ? (
+      {bridge.finite === false ? (
+        <p className="rounded-2xl border border-dashed border-[var(--gray-300)] px-5 py-6 text-sm text-[var(--gray-500)]">
+          One of these scenarios has an unbounded present value: the lost
+          income-tax stream grows at least as fast as it is discounted and
+          movers return. Shorten the horizon, lower the growth rate, or raise
+          the discount rate to bridge them.
+        </p>
+      ) : bridge.contributions.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-[var(--gray-300)] px-5 py-6 text-sm text-[var(--gray-500)]">
           {BRIDGE_ENDPOINTS[from]} and {BRIDGE_ENDPOINTS[to]} share every
-          assumption, so there is nothing to bridge: both give{" "}
-          {formatBillions(bridge.startValue, { showPlus: true })}. Change an
-          assumption below or pick different endpoints.
+          assumption that matters here, so there is nothing to bridge: both
+          give {formatBillions(bridge.startValue, { showPlus: true })}. Change
+          an assumption below or pick different endpoints.
         </p>
       ) : (
         <WaterfallChart

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -57,6 +58,22 @@ function WaterfallTooltip({ active, payload }) {
   );
 }
 
+// Below this width the category labels overlap into a smear; the cards under
+// the chart and the tooltip carry the names there.
+function useIsNarrow(maxWidth = 640) {
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const update = () => setIsNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, [maxWidth]);
+
+  return isNarrow;
+}
+
 export default function WaterfallChart({
   waterfall,
   totalLabel,
@@ -66,6 +83,7 @@ export default function WaterfallChart({
   clickableIds = null,
   referenceLines = [],
 }) {
+  const isNarrow = useIsNarrow();
   const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {}).map(
     (entry, index) => ({
       ...entry,
@@ -77,14 +95,14 @@ export default function WaterfallChart({
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} margin={{ top: 18, right: 90, left: 10, bottom: 5 }}>
+        <BarChart data={data} margin={{ top: 18, right: 16, left: 10, bottom: 5 }}>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11 }}
+            tick={isNarrow ? false : { fontSize: 11 }}
             interval={0}
             angle={-18}
             textAnchor="end"
-            height={60}
+            height={isNarrow ? 8 : 60}
           />
           <YAxis
             tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
@@ -101,7 +119,7 @@ export default function WaterfallChart({
               ifOverflow="extendDomain"
               label={{
                 value: `${line.label} ${formatBillions(line.value, { showPlus: true })}`,
-                position: "right",
+                position: "insideTopRight",
                 fontSize: 11,
                 fill: line.stroke ?? "var(--gray-500)",
               }}

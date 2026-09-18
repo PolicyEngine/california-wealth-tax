@@ -3,10 +3,11 @@
 import Slider from "@/app/components/Slider";
 import { formatBillions } from "@/lib/format";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
+import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 
 const SET_LABELS = {
-  baseline: "PolicyEngine baseline",
+  baseline: "Statutory",
   berkeley: "Berkeley",
   hoover: "Hoover",
 };
@@ -80,7 +81,13 @@ export default function AssumptionPanel({
   context,
   onClose,
 }) {
-  const { residencyAdjustments, remainingResidentWealthB, modeledAdditionalDepartureShare, snapshotDate } = context;
+  const {
+    residencyAdjustments,
+    remainingResidentWealthB,
+    modeledAdditionalDepartureShare,
+    snapshotDate,
+    allocationComparison = [],
+  } = context;
 
   let body = null;
 
@@ -89,11 +96,12 @@ export default function AssumptionPanel({
       body = (
         <div className="space-y-4">
           <p className="text-sm leading-6 text-[var(--gray-600)]">
-            The baseline keeps everyone Forbes listed in California on January
-            1, 2026. Each item is a documented claim that someone was not a
-            resident that day; remove them to see the effect. Larry Ellison is
-            out of every base: Forbes lists him in Florida and both published
-            estimates exclude him.
+            The statutory score keeps everyone Forbes listed in California on
+            January 1, 2026. The first two sections are documented claims that
+            someone was not a resident that day; the third covers people who
+            were residents on January 1 but are reported or expected to leave.
+            Larry Ellison is out of every base: Forbes lists him in Florida and
+            both published estimates exclude him.
           </p>
           <div className="flex flex-wrap gap-2">
             <ToggleChip
@@ -115,13 +123,18 @@ export default function AssumptionPanel({
             </ToggleChip>
           </div>
           {[
-            { key: "residency", title: "Contested residency", category: "residency" },
+            {
+              key: "residency",
+              title: "Contested residency",
+              category: "residency",
+              note: "Rauh et al. classify both as having left before the measure existed, so removing them takes them out of the base and loses no income tax that the measure caused.",
+            },
             { key: "pre", title: "Reported departures before January 1, 2026", category: "pre_snapshot_departure" },
             {
               key: "post",
-              title: "Reported departures after January 1, 2026",
+              title: "Reported or planned departures after January 1, 2026",
               category: "post_snapshot_departure",
-              note: "They owe the wealth tax either way; removing them counts their future California income tax as lost.",
+              note: "Rauh et al.'s Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way; applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
             },
           ].map((section) => (
             <div key={section.key} className="space-y-2">
@@ -195,7 +208,8 @@ export default function AssumptionPanel({
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             California domicile turns on a closest-connection test, and none of
             these claims has been tested. Galle, Gamage, Saez and Shanske argue
-            none changes residency; Rauh et al. treat all of theirs as
+            it is unlikely many of these people have taken the steps a change
+            of residency requires; Rauh et al. treat all of theirs as
             effective.
           </p>
         </div>
@@ -209,11 +223,11 @@ export default function AssumptionPanel({
         <div className="space-y-5">
           <Field
             title="How to set it"
-            note="A share removes that fraction of the remaining base before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05); Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5."
+            note="This stands for people who left California before January 1, 2026 without public notice; leaving after that date does not escape the tax, because residency is fixed that day. A share removes that fraction of the base the response can reach (everyone still in it, less people you marked as leaving after January 1). A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05), and the calculator solves for the share of the reachable base that delivers it; Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5; their preferred 12 to 13 implies 60% to 65%, which it reaches at 18.3 to 21.0. The slider starts at 12.6, the value earlier versions of this calculator used (46.7% here)."
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip selected={usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.SHARE)}>
-                Share of remaining base
+                Share of the reachable base
               </ToggleChip>
               <ToggleChip selected={!usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.ELASTICITY)}>
                 Semi-elasticity
@@ -222,7 +236,7 @@ export default function AssumptionPanel({
           </Field>
           {usesShare ? (
             <Slider
-              label="Further wealth leaving before December 31, 2026"
+              label="Unannounced departures before January 1, 2026 (share of the reachable base)"
               value={params.unannouncedDepartureShare}
               onChange={(value) => update("unannouncedDepartureShare", value)}
               min={0}
@@ -233,7 +247,6 @@ export default function AssumptionPanel({
               }
               quickPicks={[
                 { label: "None", value: 0 },
-                { label: "Rauh central 48%", value: 0.48 },
               ]}
             />
           ) : (
@@ -245,12 +258,12 @@ export default function AssumptionPanel({
               max={30}
               step={0.1}
               format={(value) =>
-                `${value.toFixed(1)} · ${(modeledAdditionalDepartureShare * 100).toFixed(1)}% of remaining base`
+                `${value.toFixed(2)} · ${(modeledAdditionalDepartureShare * 100).toFixed(1)}% of the reachable base`
               }
               quickPicks={[
-                { label: "Jakobsen et al. 2", value: 2 },
-                { label: "Brülhart et al. 10.32", value: 10.32 },
-                { label: "Rauh et al.'s 51.6% total: 14.5", value: 14.5 },
+                { label: "None", value: 0 },
+                { label: "Rauh et al.'s literature calibration, 10.32 (from Brülhart et al.)", value: 10.32 },
+                { label: "Rauh et al.'s 51.6% total in this kernel: 14.5", value: 14.5 },
               ]}
             />
           )}
@@ -285,28 +298,6 @@ export default function AssumptionPanel({
           </Field>
           {params.includeIncomeTaxEffects && (
             <>
-              <Slider
-                label="Taxable income as a share of wealth"
-                value={params.incomeYieldRate}
-                onChange={(value) => update("incomeYieldRate", value)}
-                min={0.001}
-                max={0.05}
-                step={0.001}
-                format={percent(1)}
-                quickPicks={[
-                  { label: "Page, Brin, Zuckerberg per SEC filings 0.3%", value: 0.003 },
-                  { label: "All CA billionaires, Boll–Saez–Zucman 1.5%", value: 0.015 },
-                  { label: "Rauh et al. 2%", value: 0.02 },
-                ]}
-              />
-              <p className="text-xs leading-5 text-[var(--gray-500)]">
-                Taxed at PolicyEngine&apos;s California rates. Rauh et al.
-                extrapolate $3.3B–$5.8B a year for the cohort from FTB data;
-                Boll, Saez and Zucman measure about $3B, and $269M in 2025 for
-                Page, Brin and Zuckerberg combined, whose wealth is mostly
-                unrealized gains. The Legislative Analyst expects an ongoing
-                loss below $1B a year.
-              </p>
               <Slider
                 label="Share of movers' lost income tax caused by the measure"
                 value={params.incomeTaxAttributionRate}
@@ -363,6 +354,112 @@ export default function AssumptionPanel({
       );
       break;
 
+    case "incomeAllocation": {
+      const method = params.incomeTaxMethod;
+      const usesCohortTotal = method !== INCOME_TAX_METHODS.YIELD;
+
+      body = (
+        <div className="space-y-5">
+          <p className="text-sm leading-6 text-[var(--gray-600)]">
+            The two teams agree on roughly how much California income tax the
+            state&apos;s billionaires pay in total: Rauh et al. estimate $3.3B to
+            $5.8B a year from Franchise Tax Board data, and Boll, Saez and
+            Zucman estimate $4.3B for 2025. They disagree about who pays it,
+            and that decides how much leaves with the people who move.
+          </p>
+          <Field title="How the total is divided">
+            <div className="flex flex-wrap gap-2">
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.FILINGS}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.FILINGS)}
+              >
+                Filings for the four largest, wealth for the rest
+              </ToggleChip>
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.WEALTH}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.WEALTH)}
+              >
+                By wealth (Rauh et al.)
+              </ToggleChip>
+              <ToggleChip
+                selected={method === INCOME_TAX_METHODS.YIELD}
+                onClick={() => update("incomeTaxMethod", INCOME_TAX_METHODS.YIELD)}
+              >
+                Uniform yield on wealth
+              </ToggleChip>
+            </div>
+          </Field>
+          {usesCohortTotal ? (
+            <Slider
+              label="California income tax paid by the cohort, a year"
+              value={params.cohortIncomeTaxB}
+              onChange={(value) => update("cohortIncomeTaxB", value)}
+              min={1}
+              max={8}
+              step={0.05}
+              format={(value) => `$${value.toFixed(2)}B`}
+              quickPicks={[
+                { label: "Rauh low $3.3B", value: 3.3 },
+                { label: "Boll–Saez–Zucman 2025 $4.3B", value: 4.3 },
+                { label: "Rauh midpoint $4.55B", value: 4.55 },
+                { label: "Rauh high $5.8B", value: 5.8 },
+              ]}
+            />
+          ) : (
+            <Slider
+              label="Taxable income as a share of wealth"
+              value={params.incomeYieldRate}
+              onChange={(value) => update("incomeYieldRate", value)}
+              min={0.001}
+              max={0.05}
+              step={0.001}
+              format={percent(1)}
+            />
+          )}
+          {allocationComparison.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--gray-200)] text-left text-xs font-semibold uppercase tracking-[0.08em] text-[var(--gray-500)]">
+                    <th className="py-2 pr-4">California income tax a year</th>
+                    <th className="px-2 py-2 text-right">Share of cohort wealth</th>
+                    <th className="px-2 py-2 text-right">If divided by wealth</th>
+                    <th className="px-2 py-2 text-right">From SEC filings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocationComparison.map((row) => (
+                    <tr key={row.name} className="border-b border-[var(--gray-100)]">
+                      <td className="py-2 pr-4 font-medium text-[var(--gray-700)]">{row.name}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{(row.wealthShare * 100).toFixed(1)}%</td>
+                      <td className="px-2 py-2 text-right tabular-nums">${(row.byWealthB * 1000).toFixed(0)}M</td>
+                      <td className="px-2 py-2 text-right tabular-nums">${(row.filingsB * 1000).toFixed(0)}M</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs leading-5 text-[var(--gray-500)]">
+            Filings figures are Boll, Saez and Zucman&apos;s estimates from SEC
+            disclosures of stock sales, donations and option exercises plus
+            dividends and compensation on the four&apos;s company stakes, 97%
+            of their Forbes wealth (their Table 3); the amounts used here are
+            our average of its 2023–2025 rows, taken as each person&apos;s
+            whole California income tax, as Boll, Saez and Zucman do.
+            Founders whose wealth is unrealized stock report little taxable
+            income relative to it. Dividing the total by wealth instead is Rauh
+            et al.&apos;s f × C: a mover&apos;s loss is their wealth share of the
+            cohort total. The uniform yield is kept for older links; Rauh et
+            al. back out 1.3% to 2.3% on their 2025 list, and on today&apos;s
+            larger roster a 2% yield puts the cohort above both teams&apos;
+            totals.
+          </p>
+        </div>
+      );
+      break;
+    }
+
     case "erosion":
       body = (
         <div className="space-y-4">
@@ -377,17 +474,20 @@ export default function AssumptionPanel({
             quickPicks={[
               { label: "None", value: 0 },
               { label: "Berkeley 10%", value: 0.1 },
-              { label: "Rauh et al. 15%", value: 0.15 },
-              { label: "Boll–Saez–Zucman high 23%", value: 0.23 },
             ]}
           />
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             A reduced-form allowance for avoidance, evasion, and the gap
             between Forbes estimates and values reported to the Franchise Tax
             Board. It lowers one-time receipts only; it does not move anyone or
-            create future income-tax losses. The measure&apos;s valuation
-            rules (no minority discounts, a funding-round floor, a book-value
-            presumption for private businesses) push in both directions.
+            create future income-tax losses. Galle et al. apply 10%; Rauh et
+            al. apply none and reduce the base through residency and migration
+            instead. Boll, Saez and Zucman&apos;s 23% scenario is mostly four
+            departures, which belong in the residency panel. The measure&apos;s
+            valuation rules (no minority discounts, a funding-round floor, and a
+            presumed value of book value plus 7.5 times three-year average
+            profits for private businesses, rebuttable on clear and convincing
+            evidence) push in both directions.
           </p>
         </div>
       );

@@ -68,9 +68,11 @@ function getRowStatuses(row) {
   if (row.belowThreshold && row.valuationSource !== "offForbesList") {
     statuses.push({
       label:
-        row.netWorthB < 1
+        row.rawNetWorthB < 1
           ? "Forbes values below $1B; owes nothing"
-          : "Under $1B once real estate is removed; owes nothing",
+          : row.netWorthB < 1
+            ? "Under $1B at the valuation date; owes nothing"
+            : "Under $1B once real estate is removed; owes nothing",
       tone: "neutral",
     });
   }
@@ -86,6 +88,7 @@ export default function BillionaireTable({
   rows,
   avoidanceRate,
   excludeRealEstate,
+  modeledDepartures = null,
 }) {
   const [showAll, setShowAll] = useState(false);
   const sorted = [...rows].sort((a, b) => b.netWorthB - a.netWorthB);
@@ -200,6 +203,37 @@ export default function BillionaireTable({
               {formatBillions(totals.annualIncomeTaxB)}
             </td>
           </tr>
+          {modeledDepartures && modeledDepartures.share > 0 && (
+            <>
+              <tr className="text-[var(--gray-600)]">
+                <td className="py-2 pr-4">
+                  Less modeled further departures ({(modeledDepartures.share * 100).toFixed(1)}% of
+                  the base the response can reach, spread across it)
+                </td>
+                <td className="px-2 py-2"></td>
+                {excludeRealEstate && <td className="px-2 py-2"></td>}
+                <td className="px-2 py-2"></td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  −{formatBillions(modeledDepartures.wealthTaxB * (1 - avoidanceRate))}
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  −{formatBillions(modeledDepartures.incomeTaxB)}
+                </td>
+              </tr>
+              <tr className="font-semibold text-[var(--gray-700)]">
+                <td className="py-2 pr-4">Modeled total</td>
+                <td className="px-2 py-2"></td>
+                {excludeRealEstate && <td className="px-2 py-2"></td>}
+                <td className="px-2 py-2"></td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  {formatBillions(totals.grossTaxB - modeledDepartures.wealthTaxB * (1 - avoidanceRate))}
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  {formatBillions(totals.annualIncomeTaxB - modeledDepartures.incomeTaxB)}
+                </td>
+              </tr>
+            </>
+          )}
         </tfoot>
       </table>
       {!showAll && rows.length > 20 && (
