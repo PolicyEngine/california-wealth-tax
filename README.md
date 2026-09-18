@@ -17,7 +17,7 @@ One model, scored person by person, in two stages.
   latest Forbes worth, wherever Forbes lists them now; people Forbes has
   added to its California list since are added, with their January 1
   residency assumed; people Forbes no longer lists at all are carried at the
-  last value it published for them. The statute is applied per person:
+  last positive value in the stored daily history. The statute is applied per person:
   net worth under $1 billion owes nothing, real property held
   directly is excluded, then the rate ramp, then an optional erosion haircut
   and the payment election (lump sum due in 2027, or five installments with a

@@ -1726,13 +1726,17 @@ function BaseNotes({ notes }) {
 
   if (notes.lastListedCount > 0) {
     lines.push(
-      `${notes.lastListedCount} people (${formatBillions(notes.lastListedWealthB)}) from the January 1 list are no longer on any Forbes list. They are carried at the last value Forbes published for them.`
+      `${notes.lastListedCount} people (${formatBillions(notes.lastListedWealthB)}) from the January 1 list are no longer on any Forbes list. They are carried at the last positive value in the stored daily Forbes history.`
     );
   }
 
   if (notes.belowThresholdCount > 0) {
     lines.push(
-      `${notes.belowThresholdCount} people Forbes now values below $1 billion are out of the base.`
+      `${notes.belowThresholdCount} people are under $1 billion and out of the base${
+        notes.belowThresholdCount > notes.belowThresholdOnForbesValueCount
+          ? `, ${notes.belowThresholdCount - notes.belowThresholdOnForbesValueCount} of them only once directly held real estate is removed`
+          : ""
+      }.`
     );
   }
 

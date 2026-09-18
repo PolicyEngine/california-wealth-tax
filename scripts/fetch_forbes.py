@@ -325,7 +325,8 @@ def build_roster_valuations(people, roster_rows, last_listed=None):
     The measure fixes residency on January 1, 2026 and values net worth on
     December 31, 2026, so a roster member Forbes now lists elsewhere still needs
     a current valuation. Someone Forbes no longer lists at all gets the last
-    value Forbes published for them, with the date, under `lastListedDate`:
+    positive value in the stored daily history, with its date, under
+    `lastListedDate` (the feed sometimes ends a run with a zero or negative entry):
     Forbes drops people for several reasons (death among them), so absence says
     nothing about their net worth. Someone with no stored valuation is omitted.
     """

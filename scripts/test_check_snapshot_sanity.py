@@ -8,8 +8,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent))
 
 from check_snapshot_sanity import (  # noqa: E402
+    MAX_IDENTICAL_TOTALS,
+    feed_looks_frozen,
     plausibility_check,
     roster_churn,
+    synthetic_rows_in,
     waived_checks,
 )
 
@@ -51,3 +54,25 @@ def test_waived_checks_parses_the_environment_and_rejects_unknown_names():
     assert waived_checks({}) == set()
     with pytest.raises(SystemExit, match="unknown check names"):
         waived_checks({"SNAPSHOT_SANITY_ALLOW": "everything"})
+
+
+def test_feed_looks_frozen_only_after_a_full_run_of_identical_totals():
+    total = 2.3e12
+
+    # A weekend: two identical totals in a row is normal.
+    assert not feed_looks_frozen(total, [2.2e12, total, total])
+    assert feed_looks_frozen(total, [total] * MAX_IDENTICAL_TOTALS)
+    # Too little history to judge.
+    assert not feed_looks_frozen(total, [total] * (MAX_IDENTICAL_TOTALS - 1))
+
+
+def test_synthetic_rows_in_finds_a_leaked_row_across_a_display_name_change():
+    metadata = {
+        "syntheticRowsBySnapshot": {"2025-10-17": [{"name": "Paper Only", "netWorth": 2e9}]}
+    }
+
+    assert synthetic_rows_in(rows("Real Person", "Paper Only & family"), metadata) == [
+        "Paper Only & family"
+    ]
+    assert synthetic_rows_in(rows("Real Person"), metadata) == []
+

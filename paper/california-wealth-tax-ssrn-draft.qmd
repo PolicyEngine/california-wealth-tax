@@ -152,17 +152,18 @@ California on January 1, 2026. The valuation is the latest Forbes estimate
 for each of them, wherever Forbes places them now. Six roster members Forbes
 now places in another state keep a current valuation and stay in the base.
 Nine roster members Forbes no longer lists anywhere, worth $24 billion when
-last listed, are carried at the last value Forbes published for them: Forbes
-drops people for several reasons, death among them, and three of the nine
-were last listed well above $1 billion, so absence from the list says nothing
-about net worth. People on Forbes's California list today who were not on its
+last listed, are carried at the last positive value in the stored daily Forbes
+history: Forbes drops people for several reasons, death among them, and
+several of the nine were last listed well above $1 billion, so absence from
+the list says nothing about net worth. People on Forbes's California list today who were not on its
 January 1 list are added, with their January 1 residency assumed; on the
 September 18, 2026 snapshot there are 56 people in this group holding $264
-billion. The join knows list membership and nothing else. Most of them first
-appear with Forbes's annual list in March 2026, and the request that fetched
-the January 1 list clipped it near $1.2 billion, so the group mixes people who
-crossed the threshold during 2026 with people who were billionaires and
-residents all along. Five people on the current California list are under $1
+billion. The join knows list membership and nothing else. The January 1 list
+is rebuilt from per-person Forbes histories, so it lacks anyone Forbes added
+to its real-time list later, most of them with the annual list in March 2026,
+and anyone whose state Forbes left blank that day. The group therefore mixes
+people who crossed the threshold during 2026 with people who were billionaires
+and residents all along. Five people on the current California list are under $1
 billion once directly held real estate is removed and owe nothing. Names are
 joined on a normalized key, because Forbes adds and drops "& family" from
 display names.
@@ -229,8 +230,8 @@ the wealth tax.
 
 Additional modeled migration can be entered either as a direct share of the
 remaining base or via a migration semi-elasticity. In the second form the
-calculator solves for the share of the remaining base at which observed plus
-modeled departures equal the finite-change mapping
+calculator solves for the share of the base the response can still reach at
+which observed plus modeled departures equal the finite-change mapping
 `1 - exp(-epsilon times tau)`, so users can compare the paper's linearized
 share-loss framing with the exact one.
 
@@ -367,11 +368,10 @@ scale but unmeasured. The first of these changes the timing of receipts from
 founders of private companies.
 
 Second, the base omits California residents who are not US citizens, because
-Forbes does not place them in a state. It also omits anyone the January 1,
-2026 list did not reach, since the request that fetched it clipped the list
-near $1.2 billion, unless Forbes lists them in California today; and it
-carries roster members Forbes has dropped at their last published value,
-which is a guess in both directions.
+Forbes does not place them in a state. It also omits anyone the rebuilt
+January 1, 2026 list does not contain, unless Forbes lists them in California
+today; and it carries roster members Forbes has dropped at their last positive
+stored value, which is a guess in both directions.
 
 Third, the real estate data record personal residences, so the exclusion is a
 lower bound.

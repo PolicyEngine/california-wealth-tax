@@ -4,8 +4,11 @@ inconsistent with the files the app reads.
 Run after scripts/fetch_forbes.py and before committing its output.
 
 The structural checks always apply. The three plausibility checks compare the
-new snapshot with earlier ones and can be waived by name when a real event
-trips them (Forbes' annual list, a market crash):
+new snapshot with earlier ones; they gate the daily publish, and CI waives
+them, because a waiver granted to the publish job is not recorded in the data
+and the same pair of snapshots would otherwise fail every later CI run. They
+can be waived by name when a real event trips them (Forbes' annual list, a
+market crash):
 
     SNAPSHOT_SANITY_ALLOW=roster-churn python scripts/check_snapshot_sanity.py
 
@@ -92,6 +95,20 @@ def raw_total(rows):
     return sum(row["netWorth"] for row in raw_rows(rows))
 
 
+def synthetic_rows_in(rows, metadata):
+    """Names in `rows` that are synthetic rows valid for one paper date only."""
+    synthetic = synthetic_row_keys(metadata)
+    return [row["name"] for row in rows if normalize_name(row["name"]) in synthetic]
+
+
+def feed_looks_frozen(total, previous_totals):
+    """True when the total matches each of the last MAX_IDENTICAL_TOTALS snapshots."""
+    recent = previous_totals[-MAX_IDENTICAL_TOTALS:]
+    return len(recent) >= MAX_IDENTICAL_TOTALS and all(
+        previous == total for previous in recent
+    )
+
+
 def roster_churn(rows, previous_rows):
     """People entering plus leaving, on the join key.
 
@@ -130,9 +147,7 @@ def main():
             f"{row['name']} has net worth {row['netWorth']}",
         )
 
-    metadata = load(DATA_DIR / "billionaire_metadata.json")
-    synthetic = synthetic_row_keys(metadata)
-    leaked = [row["name"] for row in live if normalize_name(row["name"]) in synthetic]
+    leaked = synthetic_rows_in(live, load(DATA_DIR / "billionaire_metadata.json"))
     check(not leaked, f"synthetic rows in the live file: {leaked}")
 
     total = raw_total(live)
@@ -157,12 +172,14 @@ def main():
             f"{churn} people entered or left since {previous_dates[-1]}",
             waived,
         )
-        recent = previous_dates[-MAX_IDENTICAL_TOTALS:]
         plausibility_check(
             "frozen-upstream",
-            len(recent) < MAX_IDENTICAL_TOTALS
-            or any(
-                raw_total(load(SNAPSHOTS_DIR / f"{d}.json")) != total for d in recent
+            not feed_looks_frozen(
+                total,
+                [
+                    raw_total(load(SNAPSHOTS_DIR / f"{d}.json"))
+                    for d in previous_dates[-MAX_IDENTICAL_TOTALS:]
+                ],
             ),
             f"total wealth is identical across the last {MAX_IDENTICAL_TOTALS + 1} "
             "snapshots; the Forbes feed may have stopped updating",

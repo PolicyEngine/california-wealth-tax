@@ -23,7 +23,11 @@ jobs:
         run: |
           python -m pip install pytest
           python -m pytest scripts -q
+      # Structural checks only: the plausibility checks gate the daily publish
+      # (update-forbes.yml), where a maintainer can waive them for a real event.
       - name: Snapshot sanity
+        env:
+          SNAPSHOT_SANITY_ALLOW: total-move,roster-churn,frozen-upstream
         run: python scripts/check_snapshot_sanity.py
       # A branch lags main's daily data commits, so staleness only warns here.
       - name: Snapshot freshness

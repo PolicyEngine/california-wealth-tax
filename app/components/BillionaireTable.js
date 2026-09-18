@@ -56,7 +56,7 @@ function getRowStatuses(row) {
 
   if (row.valuationSource === "lastListed") {
     statuses.push({
-      label: `Off the Forbes list; last valued ${row.lastListedDate}`,
+      label: `Off the Forbes list; carried at its ${row.lastListedDate} value`,
       tone: "warning",
     });
   }
@@ -66,7 +66,13 @@ function getRowStatuses(row) {
   }
 
   if (row.belowThreshold && row.valuationSource !== "offForbesList") {
-    statuses.push({ label: "Below $1B; owes nothing", tone: "neutral" });
+    statuses.push({
+      label:
+        row.netWorthB < 1
+          ? "Forbes values below $1B; owes nothing"
+          : "Under $1B once real estate is removed; owes nothing",
+      tone: "neutral",
+    });
   }
 
   if (row.valuationFallback) {
