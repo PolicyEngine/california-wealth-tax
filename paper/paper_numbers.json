@@ -21,74 +21,74 @@
   "adjustedGrossB": 90.2,
   "residencyAdjustmentsTaxB": 30.7,
   "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
-  "adjustedAnnualIncomeTaxLostB": 0.42,
+  "adjustedAnnualIncomeTaxLostB": 0.43,
   "adjustedPvReceiptsB": 87.6,
-  "adjustedPvIncomeTaxLostB": 14.1,
-  "adjustedNetB": 73.5,
+  "adjustedPvIncomeTaxLostB": 14.2,
+  "adjustedNetB": 73.4,
   "adjustedNetAtLaoCeilingB": 54.3,
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
   "installmentReceiptsPer100": 115,
-  "hooverAnnualIncomeTaxLostB": 2.82,
-  "hooverFromFilingsAnnualIncomeTaxLostB": 2.12,
-  "hooverFromFilingsNetB": -14.1,
+  "hooverAnnualIncomeTaxLostB": 2.83,
+  "hooverFromFilingsAnnualIncomeTaxLostB": 2.14,
+  "hooverFromFilingsNetB": -14.5,
   "fourLargestWealthSharePct": 39.8,
-  "fourLargestByWealthM": 1815,
+  "fourLargestByWealthM": 1823,
   "fourLargestFromFilingsM": 252,
   "fourLargest": [
     {
       "name": "Larry Page",
       "wealthSharePct": 11.7,
-      "byWealthM": 532,
+      "byWealthM": 534,
       "fromFilingsM": 57
     },
     {
       "name": "Sergey Brin",
       "wealthSharePct": 10.7,
-      "byWealthM": 490,
+      "byWealthM": 492,
       "fromFilingsM": 37
     },
     {
       "name": "Mark Zuckerberg",
       "wealthSharePct": 9.6,
-      "byWealthM": 438,
+      "byWealthM": 440,
       "fromFilingsM": 101
     },
     {
       "name": "Jensen Huang",
       "wealthSharePct": 7.8,
-      "byWealthM": 355,
+      "byWealthM": 357,
       "fromFilingsM": 57
     }
   ],
   "bridgeStartB": 106.1,
-  "bridgeEndB": -37.3,
+  "bridgeEndB": -37.7,
   "bridge": [
     {
       "id": "residency",
       "label": "Residency: documented departures",
       "valueB": -23.1,
-      "minB": -83.6,
-      "maxB": 6.6
+      "minB": -83.5,
+      "maxB": 6.2
     },
     {
       "id": "migration",
-      "label": "Further migration before valuation",
-      "valueB": -70.4,
+      "label": "Unannounced departures before January 1",
+      "valueB": -70.7,
       "minB": -139,
-      "maxB": -27.9
+      "maxB": -28
     },
     {
       "id": "incomeTax",
       "label": "Count movers' future income tax",
-      "valueB": -47.4,
-      "minB": -94,
+      "valueB": -47.5,
+      "minB": -94.3,
       "maxB": 0
     },
     {
       "id": "incomeAllocation",
       "label": "Who pays the cohort's income tax",
       "valueB": -10.4,
-      "minB": -39.7,
+      "minB": -40,
       "maxB": 0
     },
     {

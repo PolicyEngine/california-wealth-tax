@@ -111,7 +111,8 @@ function normalizeParams(nextParams) {
 
 function getSnapshotRows(snapshotDate, data) {
   return annotateBillionaires({
-    billionaires: data,
+    // `null` means the snapshot for this date could not be loaded.
+    billionaires: data ?? [],
     metadata: billionaireMetadata,
     snapshotDate,
   });
@@ -148,6 +149,27 @@ function groupMatchesSet(group, assumptions, set) {
   return group.keys.every((key) => sameValue(assumptions[key], set[key]));
 }
 
+// When `key` becomes the bridge's destination, the origin moves if it would
+// otherwise carry the same assumptions: the set itself, or "your scenario",
+// which equals the set once it is applied.
+function bridgeOriginFor(key, from) {
+  return from === key || from === "your"
+    ? key === "berkeley"
+      ? "baseline"
+      : "berkeley"
+    : from;
+}
+
+function matchingSetKey(assumptions) {
+  return (
+    Object.keys(ASSUMPTION_SETS).find((key) =>
+      ASSUMPTION_GROUPS.every((group) =>
+        groupMatchesSet(group, assumptions, ASSUMPTION_SETS[key])
+      )
+    ) ?? null
+  );
+}
+
 function summarizeGroup(group, assumptions, context) {
   switch (group.id) {
     case "residency": {
@@ -160,8 +182,8 @@ function summarizeGroup(group, assumptions, context) {
       return assumptions.departureResponseMode === DEPARTURE_RESPONSE_MODES.ELASTICITY
         ? `Semi-elasticity ${assumptions.migrationSemiElasticity.toFixed(1)} per point`
         : assumptions.unannouncedDepartureShare === 0
-          ? "No further departures before the valuation date"
-          : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the remaining base leaves (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
+          ? "No unannounced departures before January 1"
+          : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the reachable base left unannounced (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
         ? `Counted: ${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
@@ -266,11 +288,20 @@ export default function Home() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
+    // A link may name a date inside the index range that has no file.
+    parsed.snapshotDate = resolveSnapshotDate(parsed.snapshotDate);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL after mount; window is unavailable during render
     setParams(parsed);
     setHasSyncedUrlState(true);
     if (searchParams.toString().length > 0) {
-      setBridgeTo("your");
+      // A link that equals a set bridges to that set, never to itself.
+      const linkedSet = matchingSetKey(assumptionsOf(parsed));
+      if (linkedSet) {
+        setBridgeFrom((from) => bridgeOriginFor(linkedSet, from));
+        setBridgeTo(linkedSet);
+      } else {
+        setBridgeTo("your");
+      }
     }
   }, []);
 
@@ -393,12 +424,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bridgeFrom, bridgeTo, bridgeUsesYourScenario ? assumptions : null, score]
   );
-  const activeSet =
-    Object.keys(ASSUMPTION_SETS).find((key) =>
-      ASSUMPTION_GROUPS.every((group) =>
-        groupMatchesSet(group, assumptions, ASSUMPTION_SETS[key])
-      )
-    ) ?? null;
+  const activeSet = matchingSetKey(assumptions);
   const remainingResidentWealthB = current.baseMicro.stayers.reduce(
     (sum, row) => sum + row.netWorthB,
     0
@@ -419,19 +445,27 @@ export default function Home() {
     ])
   );
   const referenceLines = [];
-  if (!bridgeUsesYourScenario && activeSet === null) {
-    referenceLines.push({
-      label: "Yours",
-      value: current.result.netFiscalImpact,
-      stroke: "var(--gray-700)",
-    });
-  }
   if (bridgeFrom !== "baseline" && bridgeTo !== "baseline") {
     referenceLines.push({
       label: "Statutory, no behavior",
       value: campValues.baseline,
       stroke: "var(--gray-400)",
     });
+  }
+  // The user's line appears only where it says something the chart does not:
+  // a finite value that is not already an endpoint or the statutory line.
+  const yourValue = current.result.netFiscalImpact;
+  const alreadyShown = [
+    bridge.startValue,
+    bridge.endValue,
+    ...referenceLines.map((line) => line.value),
+  ];
+  if (
+    !bridgeUsesYourScenario &&
+    Number.isFinite(yourValue) &&
+    alreadyShown.every((value) => Math.abs(value - yourValue) >= 0.05)
+  ) {
+    referenceLines.push({ label: "Yours", value: yourValue, stroke: "var(--gray-700)" });
   }
   const heatmapBaseKey = JSON.stringify(
     Object.fromEntries(
@@ -463,9 +497,10 @@ export default function Home() {
         1,
         ...[INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].flatMap((method) =>
           [HEATMAP_SHARES[0], HEATMAP_SHARES.at(-1)].flatMap((share) =>
-            [HEATMAP_COHORT_TAX_B[0], HEATMAP_COHORT_TAX_B.at(-1)].map((tax) =>
-              Math.abs(heatmapEvaluators[method](share, tax))
-            )
+            [HEATMAP_COHORT_TAX_B[0], HEATMAP_COHORT_TAX_B.at(-1)]
+              .map((tax) => Math.abs(heatmapEvaluators[method](share, tax)))
+              // A divergent present value is painted neutral, not scaled to.
+              .filter((value) => Number.isFinite(value))
           )
         )
       ),
@@ -547,9 +582,7 @@ export default function Home() {
 
   function applySet(key) {
     setParams((prev) => normalizeParams({ ...prev, ...ASSUMPTION_SETS[key] }));
-    if (bridgeFrom === key) {
-      setBridgeFrom(key === "berkeley" ? "baseline" : "berkeley");
-    }
+    setBridgeFrom((from) => bridgeOriginFor(key, from));
     setBridgeTo(key);
   }
 
@@ -783,8 +816,8 @@ export default function Home() {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
                     Net present value as of 2026 with income-tax effects
-                    counted, across how much more wealth leaves before the
-                    valuation date and how much California income tax the
+                    counted, across how much of the base left before January 1
+                    without public notice and how much California income tax the
                     cohort pays in total. Same axes, same colors, two ways of
                     dividing that total among people. Other assumptions as in
                     your scenario.
@@ -811,11 +844,11 @@ export default function Home() {
                         extent={heatmapExtent}
                         cellW={26}
                         cellH={20}
-                        xLabel="Further wealth leaving before valuation (share of remaining base)"
+                        xLabel="Unannounced departures before January 1 (share of the reachable base)"
                         yLabel="Cohort income tax, $B a year"
                         formatX={(value) => `${(value * 100).toFixed(0)}%`}
                         formatY={(value) => `$${value.toFixed(1)}B`}
-                        ariaLabel={`Net present value by further migration share and cohort income tax: ${panel.title}`}
+                        ariaLabel={`Net present value by unannounced-departure share and cohort income tax: ${panel.title}`}
                       />
                     </div>
                   ))}

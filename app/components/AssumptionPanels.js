@@ -123,13 +123,18 @@ export default function AssumptionPanel({
             </ToggleChip>
           </div>
           {[
-            { key: "residency", title: "Contested residency", category: "residency" },
+            {
+              key: "residency",
+              title: "Contested residency",
+              category: "residency",
+              note: "Rauh et al. classify both as having left before the measure existed, so removing them takes them out of the base and loses no income tax that the measure caused.",
+            },
             { key: "pre", title: "Reported departures before January 1, 2026", category: "pre_snapshot_departure" },
             {
               key: "post",
               title: "Reported or planned departures after January 1, 2026",
               category: "post_snapshot_departure",
-              note: "Rauh et al.'s Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way; applying the claim counts their future California income tax as lost and keeps them out of the modeled migration response.",
+              note: "Rauh et al.'s Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way; applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
             },
           ].map((section) => (
             <div key={section.key} className="space-y-2">
@@ -218,11 +223,11 @@ export default function AssumptionPanel({
         <div className="space-y-5">
           <Field
             title="How to set it"
-            note="A share removes that fraction of the base the response can reach (everyone still in it, less people you marked as leaving after January 1) before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05), and the calculator solves for the share of the reachable base that delivers it; Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5."
+            note="This stands for people who left California before January 1, 2026 without public notice; leaving after that date does not escape the tax, because residency is fixed that day. A share removes that fraction of the base the response can reach (everyone still in it, less people you marked as leaving after January 1). A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05), and the calculator solves for the share of the reachable base that delivers it; Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5; their preferred 12 to 13 implies 60% to 65%, which it reaches at 18.3 to 21.0. The slider starts at 12.6, the value earlier versions of this calculator used (46.7% here)."
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip selected={usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.SHARE)}>
-                Share of remaining base
+                Share of the reachable base
               </ToggleChip>
               <ToggleChip selected={!usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.ELASTICITY)}>
                 Semi-elasticity
@@ -231,7 +236,7 @@ export default function AssumptionPanel({
           </Field>
           {usesShare ? (
             <Slider
-              label="Further wealth leaving before December 31, 2026"
+              label="Unannounced departures before January 1, 2026 (share of the reachable base)"
               value={params.unannouncedDepartureShare}
               onChange={(value) => update("unannouncedDepartureShare", value)}
               min={0}
@@ -242,7 +247,6 @@ export default function AssumptionPanel({
               }
               quickPicks={[
                 { label: "None", value: 0 },
-                { label: "Rauh et al.'s 51.6% total, as a share", value: 0.5 },
               ]}
             />
           ) : (
@@ -439,7 +443,8 @@ export default function AssumptionPanel({
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             Filings figures are Boll, Saez and Zucman&apos;s estimates from SEC
             disclosures of stock sales, donations and option exercises plus
-            dividends and compensation, averaged over 2023–2025 (their Table 3).
+            dividends and compensation (their Table 3); the amounts used here
+            are our average of its 2023–2025 rows.
             Founders whose wealth is unrealized stock report little taxable
             income relative to it. Dividing the total by wealth instead is Rauh
             et al.&apos;s f × C: a mover&apos;s loss is their wealth share of the
