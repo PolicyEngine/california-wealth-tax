@@ -9,7 +9,7 @@
     "paper:render": "npm run paper:html && npm run paper:pdf",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "test": "vitest run"
   },

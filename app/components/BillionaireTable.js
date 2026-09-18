@@ -42,23 +42,31 @@ function getRowStatuses(row) {
 
   if (row.residencyAssumed) {
     statuses.push({
-      label: "Crossed $1B after Jan. 1; residency assumed",
+      label: "Not on the Jan. 1 list; residency assumed",
       tone: "neutral",
     });
   }
 
   if (row.valuationSource === "anyStateList") {
     statuses.push({
-      label: `Forbes now lists ${row.forbesState ?? row.forbesCountry ?? "another location"}`,
+      label: `Forbes now lists ${row.forbesState ?? row.forbesCountry ?? row.forbesCity ?? "no location"}`,
+      tone: "warning",
+    });
+  }
+
+  if (row.valuationSource === "lastListed") {
+    statuses.push({
+      label: `Off the Forbes list; last valued ${row.lastListedDate}`,
       tone: "warning",
     });
   }
 
   if (row.valuationSource === "offForbesList") {
-    statuses.push({
-      label: "No longer on the Forbes list (below $1B)",
-      tone: "neutral",
-    });
+    statuses.push({ label: "No Forbes valuation", tone: "neutral" });
+  }
+
+  if (row.belowThreshold && row.valuationSource !== "offForbesList") {
+    statuses.push({ label: "Below $1B; owes nothing", tone: "neutral" });
   }
 
   if (row.valuationFallback) {
@@ -146,7 +154,7 @@ export default function BillionaireTable({
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums">
                   {row.valuationSource === "offForbesList"
-                    ? `< $1B (was ${formatB(row.rosterNetWorthB)})`
+                    ? `— (was ${formatB(row.rosterNetWorthB)})`
                     : formatB(row.netWorthB)}
                 </td>
                 {excludeRealEstate && (

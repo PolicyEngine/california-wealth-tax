@@ -66,7 +66,12 @@ const DEFAULT_CUSTOM_SNAPSHOT_DATE =
   [...snapshotIndex]
     .reverse()
     .find((date) => date !== LIVE_DATE && date !== PAPER_DATE) ?? LIVE_DATE;
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+// next.config.mjs mounts the app under this path; raw fetch() does not apply
+// basePath, so it is prepended by hand, as layout.js does for the logo.
+const BASE_PATH =
+  process.env.NEXT_PUBLIC_BASE_PATH !== undefined
+    ? process.env.NEXT_PUBLIC_BASE_PATH
+    : "/us/california-wealth-tax";
 
 const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
   ? new Date(liveMetadata.sourceTimestampIso).toLocaleString("en-US", {
@@ -105,7 +110,8 @@ function roundUpToNearest(value, step) {
 
 function getSnapshotRows(snapshotDate, data) {
   return annotateBillionaires({
-    billionaires: data,
+    // `null` means the snapshot for this date could not be loaded.
+    billionaires: data ?? [],
     metadata: billionaireMetadata,
     snapshotDate,
   });
@@ -376,6 +382,7 @@ function buildPresetDetails(params) {
     share: params.unannouncedDepartureShare,
     totalElasticity: params.migrationSemiElasticity,
     observedLossShare: observedDepartureLossShare,
+    poolShare: baseMicro.unannouncedDeparturePoolShare,
   });
   const micro = computeMicroResults({
     billionaires: data,
@@ -443,13 +450,32 @@ export default function Home() {
   useEffect(() => {
     const date = params.snapshotDate;
     if (BUNDLED_SNAPSHOTS[date]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the bundled snapshot is synchronous; the fetch below is not
       setSnapshotData(BUNDLED_SNAPSHOTS[date]);
       return;
     }
+    let stale = false;
     fetch(`${BASE_PATH}/snapshots/${date}.json`)
-      .then((r) => r.json())
-      .then(setSnapshotData)
-      .catch(() => setSnapshotData(liveData));
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(`snapshot ${date}: HTTP ${r.status}`);
+        }
+        return r.json();
+      })
+      .then((rows) => {
+        if (!stale) {
+          setSnapshotData(rows);
+        }
+      })
+      .catch(() => {
+        // Never show another date's rows under this date's label.
+        if (!stale) {
+          setSnapshotData(null);
+        }
+      });
+    return () => {
+      stale = true;
+    };
   }, [params.snapshotDate]);
 
   const sourceDate = useMemo(
@@ -460,6 +486,7 @@ export default function Home() {
     () => getSnapshotRows(params.snapshotDate, snapshotData),
     [params.snapshotDate, snapshotData]
   );
+  const snapshotLoadFailed = snapshotData === null;
   const residencyRosterOption = useMemo(
     () =>
       deriveResidencyRosterOption({
@@ -481,9 +508,9 @@ export default function Home() {
           rosterValuations.sourceDate === LIVE_DATE
             ? rosterValuations
             : null,
-        // People who crossed $1 billion after January 1, 2026 owe the tax if
-        // they were residents that day; before the roster date the concept
-        // does not apply.
+        // People on the California list now but not on the January 1 list
+        // owe the tax if they were residents that day; before the roster date
+        // the concept does not apply.
         includeNewEntrants: params.snapshotDate > RESIDENCY_ROSTER_DATE,
       }),
     [residencySnapshotRows, valuationSnapshotRows, params.snapshotDate]
@@ -545,11 +572,12 @@ export default function Home() {
       return 0;
     }
 
-    return (
-      (linearizedTotalLossShare - observedDepartureLossShare) /
-      (1 - observedDepartureLossShare)
-    );
-  }, [observedDepartureLossShare]);
+    const poolShare = baseMicro.unannouncedDeparturePoolShare;
+
+    return poolShare > 0
+      ? Math.min(1, (linearizedTotalLossShare - observedDepartureLossShare) / poolShare)
+      : 0;
+  }, [observedDepartureLossShare, baseMicro.unannouncedDeparturePoolShare]);
   const modeledAdditionalDepartureShare = useMemo(
     () =>
       usesElasticityMode
@@ -558,6 +586,7 @@ export default function Home() {
             share: params.unannouncedDepartureShare,
             totalElasticity: params.migrationSemiElasticity,
             observedLossShare: observedDepartureLossShare,
+            poolShare: baseMicro.unannouncedDeparturePoolShare,
           })
         : params.unannouncedDepartureShare,
     [
@@ -566,6 +595,7 @@ export default function Home() {
       params.unannouncedDepartureShare,
       params.migrationSemiElasticity,
       observedDepartureLossShare,
+      baseMicro.unannouncedDeparturePoolShare,
     ]
   );
   const impliedResidualElasticity = useMemo(
@@ -574,9 +604,15 @@ export default function Home() {
         ? impliedRemainerElasticity({
             totalElasticity: params.migrationSemiElasticity,
             observedLossShare: observedDepartureLossShare,
+            poolShare: baseMicro.unannouncedDeparturePoolShare,
           })
         : 0,
-    [usesElasticityMode, params.migrationSemiElasticity, observedDepartureLossShare]
+    [
+      usesElasticityMode,
+      params.migrationSemiElasticity,
+      observedDepartureLossShare,
+      baseMicro.unannouncedDeparturePoolShare,
+    ]
   );
   const correctedBaseWealthB = useMemo(
     () =>
@@ -745,11 +781,14 @@ export default function Home() {
         : `Current Forbes snapshot (${LIVE_DATE})`
       : params.snapshotDate === PAPER_DATE
         ? "Paper snapshot (2025-10-17)"
-        : `Stored Forbes snapshot (${params.snapshotDate})`;
+        : snapshotLoadFailed
+          ? `Stored Forbes snapshot (${params.snapshotDate}) could not be loaded`
+          : `Stored Forbes snapshot (${params.snapshotDate})`;
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const parsed = normalizeParams(parseScenarioParams(searchParams, DEFAULT_PARAMS));
     const matchingPreset = getMatchingPresetKey(parsed);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL after mount; window is unavailable during render
     setParams(parsed);
     setHasSyncedUrlState(true);
     // If URL has scenario params, keep the wizard visible but expose results.
@@ -1587,8 +1626,8 @@ export default function Home() {
               {!wizardHasPath && (
                 <p className="mt-3 text-xs leading-5 text-[var(--gray-500)]">
                   PolicyEngine baseline: Forbes data as of {LIVE_DATE}, everyone
-                  Forbes listed in California on January 1, 2026 plus residents
-                  who have since crossed $1 billion, directly held real estate
+                  Forbes listed in California on January 1, 2026 plus everyone
+                  it has added to its California list since, directly held real estate
                   excluded, no behavioral response. Pick a starting point to
                   change any of it.
                 </p>
@@ -1675,7 +1714,7 @@ function BaseNotes({ notes }) {
 
   if (notes.assumedResidencyCount > 0) {
     lines.push(
-      `${notes.assumedResidencyCount} people (${formatBillions(notes.assumedResidencyWealthB)}) crossed $1 billion after January 1, 2026. They are on Forbes' California list now and are assumed to have been residents that day.`
+      `${notes.assumedResidencyCount} people (${formatBillions(notes.assumedResidencyWealthB)}) are on Forbes' California list now and were not on its January 1, 2026 list, most of them added with Forbes' annual list in March. They are assumed to have been California residents on January 1.`
     );
   }
 
@@ -1685,9 +1724,21 @@ function BaseNotes({ notes }) {
     );
   }
 
+  if (notes.lastListedCount > 0) {
+    lines.push(
+      `${notes.lastListedCount} people (${formatBillions(notes.lastListedWealthB)}) from the January 1 list are no longer on any Forbes list. They are carried at the last value Forbes published for them.`
+    );
+  }
+
+  if (notes.belowThresholdCount > 0) {
+    lines.push(
+      `${notes.belowThresholdCount} people Forbes now values below $1 billion are out of the base.`
+    );
+  }
+
   if (notes.offForbesListCount > 0) {
     lines.push(
-      `${notes.offForbesListCount} people from the January 1 list are no longer on the Forbes list, which starts at $1 billion. They owe nothing under the rate ramp and are out of the base.`
+      `${notes.offForbesListCount} people from the January 1 list have no Forbes valuation and are out of the base.`
     );
   }
 
