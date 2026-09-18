@@ -7,7 +7,7 @@ Proposition 40 on the November 3, 2026 ballot (Initiative 25-0024A1, the 2026 Bi
 Official sources:
 - **[Measure text (25-0024A1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
 - **[LAO ballot analysis](https://lao.ca.gov/BallotAnalysis/Proposition?number=40&year=2026)**: "tens of billions of dollars spread over several years"; "possible ongoing decrease of less than $1 billion per year" in income tax
-- Propositions 41 and 42 on the same ballot can stop Proposition 40 from becoming law if either receives more yes votes (LAO).
+- The LAO analysis's "Potential Interactions With Other Propositions" section: if Proposition 41 or 42 on the same ballot receives more yes votes than Proposition 40, "Proposition 40 could be stopped from becoming law even if it gets yes votes from a majority of voters", because a court could find the measures conflict.
 
 Key provisions:
 - **Residency date**: January 1, 2026 (§50308(n)). Apportionment is 100% with no part-year proration (§50306(a)); §50306(b) allows a petition for alternative apportionment with a 25% floor. Not modeled.

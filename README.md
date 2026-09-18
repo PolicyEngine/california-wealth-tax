@@ -14,9 +14,11 @@ One model, scored person by person, in two stages.
 
 - **Stage 1: one-time wealth tax.** The residency roster is everyone Forbes
   listed in California on January 1, 2026. Each person is valued at their
-  latest Forbes worth, wherever Forbes lists them now; people who have since
-  crossed $1 billion are added; people no longer on the Forbes list are below
-  the threshold. The statute is applied per person: real property held
+  latest Forbes worth, wherever Forbes lists them now; people Forbes has
+  added to its California list since are added, with their January 1
+  residency assumed; people Forbes no longer lists at all are carried at the
+  last value it published for them. The statute is applied per person:
+  net worth under $1 billion owes nothing, real property held
   directly is excluded, then the rate ramp, then an optional erosion haircut
   and the payment election (lump sum due in 2027, or five installments with a
   7.5% charge on the unpaid balance). With stage 2 off, the headline is
