@@ -34,16 +34,16 @@
     {
       "id": "residency",
       "label": "Residency: documented departures",
-      "valueB": -34.7,
-      "minB": -107.3,
+      "valueB": -34.6,
+      "minB": -106.9,
       "maxB": -0.2
     },
     {
       "id": "migration",
       "label": "Further migration before valuation",
-      "valueB": -80.8,
+      "valueB": -80.9,
       "minB": -172,
-      "maxB": -27.9
+      "maxB": -28
     },
     {
       "id": "incomeTax",

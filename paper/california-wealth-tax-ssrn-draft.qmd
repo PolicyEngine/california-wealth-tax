@@ -365,9 +365,9 @@ orderings.
 
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
-| Further migration before valuation | -$80.8 | -$172.0 to -$27.9 |
+| Further migration before valuation | -$80.9 | -$172.0 to -$28.0 |
 | Movers' future income tax | -$76.1 | -$134.6 to +$0.0 |
-| Residency: documented departures | -$34.7 | -$107.3 to -$0.2 |
+| Residency: documented departures | -$34.6 | -$106.9 to -$0.2 |
 | Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
 | Real estate exclusion and growth to valuation | -$0.1 | -$0.4 to +$0.4 |
 
