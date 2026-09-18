@@ -20,12 +20,13 @@ abstract: |
   which requires separate assumptions about which departures are legally
   effective and which are attributable to the tax. On the September 18, 2026
   Forbes snapshot, the baseline covers 269 people and yields $120.9 billion of
-  one-time revenue. Treating every documented pre-2026 departure and contested
-  residency claim as effective removes $30.7 billion, leaving $90.2 billion.
-  Adding the present value of those movers' California income tax under a 2
-  percent income yield and a 3 percent real discount rate reduces the net
-  present value to $11.1 billion; the income tax assumption, which published
-  estimates place between $0.15 billion and $3.1 billion a year, decides the
+  one-time revenue. Treating every documented departure and contested
+  residency claim as effective removes $30.7 billion of tax, leaving $90.2
+  billion, and counting the present value of those movers' California income
+  tax under a 2 percent income yield and a 3 percent real discount rate
+  reduces the net present value to $10.2 billion; the income tax assumption,
+  which published estimates place between $0.15 billion and $3.1 billion a
+  year, decides the
   sign. Every figure in this paper is computed by the calculator's code from a
   dated snapshot.
 ---
@@ -175,17 +176,23 @@ David Sacks, is not on the Forbes list at all and so is outside a Forbes-based
 roster; his reported departure is the sixth in their Table 6, which is why
 five of the six are offered as adjustments below.
 
-The baseline keeps everyone else on the roster. Eight documented claims that a
-roster member was not a California resident on January 1, 2026 are offered as
-individual adjustments, each shown with its evidence and source: two contested
-residency classifications from Rauh et al., and six reported departures before
-January 1, five from Rauh et al.'s Table 6 plus Travis Kalanick, who has said
-on the record that he moved to Texas on December 18, 2025. California domicile
-turns on a closest-connection test, and none of these claims has been tested.
-Galle et al. [-@galle2026response] argue that few of these people are likely
-to have taken the steps a change of residency requires as a matter of law;
-Rauh et al. treat all of theirs as effective. The calculator takes no position
-beyond the baseline and reports what each one is worth.
+The baseline keeps everyone else on the roster and treats everyone in it as
+a resident who keeps paying California income tax. Twelve documented
+departure claims are offered as individual adjustments, each shown with its
+evidence and source. Eight remove a person from the base as a non-resident on
+January 1, 2026: two contested residency classifications from Rauh et al., and
+six reported departures before January 1, five from Rauh et al.'s Table 6
+plus Travis Kalanick, who has said on the record that he moved to Texas on
+December 18, 2025. Four are reported or planned departures after January 1
+(Rauh et al.'s Table 7, which marks three of them unconfirmed); those people
+owe the wealth tax whatever happens next, so applying the claim keeps them in
+the base, counts their future income tax as lost, and takes them out of the
+pool the modeled migration response draws on. California domicile turns on a
+closest-connection test, and none of these claims has been tested. Galle et
+al. [-@galle2026response] argue that few of these people are likely to have
+taken the steps a change of residency requires as a matter of law; Rauh et
+al. treat all of theirs as effective. The calculator takes no position beyond
+the baseline and reports what each one is worth.
 
 Forbes leaves the state blank for most people who are not US citizens, so the
 24 such California residents that Galle et al. count, holding about $150
@@ -297,10 +304,12 @@ one; the first lost income tax return is filed in the same year. With stage
 two off, the calculator reports nominal receipts, as a budget table would.
 With stage two on, both legs move to present value as of 2026.
 
-The calculator separates nominal wealth growth from the real discount rate and
-converts nominal growth into real growth using a 2.5 percent inflation
-assumption, so users can compare their implied spread with Rauh et al.'s 1.5
-percent to 4.5 percent range.
+Two growth rates do different jobs and are set separately. Nominal growth of
+wealth from the snapshot to December 31, 2026 scales the tax base. Real
+growth of the movers' income tax stream, together with the real discount
+rate, sets the spread $r - g$ of the perpetuity; the default of zero growth
+and a 3 percent discount rate is Rauh et al.'s central case, and their 1.5
+percent and 4.5 percent cases are one setting away.
 
 Installments carry a 7.5 percent charge on the unpaid balance. Per $100 of
 liability they return $115 in nominal receipts, and because the charge exceeds
@@ -317,16 +326,16 @@ The baseline covers 269 people with combined net worth of $2,434 billion and
 yields $120.9 billion of one-time revenue, or $108.8 billion after a 10
 percent erosion haircut of the kind Galle et al. apply.
 
-Applying all eight residency adjustments removes $30.7 billion, leaving $90.2
-billion from 261 people. Two people, Larry Page and Sergey Brin, account for
-most of that difference.
+Applying all twelve documented departure claims removes $30.7 billion of tax,
+leaving $90.2 billion from 261 people. Two people, Larry Page and Sergey
+Brin, account for most of that difference.
 
-Stage two, on the adjusted base: with a 2 percent income yield, full
+Stage two on the same scenario: with a 2 percent income yield, full
 attribution of the movers' income tax to the measure, a 3 percent real
 discount rate, no growth, no return migration, and a perpetual horizon, the
-movers' California income tax is $2.3 billion a year. Receipts are worth
-$87.6 billion in present value and the lost income tax $76.5 billion, for a
-net present value of $11.1 billion. At the Legislative Analyst's ceiling of $1
+movers' California income tax is $2.32 billion a year. Receipts are worth
+$87.6 billion in present value and the lost income tax $77.4 billion, for a
+net present value of $10.2 billion. At the Legislative Analyst's ceiling of $1
 billion a year the same base nets $54.3 billion; at Walczak's $3.1 billion of
 income tax it is -$15.4 billion. Within this model the income tax assumption
 decides the sign.
@@ -342,8 +351,13 @@ calculator holds as its October 17, 2025 snapshot.
 Scoring both sets of assumptions inside one model, on the same people and the
 same data, turns the disagreement into arithmetic. On the September 18, 2026
 snapshot the Berkeley assumptions give a net present value of $106.1 billion
-and the Hoover assumptions give -$26.9 billion. Five assumptions separate
-them. Because assumptions interact, the value of each depends on the order in
+and the Hoover assumptions give -$77.5 billion. Five assumptions separate
+them. Neither figure is the paper's own: the Berkeley roster adds non-citizen
+residents Forbes does not place in a state, and Rauh et al. score a smaller
+2025 list with fewer named movers and a smaller income-tax base, which is why
+their published mean of -$24.7 billion sits well above this model's reading
+of their assumptions. Because assumptions interact, the value of each depends
+on the order in
 which they are applied, so the table reports Shapley values: each assumption's
 marginal effect averaged over every ordering. The contributions sum exactly to
 the gap. The last column gives the smallest and largest marginal effect across
@@ -351,17 +365,17 @@ orderings.
 
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
-| Count movers' future income tax | -$60.5 | -$79.1 to -$42.2 |
-| Further migration before valuation | -$59.3 | -$87.4 to -$32.5 |
-| Treat documented departures as effective | -$21.2 | -$29.7 to -$13.6 |
-| Drop the 10% avoidance haircut | +$8.2 | +$5.2 to +$11.8 |
-| Exclude directly held real estate | -$0.2 | -$0.4 to +$0.1 |
+| Further migration before valuation | -$80.8 | -$172.1 to -$27.9 |
+| Movers' future income tax | -$76.2 | -$134.7 to +$0.0 |
+| Residency: documented departures | -$34.7 | -$107.3 to -$0.2 |
+| Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
+| Real estate exclusion and growth to valuation | -$0.1 | -$0.4 to +$0.4 |
 
 : Bridge from the Berkeley assumptions to the Hoover assumptions, net present value as of 2026 {#tbl-bridge}
 
 Three assumptions carry the gap, and all three concern migration: whether
-reported departures before January 1, 2026 are legally effective, how many
-more people leave before the valuation date, and how much California income
+reported departures before January 1, 2026 are legally effective, how much
+more wealth leaves before the valuation date, and how much California income
 tax the movers would otherwise have paid. The last two interact, which is why
 their ranges are wide: each additional person assumed to leave also takes an
 income tax stream. The avoidance haircut and the real estate exclusion, which

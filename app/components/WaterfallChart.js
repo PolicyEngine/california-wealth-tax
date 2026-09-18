@@ -29,41 +29,60 @@ function WaterfallTooltip({ active, payload }) {
   return (
     <div className="rounded-2xl border border-[var(--gray-200)] bg-white/95 px-4 py-3 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-400)]">
-        {entry.isTotal ? "Result" : "Step effect"}
+        {entry.isTotal ? "Result" : entry.isStart ? "Starting point" : "Step effect"}
       </p>
       <p className="mt-1 text-sm font-semibold text-[var(--gray-700)]">
         {entry.label}
       </p>
       <div className="mt-3 space-y-1 text-sm text-[var(--gray-600)]">
         <div className="flex min-w-[12rem] items-center justify-between gap-4">
-          <span>Change</span>
+          <span>{entry.isStart || entry.isTotal ? "Value" : "Change"}</span>
           <span className="font-semibold text-[var(--gray-700)]">
-            {formatBillions(entry.value, { showPlus: true })}
+            {formatBillions(entry.value, { showPlus: !entry.isStart })}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-4">
-          <span>Total after step</span>
-          <span className="font-semibold text-[var(--gray-700)]">
-            {formatBillions(entry.total, { showPlus: true })}
-          </span>
-        </div>
+        {!entry.isStart && !entry.isTotal && (
+          <div className="flex items-center justify-between gap-4">
+            <span>Total after step</span>
+            <span className="font-semibold text-[var(--gray-700)]">
+              {formatBillions(entry.total, { showPlus: true })}
+            </span>
+          </div>
+        )}
+        {entry.clickable && (
+          <p className="pt-1 text-xs text-[var(--teal-700)]">Click to adjust</p>
+        )}
       </div>
     </div>
   );
 }
 
-export default function WaterfallChart({ waterfall, totalLabel, height = 300 }) {
-  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {});
+export default function WaterfallChart({
+  waterfall,
+  totalLabel,
+  height = 300,
+  onBarClick,
+  activeId = null,
+  clickableIds = null,
+  referenceLines = [],
+}) {
+  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {}).map(
+    (entry, index) => ({
+      ...entry,
+      isStart: index === 0,
+      clickable: Boolean(onBarClick) && (clickableIds?.has(entry.id) ?? false),
+    })
+  );
 
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+        <BarChart data={data} margin={{ top: 18, right: 90, left: 10, bottom: 5 }}>
           <XAxis
             dataKey="label"
             tick={{ fontSize: 11 }}
             interval={0}
-            angle={-20}
+            angle={-18}
             textAnchor="end"
             height={60}
           />
@@ -73,16 +92,46 @@ export default function WaterfallChart({ waterfall, totalLabel, height = 300 }) 
           />
           <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
           <ReferenceLine y={0} stroke="var(--gray-400)" />
+          {referenceLines.map((line) => (
+            <ReferenceLine
+              key={line.label}
+              y={line.value}
+              stroke={line.stroke ?? "var(--gray-500)"}
+              strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+              label={{
+                value: `${line.label} ${formatBillions(line.value, { showPlus: true })}`,
+                position: "right",
+                fontSize: 11,
+                fill: line.stroke ?? "var(--gray-500)",
+              }}
+            />
+          ))}
           {/* Invisible base */}
           <Bar dataKey="base" stackId="waterfall" fill="transparent" />
           {/* Visible bar */}
-          <Bar dataKey="height" stackId="waterfall">
-            {data.map((entry, index) => (
+          <Bar
+            dataKey="height"
+            stackId="waterfall"
+            onClick={(item) => {
+              // recharts 3 passes the rectangle item; the data row is its payload.
+              const entry = item?.payload ?? item;
+
+              if (onBarClick && entry?.clickable) {
+                onBarClick(entry.id);
+              }
+            }}
+            className={onBarClick ? "cursor-pointer" : undefined}
+          >
+            {data.map((entry) => (
               <Cell
-                key={index}
+                key={entry.id}
                 radius={entry.isNegative ? [0, 0, 4, 4] : [4, 4, 0, 0]}
+                opacity={activeId && entry.id !== activeId ? 0.55 : 1}
+                stroke={entry.id === activeId ? "var(--gray-700)" : "none"}
+                strokeWidth={entry.id === activeId ? 2 : 0}
                 fill={
-                  entry.isTotal
+                  entry.isTotal || entry.isStart
                     ? entry.total >= 0
                       ? "var(--teal-500)"
                       : "var(--red-500)"
