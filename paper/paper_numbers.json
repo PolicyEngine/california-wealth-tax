@@ -21,36 +21,36 @@
   "adjustedGrossB": 90.2,
   "residencyAdjustmentsTaxB": 30.7,
   "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
-  "adjustedAnnualIncomeTaxLostB": 0.45,
+  "adjustedAnnualIncomeTaxLostB": 0.42,
   "adjustedPvReceiptsB": 87.6,
-  "adjustedPvIncomeTaxLostB": 15,
-  "adjustedNetB": 72.6,
+  "adjustedPvIncomeTaxLostB": 14.1,
+  "adjustedNetB": 73.5,
   "adjustedNetAtLaoCeilingB": 54.3,
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
   "installmentReceiptsPer100": 115,
-  "hooverAnnualIncomeTaxLostB": 2.83,
-  "hooverFromFilingsAnnualIncomeTaxLostB": 2.15,
-  "hooverFromFilingsNetB": -15,
+  "hooverAnnualIncomeTaxLostB": 2.82,
+  "hooverFromFilingsAnnualIncomeTaxLostB": 2.12,
+  "hooverFromFilingsNetB": -14.1,
   "fourLargestWealthSharePct": 39.8,
-  "fourLargestByWealthM": 1812,
+  "fourLargestByWealthM": 1815,
   "fourLargestFromFilingsM": 252,
   "fourLargest": [
     {
       "name": "Larry Page",
       "wealthSharePct": 11.7,
-      "byWealthM": 531,
+      "byWealthM": 532,
       "fromFilingsM": 57
     },
     {
       "name": "Sergey Brin",
       "wealthSharePct": 10.7,
-      "byWealthM": 489,
+      "byWealthM": 490,
       "fromFilingsM": 37
     },
     {
       "name": "Mark Zuckerberg",
       "wealthSharePct": 9.6,
-      "byWealthM": 437,
+      "byWealthM": 438,
       "fromFilingsM": 101
     },
     {
@@ -61,14 +61,14 @@
     }
   ],
   "bridgeStartB": 106.1,
-  "bridgeEndB": -37.8,
+  "bridgeEndB": -37.3,
   "bridge": [
     {
       "id": "residency",
       "label": "Residency: documented departures",
-      "valueB": -23.4,
-      "minB": -84.2,
-      "maxB": 5.7
+      "valueB": -23.1,
+      "minB": -83.6,
+      "maxB": 6.6
     },
     {
       "id": "migration",
@@ -80,15 +80,15 @@
     {
       "id": "incomeTax",
       "label": "Count movers' future income tax",
-      "valueB": -47.7,
-      "minB": -94.6,
+      "valueB": -47.4,
+      "minB": -94,
       "maxB": 0
     },
     {
       "id": "incomeAllocation",
       "label": "Who pays the cohort's income tax",
-      "valueB": -10.3,
-      "minB": -39.3,
+      "valueB": -10.4,
+      "minB": -39.7,
       "maxB": 0
     },
     {
@@ -102,8 +102,8 @@
       "id": "valuation",
       "label": "Real estate exclusion and growth to valuation",
       "valueB": -0.3,
-      "minB": -0.4,
-      "maxB": 0
+      "minB": -0.5,
+      "maxB": -0.1
     }
   ]
 }

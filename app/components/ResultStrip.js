@@ -4,9 +4,12 @@ import { formatBillions } from "@/lib/format";
 import { PUBLISHED_ESTIMATES } from "@/lib/presets";
 
 const SET_LABELS = {
-  baseline: "PolicyEngine baseline",
+  baseline: "Statutory score",
   berkeley: "Berkeley assumptions",
   hoover: "Hoover assumptions",
+};
+const SET_NOTES = {
+  baseline: "no behavioral response",
 };
 
 export default function ResultStrip({
@@ -23,19 +26,19 @@ export default function ResultStrip({
 }) {
   return (
     <section className="rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-500)]">
-            {headlineLabel}
+            {activeSet ? SET_LABELS[activeSet] : "Your scenario"}: {headlineLabel}
           </p>
           <div
-            className={`mt-3 text-5xl font-semibold tracking-[-0.05em] ${
-              headlineValue >= 0 ? "text-[var(--teal-600)]" : "text-[var(--red-600)]"
+            className={`mt-2 text-3xl font-semibold tracking-[-0.04em] ${
+              headlineValue >= 0 ? "text-[var(--teal-700)]" : "text-[var(--red-600)]"
             }`}
           >
             {formatBillions(headlineValue, { showPlus: true })}
           </div>
-          <p className="mt-2 text-sm text-[var(--gray-600)]">
+          <p className="mt-1 text-sm text-[var(--gray-600)]">
             Present value as of 2026:{" "}
             <span className="font-semibold text-[var(--gray-700)]">
               {formatBillions(presentValue, { showPlus: true })}
@@ -66,7 +69,14 @@ export default function ResultStrip({
                         : "border-[var(--gray-300)] bg-white text-[var(--gray-700)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
                     }`}
                   >
-                    <span className="block font-medium">{label}</span>
+                    <span className="block font-medium">
+                      {label}
+                      {SET_NOTES[key] && (
+                        <span className={`font-normal ${selected ? "text-white/80" : "text-[var(--gray-500)]"}`}>
+                          , {SET_NOTES[key]}
+                        </span>
+                      )}
+                    </span>
                     <span
                       className={`block text-xs tabular-nums ${
                         selected ? "text-white/80" : "text-[var(--gray-500)]"
@@ -90,9 +100,9 @@ export default function ResultStrip({
             </div>
             <p className="mt-2 text-xs leading-5 text-[var(--gray-500)]">
               The Legislative Analyst&apos;s Office expects &ldquo;tens of
-              billions of dollars spread over several years&rdquo; and an
-              ongoing income-tax loss of &ldquo;less than $1 billion per
-              year.&rdquo;
+              billions of dollars spread over several years&rdquo; and calls an
+              ongoing income-tax decrease of &ldquo;less than $1 billion per
+              year&rdquo; possible.
             </p>
           </div>
 

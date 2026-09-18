@@ -7,7 +7,7 @@ import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 
 const SET_LABELS = {
-  baseline: "PolicyEngine baseline",
+  baseline: "Statutory",
   berkeley: "Berkeley",
   hoover: "Hoover",
 };
@@ -96,11 +96,12 @@ export default function AssumptionPanel({
       body = (
         <div className="space-y-4">
           <p className="text-sm leading-6 text-[var(--gray-600)]">
-            The baseline keeps everyone Forbes listed in California on January
-            1, 2026. Each item is a documented claim that someone was not a
-            resident that day; remove them to see the effect. Larry Ellison is
-            out of every base: Forbes lists him in Florida and both published
-            estimates exclude him.
+            The statutory score keeps everyone Forbes listed in California on
+            January 1, 2026. The first two sections are documented claims that
+            someone was not a resident that day; the third covers people who
+            were residents on January 1 but are reported or expected to leave.
+            Larry Ellison is out of every base: Forbes lists him in Florida and
+            both published estimates exclude him.
           </p>
           <div className="flex flex-wrap gap-2">
             <ToggleChip
@@ -126,9 +127,9 @@ export default function AssumptionPanel({
             { key: "pre", title: "Reported departures before January 1, 2026", category: "pre_snapshot_departure" },
             {
               key: "post",
-              title: "Reported departures after January 1, 2026",
+              title: "Reported or planned departures after January 1, 2026",
               category: "post_snapshot_departure",
-              note: "They owe the wealth tax either way; removing them counts their future California income tax as lost.",
+              note: "Rauh et al.'s Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way; applying the claim counts their future California income tax as lost and keeps them out of the modeled migration response.",
             },
           ].map((section) => (
             <div key={section.key} className="space-y-2">
@@ -202,7 +203,8 @@ export default function AssumptionPanel({
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             California domicile turns on a closest-connection test, and none of
             these claims has been tested. Galle, Gamage, Saez and Shanske argue
-            none changes residency; Rauh et al. treat all of theirs as
+            it is unlikely many of these people have taken the steps a change
+            of residency requires; Rauh et al. treat all of theirs as
             effective.
           </p>
         </div>
@@ -216,7 +218,7 @@ export default function AssumptionPanel({
         <div className="space-y-5">
           <Field
             title="How to set it"
-            note="A share removes that fraction of the remaining base before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05); Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5."
+            note="A share removes that fraction of the base the response can reach (everyone still in it, less people you marked as leaving after January 1) before the valuation date. A semi-elasticity sets the total share of the base that leaves, documented departures included, at 1 − exp(−ε × 0.05), and the calculator solves for the share of the reachable base that delivers it; Rauh et al. apply 10.32 per point linearly for 51.6%, which this kernel reaches at 14.5."
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip selected={usesShare} onClick={() => update("departureResponseMode", DEPARTURE_RESPONSE_MODES.SHARE)}>
@@ -240,7 +242,7 @@ export default function AssumptionPanel({
               }
               quickPicks={[
                 { label: "None", value: 0 },
-                { label: "Rauh central 48%", value: 0.48 },
+                { label: "Rauh et al.'s 51.6% total, as a share", value: 0.5 },
               ]}
             />
           ) : (
@@ -252,12 +254,12 @@ export default function AssumptionPanel({
               max={30}
               step={0.1}
               format={(value) =>
-                `${value.toFixed(1)} · ${(modeledAdditionalDepartureShare * 100).toFixed(1)}% of remaining base`
+                `${value.toFixed(2)} · ${(modeledAdditionalDepartureShare * 100).toFixed(1)}% of the reachable base`
               }
               quickPicks={[
-                { label: "Jakobsen et al. 2", value: 2 },
-                { label: "Brülhart et al. 10.32", value: 10.32 },
-                { label: "Rauh et al.'s 51.6% total: 14.5", value: 14.5 },
+                { label: "None", value: 0 },
+                { label: "Rauh et al.'s literature calibration, 10.32 (from Brülhart et al.)", value: 10.32 },
+                { label: "Rauh et al.'s 51.6% total in this kernel: 14.5", value: 14.5 },
               ]}
             />
           )}
@@ -441,7 +443,10 @@ export default function AssumptionPanel({
             Founders whose wealth is unrealized stock report little taxable
             income relative to it. Dividing the total by wealth instead is Rauh
             et al.&apos;s f × C: a mover&apos;s loss is their wealth share of the
-            cohort total.
+            cohort total. The uniform yield is kept for older links; Rauh et
+            al. back out 1.3% to 2.3% on their 2025 list, and on today&apos;s
+            larger roster a 2% yield puts the cohort above both teams&apos;
+            totals.
           </p>
         </div>
       );
@@ -462,17 +467,20 @@ export default function AssumptionPanel({
             quickPicks={[
               { label: "None", value: 0 },
               { label: "Berkeley 10%", value: 0.1 },
-              { label: "Rauh et al. 15%", value: 0.15 },
-              { label: "Boll–Saez–Zucman high 23%", value: 0.23 },
             ]}
           />
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             A reduced-form allowance for avoidance, evasion, and the gap
             between Forbes estimates and values reported to the Franchise Tax
             Board. It lowers one-time receipts only; it does not move anyone or
-            create future income-tax losses. The measure&apos;s valuation
-            rules (no minority discounts, a funding-round floor, a book-value
-            presumption for private businesses) push in both directions.
+            create future income-tax losses. Galle et al. apply 10%; Rauh et
+            al. apply none and reduce the base through residency and migration
+            instead. Boll, Saez and Zucman&apos;s 23% scenario is mostly four
+            departures, which belong in the residency panel. The measure&apos;s
+            valuation rules (no minority discounts, a funding-round floor, and a
+            presumed value of book value plus 7.5 times three-year average
+            profits for private businesses, rebuttable on clear and convincing
+            evidence) push in both directions.
           </p>
         </div>
       );

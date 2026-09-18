@@ -13,6 +13,10 @@ function mix(a, b, t) {
 }
 
 function cellColor(value, extent) {
+  if (!Number.isFinite(value)) {
+    return "var(--gray-200)";
+  }
+
   if (value >= 0) {
     return mix(TEAL_LIGHT, TEAL, Math.min(1, value / extent));
   }
@@ -41,7 +45,14 @@ export default function Heatmap({
     [evaluate, xs, ys]
   );
   const extent =
-    sharedExtent ?? Math.max(1, ...grid.flat().map((value) => Math.abs(value)));
+    sharedExtent ??
+    Math.max(
+      1,
+      ...grid
+        .flat()
+        .filter((value) => Number.isFinite(value))
+        .map((value) => Math.abs(value))
+    );
   const left = 64;
   const top = 28;
   const width = left + shares.length * cellW + 16;
@@ -70,7 +81,7 @@ export default function Heatmap({
               fill={cellColor(value, extent)}
             >
               <title>
-                {`${formatX(shares[columnIndex])}, ${formatY(yields[rowIndex])}: ${formatBillions(value, { showPlus: true })}`}
+                {`${formatX(shares[columnIndex])}, ${formatY(yields[rowIndex])}: ${Number.isFinite(value) ? formatBillions(value, { showPlus: true }) : "unbounded"}`}
               </title>
             </rect>
           ))

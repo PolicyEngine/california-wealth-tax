@@ -73,12 +73,19 @@ California residents who are not citizens are missing from the base.
 
 ```text
 app/
-├── page.js                  # Calculator shell, scenario state, summary panel
+├── page.js                  # Scenario state, URL sync, data loading, layout
 ├── components/
-│   ├── Wizard.js            # Guided assumption flow
-│   ├── BillionaireTable.js  # Person-level table with valuation source flags
-│   └── WaterfallChart.js    # Fiscal-impact waterfall
+│   ├── LiveBridge.js        # The bridge between two assumption sets (hero)
+│   ├── WaterfallChart.js    # The bridge's waterfall
+│   ├── ResultStrip.js       # Your scenario's number, start-from sets, data, link
+│   ├── AssumptionPanels.js  # One panel per assumption group
+│   ├── Slider.js            # Slider with sourced quick picks
+│   ├── Heatmap.js           # Net present value over two assumptions
+│   └── BillionaireTable.js  # Person-level table with valuation source flags
 lib/
+├── scenario.js              # One scorer: parameters in, results out
+├── presets.js               # The statutory, Berkeley and Hoover assumption sets
+├── bridge.js                # Assumption groups and the Shapley bridge
 ├── calculator.js            # Receipt schedule, present values, headline
 ├── microModel.js            # Roster join, person-level tax and income tax
 ├── residencyAdjustments.js  # Documented residency claims with sources

@@ -70,10 +70,19 @@ const ASSUMPTION_SETS = {
   hoover: HOOVER_ASSUMPTIONS,
 };
 const SET_LABELS = {
-  baseline: "PolicyEngine baseline",
+  baseline: "Statutory",
   berkeley: "Berkeley",
   hoover: "Hoover",
 };
+// Settings the two heatmaps override, so a change to them alone must not
+// recompute the grids.
+const HEATMAP_OVERRIDDEN_KEYS = new Set([
+  "includeIncomeTaxEffects",
+  "departureResponseMode",
+  "unannouncedDepartureShare",
+  "incomeTaxMethod",
+  "cohortIncomeTaxB",
+]);
 const DEFAULT_PARAMS = { snapshotDate: LIVE_DATE, ...BASELINE_ASSUMPTIONS };
 const HEATMAP_SHARES = Array.from({ length: 17 }, (_, i) => i * 0.05);
 const HEATMAP_COHORT_TAX_B = Array.from({ length: 11 }, (_, i) => 1 + i * 0.5);
@@ -251,6 +260,8 @@ export default function Home() {
   const [snapshotData, setSnapshotData] = useState(
     BUNDLED_SNAPSHOTS[params.snapshotDate] ?? liveData
   );
+  // All-states valuations for a stored date, when the daily job wrote them.
+  const [fetchedRosterValuations, setFetchedRosterValuations] = useState(null);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -284,22 +295,30 @@ export default function Home() {
       return;
     }
     let stale = false;
-    fetch(`${BASE_PATH}/snapshots/${date}.json`)
-      .then((r) => {
+    const load = (path) =>
+      fetch(`${BASE_PATH}/${path}`).then((r) => {
         if (!r.ok) {
-          throw new Error(`snapshot ${date}: HTTP ${r.status}`);
+          throw new Error(`${path}: HTTP ${r.status}`);
         }
         return r.json();
-      })
-      .then((rows) => {
+      });
+    Promise.all([
+      load(`snapshots/${date}.json`),
+      // Dated roster valuations exist from September 18, 2026; before that
+      // the roster falls back to its January 1 values, which the notes say.
+      load(`roster_valuations/${date}.json`).catch(() => null),
+    ])
+      .then(([rows, valuations]) => {
         if (!stale) {
           setSnapshotData(rows);
+          setFetchedRosterValuations(valuations);
         }
       })
       .catch(() => {
         // Never show another date's rows under this date's label.
         if (!stale) {
           setSnapshotData(null);
+          setFetchedRosterValuations(null);
         }
       });
     return () => {
@@ -325,18 +344,20 @@ export default function Home() {
       buildResidencyRosterValuationRows({
         residencyRows: residencySnapshotRows,
         valuationRows: getSnapshotRows(params.snapshotDate, snapshotData),
-        // The all-states valuations are fetched with the live snapshot and
-        // describe that date only.
+        // All-states valuations describe one date: the bundled file for the
+        // live date, the dated file for a stored one.
         rosterValuations:
           params.snapshotDate === LIVE_DATE && rosterValuations.sourceDate === LIVE_DATE
             ? rosterValuations
-            : null,
+            : fetchedRosterValuations?.sourceDate === params.snapshotDate
+              ? fetchedRosterValuations
+              : null,
         // People on the California list now but not on the January 1 list owe the tax if
         // they were residents that day; before the roster date the concept
         // does not apply.
         includeNewEntrants: params.snapshotDate > RESIDENCY_ROSTER_DATE,
       }),
-    [residencySnapshotRows, params.snapshotDate, snapshotData]
+    [residencySnapshotRows, params.snapshotDate, snapshotData, fetchedRosterValuations]
   );
   const sourceDate = useMemo(
     () => new Date(`${params.snapshotDate}T00:00:00`),
@@ -361,6 +382,7 @@ export default function Home() {
   );
   const endpointAssumptions = (key) =>
     key === "your" ? assumptions : ASSUMPTION_SETS[key];
+  const bridgeUsesYourScenario = bridgeFrom === "your" || bridgeTo === "your";
   const bridge = useMemo(
     () =>
       scenarioBridge({
@@ -369,7 +391,7 @@ export default function Home() {
         score,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bridgeFrom, bridgeTo, assumptions, score]
+    [bridgeFrom, bridgeTo, bridgeUsesYourScenario ? assumptions : null, score]
   );
   const activeSet =
     Object.keys(ASSUMPTION_SETS).find((key) =>
@@ -397,20 +419,25 @@ export default function Home() {
     ])
   );
   const referenceLines = [];
-  if (bridgeFrom !== "your" && bridgeTo !== "your") {
+  if (!bridgeUsesYourScenario && activeSet === null) {
     referenceLines.push({
-      label: "Your scenario",
+      label: "Yours",
       value: current.result.netFiscalImpact,
       stroke: "var(--gray-700)",
     });
   }
   if (bridgeFrom !== "baseline" && bridgeTo !== "baseline") {
     referenceLines.push({
-      label: "Baseline",
+      label: "Statutory, no behavior",
       value: campValues.baseline,
       stroke: "var(--gray-400)",
     });
   }
+  const heatmapBaseKey = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(assumptions).filter(([key]) => !HEATMAP_OVERRIDDEN_KEYS.has(key))
+    )
+  );
   const heatmapEvaluators = useMemo(
     () =>
       Object.fromEntries(
@@ -427,7 +454,8 @@ export default function Home() {
             }).result.netFiscalImpact,
         ])
       ),
-    [score, assumptions]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [score, heatmapBaseKey]
   );
   const heatmapExtent = useMemo(
     () =>
@@ -480,7 +508,8 @@ export default function Home() {
           ]
         : [];
     });
-  }, [score, assumptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score, heatmapBaseKey, assumptions.cohortIncomeTaxB]);
 
   const snapshotLabel =
     params.snapshotDate === LIVE_DATE
@@ -488,8 +517,10 @@ export default function Home() {
         ? `Forbes as of ${LIVE_SNAPSHOT_TIMESTAMP_LABEL}`
         : `Forbes as of ${LIVE_DATE}`
       : params.snapshotDate === PAPER_DATE
-        ? "Forbes list of October 17, 2025, the one both papers scored"
-        : `Forbes snapshot of ${params.snapshotDate}`;
+        ? "Forbes list of October 17, 2025, Rauh et al.'s roster"
+        : snapshotData === null
+          ? `Forbes snapshot of ${params.snapshotDate} could not be loaded`
+          : `Forbes snapshot of ${params.snapshotDate}`;
   const pitEffectsEnabled = params.includeIncomeTaxEffects;
   const embedBasePath =
     typeof window === "undefined"
@@ -516,7 +547,10 @@ export default function Home() {
 
   function applySet(key) {
     setParams((prev) => normalizeParams({ ...prev, ...ASSUMPTION_SETS[key] }));
-    markEdited();
+    if (bridgeFrom === key) {
+      setBridgeFrom(key === "berkeley" ? "baseline" : "berkeley");
+    }
+    setBridgeTo(key);
   }
 
   function applyGroupFrom(groupId, setKey) {
@@ -565,8 +599,8 @@ export default function Home() {
         }}
         className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
-        <option value="live">Forbes today ({LIVE_DATE})</option>
-        <option value="paper">October 17, 2025 list (both papers)</option>
+        <option value="live">Latest Forbes data ({LIVE_DATE})</option>
+        <option value="paper">October 17, 2025 list (Rauh et al.&apos;s roster)</option>
         <option value="other">Another stored date</option>
       </select>
       {params.snapshotDate !== LIVE_DATE && params.snapshotDate !== PAPER_DATE && (
@@ -675,6 +709,26 @@ export default function Home() {
             </section>
           ) : (
             <>
+              <LiveBridge
+                bridge={bridge}
+                from={bridgeFrom}
+                to={bridgeTo}
+                onChangeFrom={setBridgeFrom}
+                onChangeTo={setBridgeTo}
+                groups={ASSUMPTION_GROUPS}
+                activeGroup={activeGroup}
+                onSelectGroup={setActiveGroup}
+                groupSummaries={groupSummaries}
+                groupMatches={Object.fromEntries(
+                  Object.entries(groupMatches).map(([id, keys]) => [
+                    id,
+                    keys.map((key) => SET_LABELS[key]),
+                  ])
+                )}
+                referenceLines={referenceLines}
+                snapshotDate={params.snapshotDate}
+              />
+
               <ResultStrip
                 headlineValue={current.result.headlineValue}
                 headlineLabel={
@@ -694,26 +748,6 @@ export default function Home() {
                 copyStatus={copyStatus}
                 onCopyLink={copyScenarioLink}
                 dataControl={dataControl}
-              />
-
-              <LiveBridge
-                bridge={bridge}
-                from={bridgeFrom}
-                to={bridgeTo}
-                onChangeFrom={setBridgeFrom}
-                onChangeTo={setBridgeTo}
-                groups={ASSUMPTION_GROUPS}
-                activeGroup={activeGroup}
-                onSelectGroup={setActiveGroup}
-                groupSummaries={groupSummaries}
-                groupMatches={Object.fromEntries(
-                  Object.entries(groupMatches).map(([id, keys]) => [
-                    id,
-                    keys.map((key) => SET_LABELS[key]),
-                  ])
-                )}
-                referenceLines={referenceLines}
-                snapshotDate={params.snapshotDate}
               />
 
               {activeGroupConfig && (
@@ -805,7 +839,10 @@ export default function Home() {
                       Derivation
                     </summary>
                     <div className="mt-2 divide-y divide-[var(--gray-100)]">
-                      <DerivationRow label="Gross wealth tax (statutory rate)" value={formatBillions(current.result.grossWealthTaxB)} />
+                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB)} />
+                      {current.micro.unannouncedWealthTaxLossB > 0 && (
+                        <DerivationRow label="Less modeled further departures" value={`−${formatBillions(current.micro.unannouncedWealthTaxLossB)}`} />
+                      )}
                       <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxCollected)} />
                       {current.result.wealthTaxDeferralChargeB > 0 && (
                         <DerivationRow label="Installment deferral charges" value={formatBillions(current.result.wealthTaxDeferralChargeB)} />
@@ -827,6 +864,11 @@ export default function Home() {
                   rows={current.micro.rows}
                   avoidanceRate={params.avoidanceRate}
                   excludeRealEstate={params.excludeRealEstate}
+                  modeledDepartures={{
+                    share: current.modeledAdditionalDepartureShare,
+                    wealthTaxB: current.micro.unannouncedWealthTaxLossB,
+                    incomeTaxB: current.micro.unannouncedIncomeTaxB,
+                  }}
                 />
               </section>
             </>
