@@ -40,6 +40,10 @@ function getRowStatuses(row) {
     statuses.push({ label: "Added from paper corrections", tone: "neutral" });
   }
 
+  if (row.countsTowardKnownIncomeTaxLoss) {
+    statuses.push({ label: "Counted for income-tax loss", tone: "warning" });
+  }
+
   if (row.valuationFallback) {
     statuses.push({ label: "Wealth fallback to Jan. 1 roster", tone: "neutral" });
   }

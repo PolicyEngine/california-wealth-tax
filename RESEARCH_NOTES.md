@@ -108,19 +108,18 @@ Our model should ideally match the paper's Table 7 (10 departures) or let users 
 
 ### What should change based on the paper
 
-#### Income tax approach
-Rauh derives income tax from FTB data ($3.3-5.8B/yr), not from wealth × yield × tax rate. Our PE-derived approach is a reasonable alternative methodology, but we should:
-- Consider letting users toggle between "PolicyEngine-derived" and "Rauh range" ($3.3-5.8B) for the income tax input
-- Or at minimum, show how our PE-derived figure compares to Rauh's range
+#### Income tax approach (implemented)
+Rauh derives income tax from FTB data ($3.3-5.8B/yr), not from wealth × yield × tax rate. The app now supports both:
+- A mode toggle on the income-stream step: "Wealth-yield method" (PE-derived, the default) and "FTB aggregate method (Rauh et al.)" with a slider for the roster's total annual CA income tax (default $4.55B midpoint), allocated across billionaires by wealth share so mover loss follows the paper's f·C structure
+- In yield mode, the step shows the implied aggregate from current settings next to Rauh's $3.3–5.8B range
+- The Hoover starting point uses the FTB aggregate method at the midpoint
 
 #### Departure data
 The raw replication spreadsheet doesn't match the paper's final tables. The app now overlays local metadata to align the corrected base and timing buckets with Tables 6 and 7, but the raw JSON snapshot is still a Forbes-style base file rather than a paper-ready analytical table.
 
-#### Discount rate vs (r-g)
-Rauh uses (r-g) as a single parameter calibrated to dividend yield (~1.5%). Our model correctly separates r and g, which is more transparent, but:
-- The user needs to understand what growth rate to pair with what discount rate
-- We could add (r-g) as a derived display value so users can see how their choices compare to Rauh's range
-- **Open question**: Should the state discount at the equity return rate (implicit in Rauh's approach) or at its borrowing cost (~2-3% real)? If r=3% and g=5%, (r-g) is negative and the PV diverges, implying infinite cost. This is a real limitation of the growing perpetuity model.
+#### Discount rate vs (r-g) (display implemented)
+Rauh uses (r-g) as a single parameter calibrated to dividend yield (~1.5%). Our model correctly separates r and g, which is more transparent. The PV step and scenario summary now display the implied (r−g) against Rauh's 1.5%–4.5% range, and both the wizard and the headline warn when growth at or above the discount-plus-return rate makes a perpetual-horizon PV unbounded.
+- **Open question**: Should the state discount at the equity return rate (implicit in Rauh's approach) or at its borrowing cost (~2-3% real)? This remains the user's choice; the display just makes the implied spread visible.
 
 #### Wealth growth to EOY 2026
 Both papers use the Forbes snapshot as-is (implicitly 0% growth to Dec 31, 2026). Our model allows forecasting growth, with the rate labeled "nominal." The bill taxes nominal wealth, so this is correct. The growth rate also feeds into the PV of income tax losses (converted to real by subtracting the 2.5% CBO inflation forecast).
