@@ -443,8 +443,10 @@ export default function AssumptionPanel({
           <p className="text-xs leading-5 text-[var(--gray-500)]">
             Filings figures are Boll, Saez and Zucman&apos;s estimates from SEC
             disclosures of stock sales, donations and option exercises plus
-            dividends and compensation (their Table 3); the amounts used here
-            are our average of its 2023–2025 rows.
+            dividends and compensation on the four&apos;s company stakes, 97%
+            of their Forbes wealth (their Table 3); the amounts used here are
+            our average of its 2023–2025 rows, taken as each person&apos;s
+            whole California income tax, as Boll, Saez and Zucman do.
             Founders whose wealth is unrealized stock report little taxable
             income relative to it. Dividing the total by wealth instead is Rauh
             et al.&apos;s f × C: a mover&apos;s loss is their wealth share of the

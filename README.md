@@ -66,8 +66,9 @@ the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
 before anything is committed. Names are joined on a normalized key (aliases,
 trailing "& family", case), because Forbes changes display names.
 
-Known gap: Forbes leaves the state blank for most non-US citizens, so
-California residents who are not citizens are missing from the base.
+Known gap: the January 1, 2026 list is a backfill of US-citizen Forbes
+profiles, so non-US citizens Forbes places in California enter the base only
+through the current list, with their January 1 residency assumed.
 
 ## Architecture
 

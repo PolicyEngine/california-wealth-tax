@@ -107,7 +107,7 @@ Our model should ideally match the paper's Table 7 (10 departures) or let users 
 1. **Wealth base**: Toggle between raw Forbes, Rauh-corrected base, and after confirmed pre-snapshot departures
 2. **Real estate**: Toggle to exclude directly-held RE per the bill
 3. **Phase-in**: Per-billionaire effective rate from 0% ($1B) to 5% ($1.1B)
-4. **Avoidance**: Slider (10% Saez, 15% Rauh)
+4. **Avoidance**: Slider (10% per Galle et al.; Rauh et al. apply no haircut)
 5. **Unannounced departures**: Slider (share of remaining resident wealth)
 6. **Income tax**: Derived from wealth × income yield rate × PolicyEngine CA income tax (MFJ, 2026-2030 lookup)
 7. **PV**: Real discount rate (3%), minus inflation-adjusted nominal growth, with annual return hazard, over a horizon

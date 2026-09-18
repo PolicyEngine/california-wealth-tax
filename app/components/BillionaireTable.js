@@ -68,9 +68,11 @@ function getRowStatuses(row) {
   if (row.belowThreshold && row.valuationSource !== "offForbesList") {
     statuses.push({
       label:
-        row.netWorthB < 1
+        row.rawNetWorthB < 1
           ? "Forbes values below $1B; owes nothing"
-          : "Under $1B once real estate is removed; owes nothing",
+          : row.netWorthB < 1
+            ? "Under $1B at the valuation date; owes nothing"
+            : "Under $1B once real estate is removed; owes nothing",
       tone: "neutral",
     });
   }
