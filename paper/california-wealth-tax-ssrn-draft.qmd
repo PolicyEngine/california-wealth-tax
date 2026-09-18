@@ -351,7 +351,7 @@ calculator holds as its October 17, 2025 snapshot.
 Scoring both sets of assumptions inside one model, on the same people and the
 same data, turns the disagreement into arithmetic. On the September 18, 2026
 snapshot the Berkeley assumptions give a net present value of $106.1 billion
-and the Hoover assumptions give -$77.5 billion. Five assumptions separate
+and the Hoover assumptions give -$77.4 billion. Five assumptions separate
 them. Neither figure is the paper's own: the Berkeley roster adds non-citizen
 residents Forbes does not place in a state, and Rauh et al. score a smaller
 2025 list with fewer named movers and a smaller income-tax base, which is why
@@ -365,8 +365,8 @@ orderings.
 
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
-| Further migration before valuation | -$80.8 | -$172.1 to -$27.9 |
-| Movers' future income tax | -$76.2 | -$134.7 to +$0.0 |
+| Further migration before valuation | -$80.8 | -$172.0 to -$27.9 |
+| Movers' future income tax | -$76.1 | -$134.6 to +$0.0 |
 | Residency: documented departures | -$34.7 | -$107.3 to -$0.2 |
 | Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
 | Real estate exclusion and growth to valuation | -$0.1 | -$0.4 to +$0.4 |
