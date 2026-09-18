@@ -32,7 +32,7 @@
   "installmentReceiptsPer100": 115,
   "hooverAnnualIncomeTaxLostB": 2.83,
   "hooverFromFilingsAnnualIncomeTaxLostB": 2.13,
-  "hooverFromFilingsNetB": -14.4,
+  "hooverFromFilingsNetB": -14.5,
   "fourLargestWealthSharePct": 39.9,
   "fourLargestByWealthM": 1820,
   "fourLargestFromFilingsM": 252,
@@ -63,14 +63,14 @@
     }
   ],
   "bridgeStartB": 106.1,
-  "bridgeEndB": -37.6,
+  "bridgeEndB": -37.7,
   "bridge": [
     {
       "id": "residency",
       "label": "Residency: documented departures",
       "valueB": -23.1,
       "minB": -83.4,
-      "maxB": 6.2
+      "maxB": 6.3
     },
     {
       "id": "migration",
@@ -105,7 +105,7 @@
       "label": "Real estate exclusion and growth to valuation",
       "valueB": -0.3,
       "minB": -0.4,
-      "maxB": 0
+      "maxB": -0.1
     }
   ]
 }

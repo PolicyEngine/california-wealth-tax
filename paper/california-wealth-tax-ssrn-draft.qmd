@@ -21,13 +21,13 @@ abstract: |
   effective and which are attributable to the tax. On the September 18, 2026
   Forbes snapshot, the baseline covers 269 people and yields $120.9 billion of
   one-time revenue. Inside one model the Berkeley assumptions give a net
-  present value of $106.1 billion and the Hoover assumptions -$37.6 billion.
+  present value of $106.1 billion and the Hoover assumptions -$37.7 billion.
   The two teams' estimates of how much California income tax the state's
   billionaires pay in total overlap. They disagree on who pays it. Dividing
   Rauh et al.'s $4.55 billion by wealth assigns the four largest fortunes
   $1,820 million a year; estimates
   from their securities filings put them at $252 million. Changing that one
-  assumption moves the Hoover case from -$37.6 billion to -$14.4 billion. Every
+  assumption moves the Hoover case from -$37.7 billion to -$14.5 billion. Every
   figure in this paper is computed by the calculator's code from a dated
   snapshot.
 ---
@@ -366,7 +366,7 @@ Forbes list, which the calculator holds as its October 17, 2025 snapshot.
 Scoring both sets of assumptions inside one model, on the same people and the
 same data, turns the disagreement into arithmetic. On the September 18, 2026
 snapshot the Berkeley assumptions give a net present value of $106.1 billion
-and the Hoover assumptions give -$37.6 billion; Rauh et al. report a mean of
+and the Hoover assumptions give -$37.7 billion; Rauh et al. report a mean of
 -$24.7 billion from their own smaller roster. Six assumptions separate the
 two. Because assumptions interact, the value of each depends on the order in
 which they are applied, so the table reports Shapley values: each assumption's
@@ -378,10 +378,10 @@ orderings.
 |---|---|---|
 | Unannounced departures before January 1 | -$70.7 | -$139.0 to -$28.0 |
 | Count movers' future income tax | -$47.5 | -$94.3 to +$0.0 |
-| Residency: documented departures | -$23.1 | -$83.4 to +$6.2 |
+| Residency: documented departures | -$23.1 | -$83.4 to +$6.3 |
 | Who pays the cohort's income tax | -$10.4 | -$39.9 to +$0.0 |
 | Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
-| Real estate exclusion and growth to valuation | -$0.3 | -$0.4 to +$0.0 |
+| Real estate exclusion and growth to valuation | -$0.3 | -$0.4 to -$0.1 |
 
 : Bridge from the Berkeley assumptions to the Hoover assumptions, net present value as of 2026 {#tbl-bridge}
 
@@ -409,7 +409,7 @@ four largest fortunes.
 
 Holding every other Hoover assumption fixed and changing only this division,
 the movers' lost income tax falls from $2.83 billion to $2.13 billion a year
-and the net present value moves from -$37.6 billion to -$14.4 billion. The
+and the net present value moves from -$37.7 billion to -$14.5 billion. The
 division is worth more than the avoidance haircut and the real estate
 exclusion together. It does not by itself change the sign of the Hoover
 estimate; the migration response and the decision to count income tax at all

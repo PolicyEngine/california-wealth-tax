@@ -2388,7 +2388,7 @@ window.Quarto = {
 <div>
   <div class="abstract">
     <div class="block-title">Abstract</div>
-    <p>Proposition 40, on California’s November 3, 2026 ballot, would impose a one-time tax of 5 percent of the entire net worth of residents (as of January 1, 2026) worth $1 billion or more, valued on December 31, 2026. Public estimates of its fiscal effect run from roughly $100 billion in revenue to a negative net present value once future California income tax losses are counted. This paper documents a PolicyEngine calculator that scores the measure person by person from current Forbes data and exposes each contested assumption as a setting inside one model, so that the Berkeley and Hoover estimates become two parameterizations of the same calculation. The analysis has two stages. The first defines the taxable base and computes one-time receipts. The second optionally adds future California income tax losses, which requires separate assumptions about which departures are legally effective and which are attributable to the tax. On the September 18, 2026 Forbes snapshot, the baseline covers 269 people and yields $120.9 billion of one-time revenue. Inside one model the Berkeley assumptions give a net present value of $106.1 billion and the Hoover assumptions -$37.6 billion. The two teams’ estimates of how much California income tax the state’s billionaires pay in total overlap. They disagree on who pays it. Dividing Rauh et al.’s $4.55 billion by wealth assigns the four largest fortunes $1,820 million a year; estimates from their securities filings put them at $252 million. Changing that one assumption moves the Hoover case from -$37.6 billion to -$14.4 billion. Every figure in this paper is computed by the calculator’s code from a dated snapshot.</p>
+    <p>Proposition 40, on California’s November 3, 2026 ballot, would impose a one-time tax of 5 percent of the entire net worth of residents (as of January 1, 2026) worth $1 billion or more, valued on December 31, 2026. Public estimates of its fiscal effect run from roughly $100 billion in revenue to a negative net present value once future California income tax losses are counted. This paper documents a PolicyEngine calculator that scores the measure person by person from current Forbes data and exposes each contested assumption as a setting inside one model, so that the Berkeley and Hoover estimates become two parameterizations of the same calculation. The analysis has two stages. The first defines the taxable base and computes one-time receipts. The second optionally adds future California income tax losses, which requires separate assumptions about which departures are legally effective and which are attributable to the tax. On the September 18, 2026 Forbes snapshot, the baseline covers 269 people and yields $120.9 billion of one-time revenue. Inside one model the Berkeley assumptions give a net present value of $106.1 billion and the Hoover assumptions -$37.7 billion. The two teams’ estimates of how much California income tax the state’s billionaires pay in total overlap. They disagree on who pays it. Dividing Rauh et al.’s $4.55 billion by wealth assigns the four largest fortunes $1,820 million a year; estimates from their securities filings put them at $252 million. Changing that one assumption moves the Hoover case from -$37.7 billion to -$14.5 billion. Every figure in this paper is computed by the calculator’s code from a dated snapshot.</p>
   </div>
 </div>
 
@@ -2460,7 +2460,7 @@ window.Quarto = {
 </section>
 <section id="why-the-estimates-differ" class="level1">
 <h1>Why the estimates differ</h1>
-<p>Scoring both sets of assumptions inside one model, on the same people and the same data, turns the disagreement into arithmetic. On the September 18, 2026 snapshot the Berkeley assumptions give a net present value of $106.1 billion and the Hoover assumptions give -$37.6 billion; Rauh et al. report a mean of -$24.7 billion from their own smaller roster. Six assumptions separate the two. Because assumptions interact, the value of each depends on the order in which they are applied, so the table reports Shapley values: each assumption’s marginal effect averaged over every ordering. The contributions sum exactly to the gap. The last column gives the smallest and largest marginal effect across orderings.</p>
+<p>Scoring both sets of assumptions inside one model, on the same people and the same data, turns the disagreement into arithmetic. On the September 18, 2026 snapshot the Berkeley assumptions give a net present value of $106.1 billion and the Hoover assumptions give -$37.7 billion; Rauh et al. report a mean of -$24.7 billion from their own smaller roster. Six assumptions separate the two. Because assumptions interact, the value of each depends on the order in which they are applied, so the table reports Shapley values: each assumption’s marginal effect averaged over every ordering. The contributions sum exactly to the gap. The last column gives the smallest and largest marginal effect across orderings.</p>
 <div id="tbl-bridge" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-bridge-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -2494,7 +2494,7 @@ Table 1: Bridge from the Berkeley assumptions to the Hoover assumptions, net pr
 <tr class="odd">
 <td>Residency: documented departures</td>
 <td>-$23.1</td>
-<td>-$83.4 to +$6.2</td>
+<td>-$83.4 to +$6.3</td>
 </tr>
 <tr class="even">
 <td>Who pays the cohort’s income tax</td>
@@ -2509,7 +2509,7 @@ Table 1: Bridge from the Berkeley assumptions to the Hoover assumptions, net pr
 <tr class="even">
 <td>Real estate exclusion and growth to valuation</td>
 <td>-$0.3</td>
-<td>-$0.4 to +$0.0</td>
+<td>-$0.4 to -$0.1</td>
 </tr>
 </tbody>
 </table>
@@ -2569,7 +2569,7 @@ Table 2: California income tax a year assigned to the four largest fortunes, wi
 </div>
 </figure>
 </div>
-<p>Holding every other Hoover assumption fixed and changing only this division, the movers’ lost income tax falls from $2.83 billion to $2.13 billion a year and the net present value moves from -$37.6 billion to -$14.4 billion. The division is worth more than the avoidance haircut and the real estate exclusion together. It does not by itself change the sign of the Hoover estimate; the migration response and the decision to count income tax at all do that.</p>
+<p>Holding every other Hoover assumption fixed and changing only this division, the movers’ lost income tax falls from $2.83 billion to $2.13 billion a year and the net present value moves from -$37.7 billion to -$14.5 billion. The division is worth more than the avoidance haircut and the real estate exclusion together. It does not by itself change the sign of the Hoover estimate; the migration response and the decision to count income tax at all do that.</p>
 </section>
 <section id="valuation-remains-the-largest-open-issue" class="level1">
 <h1>Valuation remains the largest open issue</h1>
