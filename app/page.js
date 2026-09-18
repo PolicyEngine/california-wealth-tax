@@ -43,15 +43,19 @@ import liveMetadata from "@/data/billionaires_live_meta.json";
 import snapshotIndex from "@/public/snapshots/index.json";
 import residencyRosterData from "@/public/snapshots/2026-01-01.json";
 import rosterValuations from "@/data/roster_valuations.json";
+import AssumptionBridge from "@/app/components/AssumptionBridge";
+import { berkeleyToHooverBridge } from "@/lib/bridge";
+import {
+  BASELINE_ASSUMPTIONS,
+  BERKELEY_ASSUMPTIONS,
+  HOOVER_ASSUMPTIONS,
+} from "@/lib/presets";
+import { scoreScenario, toRealGrowthRate } from "@/lib/scenario";
 
 const BALLOT_MEASURE_URL =
   "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf";
 const LAO_ANALYSIS_URL =
   "https://lao.ca.gov/BallotAnalysis/Proposition?number=40&year=2026";
-
-// CBO CPI-U forecast via PolicyEngine: ~2.45% annualized 2026–2030.
-// Used to convert nominal wealth growth to real for PV discounting.
-const INFLATION_RATE = 0.025;
 
 // Bundled snapshots (always available without fetch)
 const BUNDLED_SNAPSHOTS = {
@@ -84,10 +88,6 @@ const LIVE_SNAPSHOT_TIMESTAMP_LABEL = liveMetadata.sourceTimestampIso
       timeZoneName: "short",
     })
   : null;
-function toRealGrowthRate(nominalGrowthRate, inflationRate = INFLATION_RATE) {
-  return (1 + nominalGrowthRate) / (1 + inflationRate) - 1;
-}
-
 function impliedElasticityFromLossShare(lossShare, taxRateDelta = 0.05) {
   if (taxRateDelta <= 0 || lossShare <= 0) {
     return 0;
@@ -259,69 +259,18 @@ const PRESETS = {
     description:
       "Applies the Galle, Gamage, Saez and Shanske static assumptions to this calculator's roster.",
     href: "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxJuly26.pdf",
-    params: {
-      snapshotDate: PAPER_DATE,
-      residencyExclusionIds: [],
-      departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-      wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
-      excludeRealEstate: false,
-      includeIncomeTaxEffects: false,
-      avoidanceRate: 0.1,
-      unannouncedDepartureShare: 0,
-      migrationSemiElasticity: 12.6,
-      wealthGrowthRate: 0,
-      annualReturnRate: 0,
-      incomeYieldRate: 0.01,
-      incomeTaxAttributionRate: 1,
-      horizonYears: Infinity,
-      discountRate: 0.03,
-    },
+    params: { snapshotDate: PAPER_DATE, ...BERKELEY_ASSUMPTIONS },
   },
   rauh: {
     label: "Hoover assumptions",
     description:
       "Applies the Rauh et al. departure and income-tax assumptions to this calculator's roster.",
     href: "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed",
-    params: {
-      snapshotDate: PAPER_DATE,
-      residencyExclusionIds: normalizeResidencyExclusionIds([
-        ...RESIDENCY_ONLY_EXCLUSION_IDS,
-        ...PRE_SNAPSHOT_EXCLUSION_IDS,
-      ]),
-      departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-      wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
-      excludeRealEstate: true,
-      includeIncomeTaxEffects: true,
-      avoidanceRate: 0,
-      unannouncedDepartureShare: 0.48,
-      migrationSemiElasticity: 12.6,
-      wealthGrowthRate: 0,
-      annualReturnRate: 0,
-      incomeYieldRate: 0.02,
-      incomeTaxAttributionRate: 1,
-      horizonYears: Infinity,
-      discountRate: 0.03,
-    },
+    params: { snapshotDate: PAPER_DATE, ...HOOVER_ASSUMPTIONS },
   },
 };
 
-const DEFAULT_PARAMS = {
-  snapshotDate: LIVE_DATE,
-  residencyExclusionIds: [],
-  departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-  wealthTaxPaymentMode: WEALTH_TAX_PAYMENT_MODES.LUMP_SUM,
-  excludeRealEstate: true,
-  includeIncomeTaxEffects: false,
-  avoidanceRate: 0,
-  unannouncedDepartureShare: 0,
-  migrationSemiElasticity: 12.6,
-  wealthGrowthRate: 0,
-  annualReturnRate: 0,
-  incomeYieldRate: 0.02,
-  incomeTaxAttributionRate: 1,
-  horizonYears: Infinity,
-  discountRate: 0.03,
-};
+const DEFAULT_PARAMS = { snapshotDate: LIVE_DATE, ...BASELINE_ASSUMPTIONS };
 
 const formatPercent = (value, decimals = 0) =>
   `${(value * 100).toFixed(decimals)}%`;
@@ -360,51 +309,11 @@ function buildPresetDetails(params) {
     residencyRows,
     valuationRows,
   });
-  const sourceDate = new Date(params.snapshotDate + "T00:00:00");
-  const realGrowthRate = toRealGrowthRate(params.wealthGrowthRate);
-  const baseMicro = computeMicroResults({
-    billionaires: data,
+  const { micro, result } = scoreScenario({
+    params,
+    rows: data,
     incomeTaxLookup,
-    excludedNames: residencyExcludedNamesFromIds(params.residencyExclusionIds),
-    excludeRealEstate: params.excludeRealEstate,
-    incomeYieldRate: params.incomeYieldRate,
-    wealthGrowthRate: params.wealthGrowthRate,
-    unannouncedDepartureShare: 0,
-    sourceDate,
-  });
-  const observedDepartureLossShare =
-    baseMicro.correctedBaseGrossWealthTaxB > 0
-      ? baseMicro.observedPreSnapshotDepartureGrossWealthTaxB /
-        baseMicro.correctedBaseGrossWealthTaxB
-      : 0;
-  const modeledAdditionalDepartureShare = effectiveAdditionalDepartureShare({
-    mode: params.departureResponseMode,
-    share: params.unannouncedDepartureShare,
-    totalElasticity: params.migrationSemiElasticity,
-    observedLossShare: observedDepartureLossShare,
-    poolShare: baseMicro.unannouncedDeparturePoolShare,
-  });
-  const micro = computeMicroResults({
-    billionaires: data,
-    incomeTaxLookup,
-    excludedNames: residencyExcludedNamesFromIds(params.residencyExclusionIds),
-    excludeRealEstate: params.excludeRealEstate,
-    incomeYieldRate: params.incomeYieldRate,
-    wealthGrowthRate: params.wealthGrowthRate,
-    unannouncedDepartureShare: modeledAdditionalDepartureShare,
-    sourceDate,
-  });
-  const result = calculateFiscalImpact({
-    grossWealthTaxB: micro.grossWealthTaxB,
-    avoidanceRate: params.avoidanceRate,
-    moverIncomeTaxB: micro.moverIncomeTaxB,
-    includeIncomeTaxEffects: params.includeIncomeTaxEffects,
-    incomeTaxAttributionRate: params.incomeTaxAttributionRate,
-    horizonYears: params.horizonYears,
-    discountRate: params.discountRate,
-    annualReturnRate: params.annualReturnRate,
-    growthRate: realGrowthRate,
-    wealthTaxPaymentMode: params.wealthTaxPaymentMode,
+    sourceDate: new Date(params.snapshotDate + "T00:00:00"),
   });
 
   return { micro, result };
@@ -515,6 +424,29 @@ export default function Home() {
       }),
     [residencySnapshotRows, valuationSnapshotRows, params.snapshotDate]
   );
+  // The bridge always uses the latest data, whatever snapshot the user picked.
+  const assumptionBridge = useMemo(() => {
+    const liveRows = buildResidencyRosterValuationRows({
+      residencyRows: residencySnapshotRows,
+      valuationRows: getSnapshotRows(LIVE_DATE, liveData),
+      rosterValuations:
+        rosterValuations.sourceDate === LIVE_DATE ? rosterValuations : null,
+      includeNewEntrants: true,
+    });
+    const sourceDate = new Date(`${LIVE_DATE}T00:00:00`);
+    const score = (scenarioParams) =>
+      scoreScenario({
+        params: scenarioParams,
+        rows: liveRows,
+        incomeTaxLookup,
+        sourceDate,
+      });
+
+    return {
+      ...berkeleyToHooverBridge(score),
+      baselineValue: score(BASELINE_ASSUMPTIONS).result.netFiscalImpact,
+    };
+  }, [residencySnapshotRows]);
   const excludedNames = useMemo(
     () => residencyExcludedNamesFromIds(params.residencyExclusionIds),
     [params.residencyExclusionIds]
@@ -918,6 +850,7 @@ export default function Home() {
               <div className="inline-flex rounded-full border border-[var(--gray-200)] bg-[var(--gray-50)] p-1">
                 {[
                   { key: "calculator", label: "Calculator" },
+                  { key: "bridge", label: "Why estimates differ" },
                   { key: "paper", label: "Paper" },
                 ].map((tab) => (
                   <button
@@ -937,7 +870,9 @@ export default function Home() {
             </div>
           </section>
 
-          {activeTab === "paper" ? (
+          {activeTab === "bridge" ? (
+            <AssumptionBridge bridge={assumptionBridge} snapshotDate={LIVE_DATE} />
+          ) : activeTab === "paper" ? (
             <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-3xl">

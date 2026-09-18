@@ -2204,6 +2204,7 @@ vertical-align: -.125em;
   <li><a href="#discounting-and-payment-timing" id="toc-discounting-and-payment-timing" class="nav-link" data-scroll-target="#discounting-and-payment-timing">Discounting and payment timing</a></li>
   </ul></li>
   <li><a href="#what-the-calculator-shows" id="toc-what-the-calculator-shows" class="nav-link" data-scroll-target="#what-the-calculator-shows">What the calculator shows</a></li>
+  <li><a href="#why-the-estimates-differ" id="toc-why-the-estimates-differ" class="nav-link" data-scroll-target="#why-the-estimates-differ">Why the estimates differ</a></li>
   <li><a href="#valuation-remains-the-largest-open-issue" id="toc-valuation-remains-the-largest-open-issue" class="nav-link" data-scroll-target="#valuation-remains-the-largest-open-issue">Valuation remains the largest open issue</a></li>
   <li><a href="#limitations-and-extensions" id="toc-limitations-and-extensions" class="nav-link" data-scroll-target="#limitations-and-extensions">Limitations and extensions</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
@@ -2316,6 +2317,56 @@ vertical-align: -.125em;
 <p>Applying all eight residency adjustments removes $30.7 billion, leaving $90.2 billion from 261 people. Two people, Larry Page and Sergey Brin, account for most of that difference.</p>
 <p>Stage two, on the adjusted base: with a 2 percent income yield, full attribution of the movers’ income tax to the measure, a 3 percent real discount rate, no growth, no return migration, and a perpetual horizon, the movers’ California income tax is $2.3 billion a year. Receipts are worth $87.6 billion in present value and the lost income tax $76.5 billion, for a net present value of $11.1 billion. At the Legislative Analyst’s ceiling of $1 billion a year the same base nets $54.3 billion; at Walczak’s $3.1 billion of income tax it is -$15.4 billion. Within this model the income tax assumption decides the sign.</p>
 <p>The Berkeley and Hoover starting points in the calculator apply those papers’ assumptions to this roster. They do not reproduce the papers’ rosters: Galle et al.’s includes non-citizen residents that Forbes does not place in a state, and Rauh et al.’s is fixed at the 2025 Forbes list, which the calculator holds as its October 17, 2025 snapshot.</p>
+</section>
+<section id="why-the-estimates-differ" class="level1">
+<h1>Why the estimates differ</h1>
+<p>Scoring both sets of assumptions inside one model, on the same people and the same data, turns the disagreement into arithmetic. On the September 18, 2026 snapshot the Berkeley assumptions give a net present value of $106.1 billion and the Hoover assumptions give -$26.9 billion. Five assumptions separate them. Because assumptions interact, the value of each depends on the order in which they are applied, so the table reports Shapley values: each assumption’s marginal effect averaged over every ordering. The contributions sum exactly to the gap. The last column gives the smallest and largest marginal effect across orderings.</p>
+<div id="tbl-bridge" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-bridge-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table 1: Bridge from the Berkeley assumptions to the Hoover assumptions, net present value as of 2026
+</figcaption>
+<div aria-describedby="tbl-bridge-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Assumption</th>
+<th>Worth ($ billions)</th>
+<th>Range across orderings</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Count movers’ future income tax</td>
+<td>-$60.5</td>
+<td>-$79.1 to -$42.2</td>
+</tr>
+<tr class="even">
+<td>Further migration before valuation</td>
+<td>-$59.3</td>
+<td>-$87.4 to -$32.5</td>
+</tr>
+<tr class="odd">
+<td>Treat documented departures as effective</td>
+<td>-$21.2</td>
+<td>-$29.7 to -$13.6</td>
+</tr>
+<tr class="even">
+<td>Drop the 10% avoidance haircut</td>
+<td>+$8.2</td>
+<td>+$5.2 to +$11.8</td>
+</tr>
+<tr class="odd">
+<td>Exclude directly held real estate</td>
+<td>-$0.2</td>
+<td>-$0.4 to +$0.1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>Three assumptions carry the gap, and all three concern migration: whether reported departures before January 1, 2026 are legally effective, how many more people leave before the valuation date, and how much California income tax the movers would otherwise have paid. The last two interact, which is why their ranges are wide: each additional person assumed to leave also takes an income tax stream. The avoidance haircut and the real estate exclusion, which occupy much of the public argument about the static score, are small.</p>
 </section>
 <section id="valuation-remains-the-largest-open-issue" class="level1">
 <h1>Valuation remains the largest open issue</h1>

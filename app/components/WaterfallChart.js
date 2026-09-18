@@ -29,7 +29,7 @@ function WaterfallTooltip({ active, payload }) {
   return (
     <div className="rounded-2xl border border-[var(--gray-200)] bg-white/95 px-4 py-3 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-400)]">
-        {entry.isTotal ? "Net result" : "Step effect"}
+        {entry.isTotal ? "Result" : "Step effect"}
       </p>
       <p className="mt-1 text-sm font-semibold text-[var(--gray-700)]">
         {entry.label}
@@ -52,12 +52,12 @@ function WaterfallTooltip({ active, payload }) {
   );
 }
 
-export default function WaterfallChart({ waterfall }) {
-  const data = buildWaterfallData(waterfall);
+export default function WaterfallChart({ waterfall, totalLabel, height = 300 }) {
+  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {});
 
   return (
     <div className="relative">
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
           <XAxis
             dataKey="label"

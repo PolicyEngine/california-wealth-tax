@@ -337,6 +337,36 @@ et al.'s includes non-citizen residents that Forbes does not place in a
 state, and Rauh et al.'s is fixed at the 2025 Forbes list, which the
 calculator holds as its October 17, 2025 snapshot.
 
+# Why the estimates differ
+
+Scoring both sets of assumptions inside one model, on the same people and the
+same data, turns the disagreement into arithmetic. On the September 18, 2026
+snapshot the Berkeley assumptions give a net present value of $106.1 billion
+and the Hoover assumptions give -$26.9 billion. Five assumptions separate
+them. Because assumptions interact, the value of each depends on the order in
+which they are applied, so the table reports Shapley values: each assumption's
+marginal effect averaged over every ordering. The contributions sum exactly to
+the gap. The last column gives the smallest and largest marginal effect across
+orderings.
+
+| Assumption | Worth ($ billions) | Range across orderings |
+|---|---|---|
+| Count movers' future income tax | -$60.5 | -$79.1 to -$42.2 |
+| Further migration before valuation | -$59.3 | -$87.4 to -$32.5 |
+| Treat documented departures as effective | -$21.2 | -$29.7 to -$13.6 |
+| Drop the 10% avoidance haircut | +$8.2 | +$5.2 to +$11.8 |
+| Exclude directly held real estate | -$0.2 | -$0.4 to +$0.1 |
+
+: Bridge from the Berkeley assumptions to the Hoover assumptions, net present value as of 2026 {#tbl-bridge}
+
+Three assumptions carry the gap, and all three concern migration: whether
+reported departures before January 1, 2026 are legally effective, how many
+more people leave before the valuation date, and how much California income
+tax the movers would otherwise have paid. The last two interact, which is why
+their ranges are wide: each additional person assumed to leave also takes an
+income tax stream. The avoidance haircut and the real estate exclusion, which
+occupy much of the public argument about the static score, are small.
+
 # Valuation remains the largest open issue
 
 The largest remaining uncertainty may be the gap between public Forbes wealth

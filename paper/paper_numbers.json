@@ -26,5 +26,44 @@
   "adjustedNetB": 11.1,
   "adjustedNetAtLaoCeilingB": 54.3,
   "adjustedNetAtWalczakIncomeTaxB": -15.4,
-  "installmentReceiptsPer100": 115
+  "installmentReceiptsPer100": 115,
+  "bridgeStartB": 106.1,
+  "bridgeEndB": -26.9,
+  "bridge": [
+    {
+      "id": "residency",
+      "label": "Treat documented departures as effective",
+      "valueB": -21.2,
+      "minB": -29.7,
+      "maxB": -13.6
+    },
+    {
+      "id": "migration",
+      "label": "Further migration before valuation",
+      "valueB": -59.3,
+      "minB": -87.4,
+      "maxB": -32.5
+    },
+    {
+      "id": "incomeTax",
+      "label": "Count movers' future income tax",
+      "valueB": -60.5,
+      "minB": -79.1,
+      "maxB": -42.2
+    },
+    {
+      "id": "erosion",
+      "label": "Drop the 10% avoidance haircut",
+      "valueB": 8.2,
+      "minB": 5.2,
+      "maxB": 11.8
+    },
+    {
+      "id": "realEstate",
+      "label": "Exclude directly held real estate",
+      "valueB": -0.2,
+      "minB": -0.4,
+      "maxB": 0.1
+    }
+  ]
 }
