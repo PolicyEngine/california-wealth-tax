@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import fetch_forbes  # noqa: E402
 from fetch_forbes import (  # noqa: E402
     MIN_CALIFORNIA_PEOPLE,
     MIN_FORBES_PEOPLE,
@@ -16,7 +17,10 @@ from fetch_forbes import (  # noqa: E402
     build_roster_valuations,
     build_row,
     canonicalize_name,
+    check_payload_complete,
     fetch_forbes_people,
+    last_listed_valuations,
+    load_fallback_rows,
     normalize_name,
     summarize_rows,
     validate_payload,
@@ -79,6 +83,22 @@ def test_fetch_forbes_people_rejects_an_empty_payload():
     with patch("urllib.request.urlopen", return_value=make_mock_response(empty)):
         with pytest.raises(RuntimeError):
             fetch_forbes_people()
+
+
+def test_fetch_forbes_people_rejects_a_payload_shorter_than_forbes_reports():
+    clipped = {"personList": {**MOCK_RESPONSE["personList"], "count": 5}}
+    with patch("urllib.request.urlopen", return_value=make_mock_response(clipped)):
+        with pytest.raises(RuntimeError, match="reports 5 people but returned 4"):
+            fetch_forbes_people()
+
+
+def test_check_payload_complete_rejects_a_list_that_fills_the_request_limit():
+    people = MOCK_RESPONSE["personList"]["personsLists"]
+
+    check_payload_complete(people, reported_count=4, limit=5)
+    check_payload_complete(people, reported_count=None, limit=5)
+    with pytest.raises(RuntimeError, match="request limit"):
+        check_payload_complete(people, reported_count=4, limit=4)
 
 
 def test_validate_payload_rejects_partial_and_stale_payloads():
@@ -184,6 +204,74 @@ def test_build_roster_valuations_values_roster_members_in_any_state():
     assert valuations["Elon Musk"]["forbesState"] == "Texas"
     assert valuations["Ken Xie"]["netWorth"] == 11.55e9
     assert "Fell Below" not in valuations
+
+
+def test_build_roster_valuations_carries_the_last_listed_value_for_people_forbes_dropped():
+    people = MOCK_RESPONSE["personList"]["personsLists"]
+    roster = [
+        {"name": "Dropped Person & family", "netWorth": 11.4e9},
+        {"name": "Never Stored", "netWorth": 1.2e9},
+    ]
+    last_listed = {normalize_name("Dropped Person"): ("2026-06-17", 12.0e9)}
+
+    valuations = build_roster_valuations(people, roster, last_listed)
+
+    assert valuations["Dropped Person & family"] == {
+        "netWorth": 12.0e9,
+        "lastListedDate": "2026-06-17",
+    }
+    assert "Never Stored" not in valuations
+
+
+def write_snapshot(directory, date, rows):
+    (directory / f"{date}.json").write_text(json.dumps(rows))
+
+
+def test_last_listed_valuations_skips_fallback_rows_and_nonpositive_values(tmp_path):
+    write_snapshot(tmp_path, "2026-02-01", [{"name": "A Person", "netWorth": 1.013e9}])
+    write_snapshot(
+        tmp_path,
+        "2026-02-02",
+        [
+            {"name": "A Person", "netWorth": -0.016e9},
+            {"name": "B Person & family", "netWorth": 3e9},
+        ],
+    )
+    write_snapshot(
+        tmp_path,
+        "2026-02-03",
+        [{"name": "B Person", "netWorth": 9e9, "includeInRawForbes": False}],
+    )
+    (tmp_path / "index.json").write_text("[]")
+
+    last_listed = last_listed_valuations(tmp_path)
+
+    assert last_listed[normalize_name("A Person")] == ("2026-02-01", 1.013e9)
+    assert last_listed[normalize_name("B Person")] == ("2026-02-02", 3e9)
+
+
+def test_load_fallback_rows_never_returns_a_synthetic_row(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    snapshots_dir = tmp_path / "snapshots"
+    data_dir.mkdir()
+    snapshots_dir.mkdir()
+    synthetic = {"name": "Synthetic Person", "netWorth": 2e9}
+    (data_dir / "billionaire_metadata.json").write_text(
+        json.dumps({"byName": {}, "syntheticRowsBySnapshot": {"2025-10-17": [synthetic]}})
+    )
+    # An earlier fetcher wrote the synthetic row into daily snapshots.
+    write_snapshot(
+        snapshots_dir,
+        "2026-03-26",
+        [synthetic, {"name": "Real Person", "netWorth": 3e9}],
+    )
+    monkeypatch.setattr(fetch_forbes, "DATA_DIR", data_dir)
+    monkeypatch.setattr(fetch_forbes, "SNAPSHOTS_DIR", snapshots_dir)
+
+    fallback_rows = load_fallback_rows()
+
+    assert normalize_name("Real Person") in fallback_rows
+    assert normalize_name("Synthetic Person") not in fallback_rows
 
 
 def test_summarize_rows_reports_raw_and_departure_totals():

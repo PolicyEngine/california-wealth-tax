@@ -8,8 +8,9 @@ Outputs:
     data/billionaires_live.json       — latest Forbes wealth data for CA billionaires
     data/billionaires_live_meta.json  — snapshot date + Forbes timestamp metadata
     data/billionaires_live.csv        — same as CSV
-    data/roster_valuations.json       — current Forbes worth, in any state, for everyone
+    data/roster_valuations.json       — latest Forbes worth, in any state, for everyone
                                         on the January 1, 2026 residency roster
+    public/roster_valuations/<date>.json — dated copy of the roster valuations
     public/snapshots/<date>.json      — dated copy of the live file
 
 Merges Forbes data with local metadata:
@@ -36,9 +37,12 @@ FORBES_FIELDS = (
 )
 DATA_DIR = Path(__file__).parent.parent / "data"
 SNAPSHOTS_DIR = Path(__file__).parent.parent / "public" / "snapshots"
+ROSTER_VALUATIONS_DIR = Path(__file__).parent.parent / "public" / "roster_valuations"
 RESIDENCY_ROSTER_DATE = "2026-01-01"
-# The Forbes real-time list has carried 2,900-3,100 people since the daily job
-# began; a payload far below that is a partial or failed response.
+# Forbes tracked 3,392 people on 2026-09-18, some of them below $1 billion. The
+# request asks for more than that and the payload's own `count` is checked, so a
+# clipped list fails instead of silently dropping the people at the bottom.
+FORBES_REQUEST_LIMIT = 10000
 MIN_FORBES_PEOPLE = 1000
 MIN_CALIFORNIA_PEOPLE = 100
 NAME_ALIASES = {
@@ -100,18 +104,34 @@ def metadata_by_key(metadata):
     }
 
 
+def check_payload_complete(people, reported_count, limit=FORBES_REQUEST_LIMIT):
+    """Refuse a payload the request limit or the server clipped."""
+    if len(people) >= limit:
+        raise RuntimeError(
+            f"Forbes returned {len(people)} people, the request limit; raise "
+            "FORBES_REQUEST_LIMIT so the list is not clipped"
+        )
+    if reported_count is not None and len(people) != reported_count:
+        raise RuntimeError(
+            f"Forbes reports {reported_count} people but returned {len(people)}"
+        )
+
+
 def fetch_forbes_people():
     """Fetch the full Forbes billionaire payload."""
-    url = f"{FORBES_API}?limit=3000&fields={FORBES_FIELDS}"
+    url = f"{FORBES_API}?limit={FORBES_REQUEST_LIMIT}&fields={FORBES_FIELDS}"
     req = urllib.request.Request(url, headers={"User-Agent": "PolicyEngine"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=60) as resp:
         data = json.loads(resp.read())
 
     people = data["personList"]["personsLists"]
     if not people:
         raise RuntimeError("Forbes returned an empty billionaire list")
+    check_payload_complete(people, data["personList"].get("count"))
 
-    # People carry slightly different timestamps; date the snapshot by the latest.
+    # Forbes stamps every record with the time it served the payload, so this is
+    # the fetch time, not a valuation time. check_snapshot_sanity.py watches for
+    # an upstream feed that has stopped moving.
     timestamp_ms = max(person.get("timestamp") or 0 for person in people)
     if timestamp_ms <= 0:
         raise RuntimeError("Forbes payload carries no timestamp")
@@ -205,10 +225,9 @@ def load_fallback_rows():
         for row in load_json(rauh_path):
             fallback_rows[normalize_name(row["name"])] = row
 
-    metadata = load_billionaire_metadata()
-    for rows in metadata.get("syntheticRowsBySnapshot", {}).values():
-        for row in rows:
-            fallback_rows[normalize_name(row["name"])] = row
+    # Rows in `syntheticRowsBySnapshot` reproduce one paper's table on one date.
+    # The app adds them for that date; they are not a valuation for any other.
+    synthetic_keys = synthetic_row_keys(load_billionaire_metadata())
 
     if SNAPSHOTS_DIR.exists():
         for snapshot_path in sorted(SNAPSHOTS_DIR.glob("*.json")):
@@ -222,7 +241,43 @@ def load_fallback_rows():
         for row in load_json(live_path):
             fallback_rows[normalize_name(row["name"])] = row
 
-    return fallback_rows
+    return {
+        key: row for key, row in fallback_rows.items() if key not in synthetic_keys
+    }
+
+
+def synthetic_row_keys(metadata):
+    return {
+        normalize_name(row["name"])
+        for rows in metadata.get("syntheticRowsBySnapshot", {}).values()
+        for row in rows
+    }
+
+
+def last_listed_valuations(snapshots_dir=None):
+    """Last positive Forbes valuation per person across the stored snapshots.
+
+    Returns {join key: (date, net worth)}. Rows the fetcher wrote from a
+    fallback (no Forbes URI, `includeInRawForbes` false) are not Forbes
+    valuations for that date and are skipped.
+    """
+    snapshots_dir = SNAPSHOTS_DIR if snapshots_dir is None else snapshots_dir
+    last_listed = {}
+    if not snapshots_dir.exists():
+        return last_listed
+
+    for snapshot_path in sorted(snapshots_dir.glob("*.json")):
+        if snapshot_path.stem == "index":
+            continue
+        for row in load_json(snapshot_path):
+            if row.get("includeInRawForbes") is False or row.get("netWorth", 0) <= 0:
+                continue
+            last_listed[normalize_name(row["name"])] = (
+                snapshot_path.stem,
+                row["netWorth"],
+            )
+
+    return last_listed
 
 
 def augment_tracked_departures(rows, people, rauh_re, metadata, fallback_rows):
@@ -264,25 +319,34 @@ def augment_tracked_departures(rows, people, rauh_re, metadata, fallback_rows):
     return rows
 
 
-def build_roster_valuations(people, roster_rows):
-    """Current Forbes worth, in any state, for each person on the residency roster.
+def build_roster_valuations(people, roster_rows, last_listed=None):
+    """Latest Forbes worth, in any state, for each person on the residency roster.
 
     The measure fixes residency on January 1, 2026 and values net worth on
     December 31, 2026, so a roster member Forbes now lists elsewhere still needs
-    a current valuation. People absent from the Forbes list are omitted; Forbes
-    only lists net worth of $1 billion or more.
+    a current valuation. Someone Forbes no longer lists at all gets the last
+    value Forbes published for them, with the date, under `lastListedDate`:
+    Forbes drops people for several reasons (death among them), so absence says
+    nothing about their net worth. Someone with no stored valuation is omitted.
     """
     people_by_key = {normalize_name(person["personName"]): person for person in people}
+    last_listed = last_listed or {}
     valuations = {}
 
     for row in roster_rows:
-        person = people_by_key.get(normalize_name(row["name"]))
-        if person is None:
-            continue
-        valuations[row["name"]] = {
-            "netWorth": person["finalWorth"] * 1e6,
-            **forbes_location(person),
-        }
+        key = normalize_name(row["name"])
+        person = people_by_key.get(key)
+        if person is not None:
+            valuations[row["name"]] = {
+                "netWorth": person["finalWorth"] * 1e6,
+                **forbes_location(person),
+            }
+        elif key in last_listed:
+            last_date, last_net_worth = last_listed[key]
+            valuations[row["name"]] = {
+                "netWorth": last_net_worth,
+                "lastListedDate": last_date,
+            }
 
     return valuations
 
@@ -366,18 +430,24 @@ def main(argv=None):
 
     roster_path = SNAPSHOTS_DIR / f"{RESIDENCY_ROSTER_DATE}.json"
     if roster_path.exists():
-        roster_valuations = build_roster_valuations(people, load_json(roster_path))
-        roster_valuations_path = DATA_DIR / "roster_valuations.json"
-        with open(roster_valuations_path, "w") as f:
-            json.dump(
-                {
-                    "sourceDate": source_date,
-                    "rosterDate": RESIDENCY_ROSTER_DATE,
-                    "rows": roster_valuations,
-                },
-                f,
+        roster_valuations = {
+            "sourceDate": source_date,
+            "rosterDate": RESIDENCY_ROSTER_DATE,
+            "rows": build_roster_valuations(
+                people, load_json(roster_path), last_listed_valuations()
+            ),
+        }
+        ROSTER_VALUATIONS_DIR.mkdir(parents=True, exist_ok=True)
+        for roster_valuations_path in (
+            DATA_DIR / "roster_valuations.json",
+            ROSTER_VALUATIONS_DIR / f"{source_date}.json",
+        ):
+            with open(roster_valuations_path, "w") as f:
+                json.dump(roster_valuations, f)
+            print(
+                f"  Wrote {roster_valuations_path} "
+                f"({len(roster_valuations['rows'])} people)"
             )
-        print(f"  Wrote {roster_valuations_path} ({len(roster_valuations)} people)")
 
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     snapshot_path = SNAPSHOTS_DIR / f"{source_date}.json"

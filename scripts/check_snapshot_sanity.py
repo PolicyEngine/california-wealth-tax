@@ -2,11 +2,24 @@
 inconsistent with the files the app reads.
 
 Run after scripts/fetch_forbes.py and before committing its output.
+
+The structural checks always apply. The three plausibility checks compare the
+new snapshot with earlier ones and can be waived by name when a real event
+trips them (Forbes' annual list, a market crash):
+
+    SNAPSHOT_SANITY_ALLOW=roster-churn python scripts/check_snapshot_sanity.py
+
+Names: total-move, roster-churn, frozen-upstream.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from fetch_forbes import normalize_name, synthetic_row_keys  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
 DATA_DIR = ROOT / "data"
@@ -19,11 +32,23 @@ REQUIRED_FIELDS = {
     "includeInRawForbes",
     "excludeFromCorrectedBase",
     "departureTiming",
+    "forbesUri",
+    "forbesState",
+    "forbesCity",
+    "forbesCountry",
+    "citizenship",
 }
 MIN_ROWS = 150
 MAX_ROWS = 400
-MAX_TOTAL_MOVE = 0.30  # share of total wealth, day over day
-MAX_ROSTER_MOVE = 40  # names entering plus leaving, day over day
+MAX_TOTAL_MOVE = 0.30  # share of total wealth, snapshot over snapshot
+# People entering plus leaving, snapshot over snapshot, on the join key. The
+# stored history peaks at 23 on consecutive days (Forbes 400 refresh, October
+# 2025) and 53 across a 24-day gap.
+MAX_ROSTER_MOVE = 40
+# Markets close on weekends, so two identical totals in a row are normal and the
+# stored history never shows more. Four in a row means the feed stopped moving.
+MAX_IDENTICAL_TOTALS = 3
+WAIVABLE = {"total-move", "roster-churn", "frozen-upstream"}
 
 
 def load(path):
@@ -35,7 +60,51 @@ def check(condition, message):
         raise SystemExit(f"Snapshot sanity check failed: {message}")
 
 
+def waived_checks(environ=None):
+    environ = os.environ if environ is None else environ
+    names = {
+        name.strip()
+        for name in environ.get("SNAPSHOT_SANITY_ALLOW", "").split(",")
+        if name.strip()
+    }
+    unknown = names - WAIVABLE
+    check(not unknown, f"unknown check names in SNAPSHOT_SANITY_ALLOW: {sorted(unknown)}")
+    return names
+
+
+def plausibility_check(name, condition, message, waived):
+    if condition:
+        return
+    if name in waived:
+        print(f"Waived ({name}): {message}")
+        return
+    raise SystemExit(
+        f"Snapshot sanity check failed ({name}): {message}. If this is a real "
+        f"event, rerun with SNAPSHOT_SANITY_ALLOW={name}."
+    )
+
+
+def raw_rows(rows):
+    return [row for row in rows if row.get("includeInRawForbes", True)]
+
+
+def raw_total(rows):
+    return sum(row["netWorth"] for row in raw_rows(rows))
+
+
+def roster_churn(rows, previous_rows):
+    """People entering plus leaving, on the join key.
+
+    Forbes flips display names between "X" and "X & family"; on 2025-10-17 that
+    alone moved 24 exact-string names for a day.
+    """
+    keys = {normalize_name(row["name"]) for row in raw_rows(rows)}
+    previous_keys = {normalize_name(row["name"]) for row in raw_rows(previous_rows)}
+    return len(keys ^ previous_keys)
+
+
 def main():
+    waived = waived_checks()
     meta = load(DATA_DIR / "billionaires_live_meta.json")
     source_date = meta["sourceDate"]
     check(source_date >= "2025-10-01", f"implausible source date {source_date}")
@@ -61,26 +130,43 @@ def main():
             f"{row['name']} has net worth {row['netWorth']}",
         )
 
-    raw = [row for row in live if row.get("includeInRawForbes", True)]
-    total = sum(row["netWorth"] for row in raw)
+    metadata = load(DATA_DIR / "billionaire_metadata.json")
+    synthetic = synthetic_row_keys(metadata)
+    leaked = [row["name"] for row in live if normalize_name(row["name"]) in synthetic]
+    check(not leaked, f"synthetic rows in the live file: {leaked}")
+
+    total = raw_total(live)
     check(total > 0, "zero total wealth")
 
     previous_dates = [d for d in index if d < source_date]
     if previous_dates:
         previous = load(SNAPSHOTS_DIR / f"{previous_dates[-1]}.json")
-        previous_raw = [row for row in previous if row.get("includeInRawForbes", True)]
-        previous_total = sum(row["netWorth"] for row in previous_raw)
+        previous_total = raw_total(previous)
         if previous_total > 0:
             move = abs(total - previous_total) / previous_total
-            check(
+            plausibility_check(
+                "total-move",
                 move <= MAX_TOTAL_MOVE,
                 f"total wealth moved {move:.1%} since {previous_dates[-1]}",
+                waived,
             )
-        previous_names = {row["name"] for row in previous_raw}
-        churn = len(set(names) ^ previous_names)
-        check(
+        churn = roster_churn(live, previous)
+        plausibility_check(
+            "roster-churn",
             churn <= MAX_ROSTER_MOVE,
-            f"{churn} names entered or left since {previous_dates[-1]}",
+            f"{churn} people entered or left since {previous_dates[-1]}",
+            waived,
+        )
+        recent = previous_dates[-MAX_IDENTICAL_TOTALS:]
+        plausibility_check(
+            "frozen-upstream",
+            len(recent) < MAX_IDENTICAL_TOTALS
+            or any(
+                raw_total(load(SNAPSHOTS_DIR / f"{d}.json")) != total for d in recent
+            ),
+            f"total wealth is identical across the last {MAX_IDENTICAL_TOTALS + 1} "
+            "snapshots; the Forbes feed may have stopped updating",
+            waived,
         )
 
     roster_path = DATA_DIR / "roster_valuations.json"
@@ -91,6 +177,9 @@ def main():
             "roster_valuations.json is not from the live date",
         )
         check(len(roster["rows"]) >= 100, "roster_valuations.json is nearly empty")
+        dated_roster_path = ROOT / "public" / "roster_valuations" / f"{source_date}.json"
+        check(dated_roster_path.exists(), f"missing roster_valuations/{source_date}.json")
+        check(load(dated_roster_path) == roster, "dated roster valuations differ")
 
     print(
         f"Snapshot {source_date} passes: {len(live)} rows, "
