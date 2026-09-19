@@ -1,0 +1,18 @@
+{
+  "_about": "Documented spouses with separately valued Forbes rows. Sum each observed individual asset row once, then apply RTC 50301(a) and 50308(f) to the combined unit, including a spouse resident elsewhere. No relationship is inferred from names or '& family'. Unlisted spouses and children remain unobserved.",
+  "statute": "https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf#page=25",
+  "couples": [
+    {
+      "id": "carter",
+      "members": ["Jay-Z", "Beyoncé Knowles-Carter"],
+      "evidence": "Forbes identifies Jay-Z as Beyoncé's husband and gives each a separate individual fortune. Checked September 19, 2026.",
+      "sources": ["https://www.forbes.com/profile/beyonce-knowles-carter/", "https://www.forbes.com/profile/jay-z/"]
+    },
+    {
+      "id": "resnick",
+      "members": ["Lynda Resnick", "Stewart Resnick"],
+      "evidence": "The Wonderful Company identifies the spouses. Forbes gives each $5.4B and explicitly identifies their combined fortune as $10.8B, confirming separate shares rather than duplicate joint wealth. Checked September 19, 2026.",
+      "sources": ["https://www.wonderful.com/lyndaresnick/", "https://www.forbes.com/profile/lynda-resnick/", "https://www.forbes.com/profile/stewart-resnick/"]
+    }
+  ]
+}

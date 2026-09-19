@@ -1,19 +1,28 @@
 # Research notes: California wealth tax fiscal impact model
 
-## The bill
+## The measure
 
-The 2026 California Billionaire Tax Act (Initiative 25-0024) proposes a one-time 5% excise tax on worldwide net worth exceeding $1 billion for California residents as of January 1, 2026.
+Proposition 40 on the November 3, 2026 ballot (Initiative 25-0024A1, the 2026 Billionaire Tax Act; eligible June 17, certified June 25, 2026). It imposes a one-time tax of 5% of the **entire** net worth of California residents (as of January 1, 2026) worth $1 billion or more. There is no exemption for the first $1 billion: RTC §50301(b) as proposed reduces the *rate* by 0.1 percentage point per $2 million by which net worth falls below $1.1 billion, reaching 0% at $1.0 billion.
 
-Official filing:
-- **[Initiative text (Amdt. 1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
+Official sources:
+- **[Measure text (25-0024A1)](https://oag.ca.gov/system/files/initiatives/pdfs/25-0024A1%20%28Billionaire%20Tax%20%29.pdf)**
+- **[LAO ballot analysis](https://lao.ca.gov/BallotAnalysis/Proposition?number=40&year=2026)**: "tens of billions of dollars spread over several years"; "possible ongoing decrease of less than $1 billion per year" in income tax
+- The LAO analysis's "Potential Interactions With Other Propositions" section: if Proposition 41 or 42 on the same ballot receives more yes votes than Proposition 40, "Proposition 40 could be stopped from becoming law even if it gets yes votes from a majority of voters", because a court could find the measures conflict.
 
 Key provisions:
-- **Valuation date**: December 31, 2026 (not the Forbes snapshot date)
-- **Phase-in**: Rate ramps linearly from 0% at $1B to 5% at $1.1B net worth
-- **Real estate exclusion**: Directly held real property is excluded (already subject to property tax)
-- **Threshold excludes directly held RE**: The initiative excludes directly held real property from "net worth," so the phase-in applies after that exclusion
-- **Payment**: Payable in annual installments of 1%/year over 5 years (with deferral charge)
-- **Residency**: Based on CA resident/part-year resident status as of January 1, 2026; residency is determined by subjective and objective factors, not a simple address change
+- **Residency date**: January 1, 2026 (§50308(n)). Apportionment is 100% with no part-year proration (§50306(a)); §50306(b) allows a petition for alternative apportionment with a 25% floor. Not modeled.
+- **Valuation date**: December 31, 2026 (§50308(o)), not the Forbes snapshot date
+- **Rate ramp**: 0% at $1.0B to 5% at $1.1B, applied to the whole net worth
+- **Real property exclusion**: held directly or through a revocable trust only (§50303(c)(4)); real estate held through a business is taxable. Applied before the ramp.
+- **Payment**: due with the 2026 return in 2027 (§50312(i) contemplates April 2027 estimates and October 2027 final payments), in full or in five equal annual installments with a 7.5% nondeductible charge on the remaining unpaid balance (§50301(c))
+- **Not modeled**: optional deferral accounts (§50304), the private-business valuation presumption (book value + 7.5 × three-year average profits, §50303(c)(3)), debt limits (§50302), spousal aggregation (§50301(a), §50308(f)), trusts at a flat 5% (§50308(b)), the $5M personal-asset and retirement exclusions
+- **Funds**: receipts go to a reserve fund legally separate from the General Fund (Art. XIII §37(e)–(g))
+
+## What changed after the two papers (as of September 17, 2026)
+
+- **Berkeley**: July 20, 2026 [expert report](https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxJuly26.pdf) removes Ellison, adds 24 non-citizen residents (~$150B), $2,307B base, $104B after a 10% haircut. [Response to Rauh et al.](https://eml.berkeley.edu/~saez/responsetorauh26.pdf) (March 17). [Boll, Saez and Zucman, NBER 35218](https://eml.berkeley.edu/~saez/BSZ26CAbillionaires.pdf): $89–128B across four scenarios, income tax loss $0.15–0.56B/yr, cites this calculator in footnote 21. Daily tracker at cabillionairetracker.org.
+- **Hoover**: NPV paper unchanged since March 17. June 2026 2% supplement in the [replication repo](https://github.com/bjaros20/wealth_tax); [reply on expected recurrence](https://fiscalrealitycheck.substack.com/p/the-commitment-problem-at-the-heart) (April 17). The 10.32 semi-elasticity is Brülhart et al.'s permanent-annual-tax estimate (43% per point × 24% migration share) applied to 5 points.
+- **CalTax (Walczak)**: [ongoing loss $3.53–4.49B/yr](https://www.caltax.org/foundation/reports/Revenue-Implications-of-Billionaire-Tax-Act.pdf) (April 22).
 
 ## Two papers
 
@@ -97,13 +106,13 @@ Our model should ideally match the paper's Table 7 (10 departures) or let users 
 ### What we currently do
 1. **Wealth base**: Toggle between raw Forbes, Rauh-corrected base, and after confirmed pre-snapshot departures
 2. **Real estate**: Toggle to exclude directly-held RE per the bill
-3. **Phase-in**: Per-billionaire effective rate from 0% ($1B) to 5% ($1.1B)
-4. **Avoidance**: Slider (10% Saez, 15% Rauh)
+3. **Phase-in**: Effective rate from 0% ($1B) to 5% ($1.1B), applied to combined observed wealth for documented spouses (Jay-Z/Beyoncé and Lynda/Stewart Resnick); other family assets remain unobserved
+4. **Avoidance**: Slider (10% per Galle et al.; Rauh et al. apply no haircut)
 5. **Unannounced departures**: Slider (share of remaining resident wealth)
 6. **Income tax**: Derived from wealth × income yield rate × PolicyEngine CA income tax (MFJ, 2026-2030 lookup)
-7. **PV**: Real discount rate (3%), minus inflation-adjusted nominal growth, with annual return hazard, over a horizon
+7. **PV**: Nominal wealth-tax receipts are deflated by explicit inflation and then discounted at the real rate (3% default); income-tax growth is set separately in real terms, with an annual return hazard and chosen horizon
 8. **Wealth growth**: Nominal, forecast from Forbes snapshot date to Dec 31, 2026
-9. **Inflation**: 2.5% CBO forecast baked in (converts nominal growth to real for PV)
+9. **Inflation**: Explicit constant-price default (0%); illustrative 2% option is not a forecast
 10. **Cash flow**: Year-by-year chart shows five equal annual wealth-tax installments; deferral charges are not modeled
 
 ### What should change based on the paper
@@ -123,11 +132,11 @@ Rauh uses (r-g) as a single parameter calibrated to dividend yield (~1.5%). Our 
 - **Open question**: Should the state discount at the equity return rate (implicit in Rauh's approach) or at its borrowing cost (~2-3% real)? If r=3% and g=5%, (r-g) is negative and the PV diverges, implying infinite cost. This is a real limitation of the growing perpetuity model.
 
 #### Wealth growth to EOY 2026
-Both papers use the Forbes snapshot as-is (implicitly 0% growth to Dec 31, 2026). Our model allows forecasting growth, with the rate labeled "nominal." The bill taxes nominal wealth, so this is correct. The growth rate also feeds into the PV of income tax losses (converted to real by subtracting the 2.5% CBO inflation forecast).
+Both papers use the Forbes snapshot as-is (implicitly 0% growth to Dec 31, 2026). Our model allows forecasting growth, with the rate labeled "nominal." The bill taxes nominal wealth. Growth of the future income-tax stream is a separate real setting; inflation deflates nominal receipts and does not deflate the already-real income-tax stream a second time.
 
 ### Unresolved questions
 
-1. **Real vs nominal consistency**: We label wealth growth as nominal and discount rate as real, with a baked-in 2.5% inflation bridging them. Rauh works entirely in real terms with (r-g) directly. Should we offer both framings?
+1. **Real vs nominal consistency (resolved September 19, 2026)**: Explicit inflation converts nominal receipts to 2026 dollars before real discounting. All published calculator presets assume zero inflation; this is a disclosed modeling assumption, not a claim about the papers' inflation assumptions.
 
 2. **Income tax from FTB data vs PE derivation**: Rauh's $3.3-5.8B range comes from actual CA tax return data. Our PE approach derives it from wealth × yield × marginal rates. These are complementary methods — we should probably support both.
 

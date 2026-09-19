@@ -1,0 +1,112 @@
+{
+  "snapshotDate": "2026-09-18",
+  "baselinePeople": 269,
+  "baselineWealthB": 2434,
+  "baselineGrossB": 121,
+  "baselineAfterTenPercentErosionB": 108.9,
+  "realEstateExclusionTaxB": 0.44,
+  "peopleInRateRamp": 7,
+  "rateRampCostB": 0.24,
+  "topFourWealthSharePercent": 40,
+  "newEntrantPeople": 56,
+  "newEntrantWealthB": 264,
+  "newEntrantNonCitizenPeople": 24,
+  "newEntrantNonCitizenWealthB": 159,
+  "movedPerForbesPeople": 6,
+  "lastListedPeople": 9,
+  "lastListedWealthB": 24,
+  "belowThresholdPeople": 5,
+  "excludedFromEveryBase": 1,
+  "residencyAdjustmentCount": 12,
+  "baseExclusionCount": 8,
+  "adjustedPeople": 261,
+  "adjustedGrossB": 90.3,
+  "residencyAdjustmentsTaxB": 30.7,
+  "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
+  "adjustedAnnualIncomeTaxLostB": 0.43,
+  "adjustedPvReceiptsB": 87.6,
+  "adjustedPvIncomeTaxLostB": 14.2,
+  "adjustedNetB": 73.5,
+  "adjustedNetAtLaoCeilingB": 54.3,
+  "adjustedNetAtWalczakIncomeTaxB": -15.4,
+  "installmentReceiptsPer100": 115,
+  "installmentPvAtTwoPercentInflationPer100": 99.4,
+  "hooverAnnualIncomeTaxLostB": 2.83,
+  "hooverFromFilingsAnnualIncomeTaxLostB": 2.14,
+  "hooverFromFilingsNetB": -14.5,
+  "fourLargestWealthSharePct": 39.9,
+  "fourLargestByWealthM": 1820,
+  "fourLargestFromFilingsM": 252,
+  "fourLargest": [
+    {
+      "name": "Larry Page",
+      "wealthSharePct": 11.7,
+      "byWealthM": 534,
+      "fromFilingsM": 57
+    },
+    {
+      "name": "Sergey Brin",
+      "wealthSharePct": 10.8,
+      "byWealthM": 491,
+      "fromFilingsM": 37
+    },
+    {
+      "name": "Mark Zuckerberg",
+      "wealthSharePct": 9.6,
+      "byWealthM": 439,
+      "fromFilingsM": 101
+    },
+    {
+      "name": "Jensen Huang",
+      "wealthSharePct": 7.8,
+      "byWealthM": 356,
+      "fromFilingsM": 57
+    }
+  ],
+  "bridgeStartB": 106.1,
+  "bridgeEndB": -37.6,
+  "bridge": [
+    {
+      "id": "residency",
+      "label": "Residency: documented departures",
+      "valueB": -23.1,
+      "minB": -83.4,
+      "maxB": 6.2
+    },
+    {
+      "id": "migration",
+      "label": "Unannounced departures before January 1",
+      "valueB": -70.7,
+      "minB": -139,
+      "maxB": -28
+    },
+    {
+      "id": "incomeTax",
+      "label": "Count movers' future income tax",
+      "valueB": -47.5,
+      "minB": -94.3,
+      "maxB": 0
+    },
+    {
+      "id": "incomeAllocation",
+      "label": "Who pays the cohort's income tax",
+      "valueB": -10.4,
+      "minB": -39.9,
+      "maxB": 0
+    },
+    {
+      "id": "erosion",
+      "label": "Avoidance and valuation haircut",
+      "valueB": 8.2,
+      "minB": 5.7,
+      "maxB": 11.8
+    },
+    {
+      "id": "valuation",
+      "label": "Real estate exclusion and growth to valuation",
+      "valueB": -0.3,
+      "minB": -0.4,
+      "maxB": -0.1
+    }
+  ]
+}
