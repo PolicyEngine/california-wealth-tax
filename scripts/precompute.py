@@ -6,22 +6,34 @@ Run this whenever policyengine-us updates or the income-tax lookup assumptions
 change.
 
 Usage:
-    cd ~/PolicyEngine/policyengine-us
-    .venv/bin/python ~/PolicyEngine/california-wealth-tax/scripts/precompute.py
+    uv run --with "policyengine[us]" python scripts/precompute.py
 """
 
 import json
 from pathlib import Path
 
-from policyengine_us import Simulation
-
 OUTPUT_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
-def compute_income_tax_lookup():
-    """Compute CA income tax at billionaire-scale incomes."""
-    incomes = [
+def calculate_ca_tax(income: float, year: int) -> float:
+    """Calculate one California household through the PolicyEngine interface."""
+    import policyengine as pe
+
+    result = pe.us.calculate_household(
+        people=[{"age": 40, "employment_income": income}],
+        tax_unit={"filing_status": "SINGLE"},
+        household={"state_code": "CA"},
+        year=year,
+        extra_variables=["ca_income_tax"],
+    )
+    return float(result.tax_unit.ca_income_tax)
+
+
+def compute_income_tax_lookup(*, year=2026, incomes=None, calculate_tax=None):
+    """Return the app's year-keyed lookup; allow schema tests without model imports."""
+    calculate_tax = calculate_tax or calculate_ca_tax
+    incomes = incomes if incomes is not None else [
         100_000_000,
         250_000_000,
         500_000_000,
@@ -38,27 +50,7 @@ def compute_income_tax_lookup():
     rows = []
 
     for income in incomes:
-        sim = Simulation(
-            situation={
-                "people": {
-                    "person": {
-                        "age": {"2026": 40},
-                        "employment_income": {"2026": income},
-                    }
-                },
-                "tax_units": {"tax_unit": {"members": ["person"]}},
-                "families": {"family": {"members": ["person"]}},
-                "spm_units": {"spm_unit": {"members": ["person"]}},
-                "marital_units": {"marital_unit": {"members": ["person"]}},
-                "households": {
-                    "household": {
-                        "members": ["person"],
-                        "state_code": {"2026": "CA"},
-                    }
-                },
-            }
-        )
-        ca_tax = float(sim.calculate("ca_income_tax", "2026")[0])
+        ca_tax = calculate_tax(income, year)
         rows.append(
             {
                 "income": income,
@@ -67,7 +59,7 @@ def compute_income_tax_lookup():
             }
         )
 
-    return rows
+    return {str(year): rows}
 
 
 def main():

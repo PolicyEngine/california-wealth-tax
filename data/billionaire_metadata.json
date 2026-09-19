@@ -1,44 +1,112 @@
 {
+  "_about": "Per-person residency evidence layered over the Forbes data. Every entry carries a dated evidence note and at least one source. 'departureTiming' marks a reported departure: 'pre_snapshot' = before the January 1, 2026 residency date, 'post_snapshot' = after it, 'unconfirmed' = reported intent or secondhand report only. Whether any of these changes California domicile is contested; the calculator keeps them in the default base and lets the user remove them.",
   "byName": {
     "Larry Ellison": {
-      "excludeFromCorrectedBase": true
+      "includeInRawForbes": false,
+      "excludeFromCorrectedBase": true,
+      "evidence": "Forbes lists Manalapan, Florida (checked 2026-09-17). Galle, Gamage, Saez and Shanske's July 20, 2026 report removes him as very likely a Florida resident, and Rauh et al. (2026) exclude him. Excluded from every base.",
+      "sources": [
+        "https://www.forbes.com/profile/larry-ellison/",
+        "https://eml.berkeley.edu/~saez/galle-gamage-saez-shanskeCAbillionairetaxJuly26.pdf",
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed"
+      ]
     },
     "Drew Houston": {
-      "excludeFromCorrectedBase": true
+      "excludeFromCorrectedBase": true,
+      "evidence": "Rauh et al. (2026) classify him as a non-resident. Forbes lists San Francisco, California (checked 2026-09-17).",
+      "sources": [
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed"
+      ]
     },
     "Lynsi Snyder": {
-      "excludeFromCorrectedBase": true
+      "excludeFromCorrectedBase": true,
+      "evidence": "Rauh et al. (2026) classify her as a non-resident. Forbes lists Franklin, Tennessee (checked 2026-09-17).",
+      "sources": [
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed"
+      ]
     },
     "Larry Page": {
-      "departureTiming": "pre_snapshot"
+      "departureTiming": "pre_snapshot",
+      "evidence": "Fortune (2026-03-17) lists him among six billionaires who took steps to leave before January 1, 2026. Forbes lists Palo Alto, California (checked 2026-09-17).",
+      "sources": [
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
     },
     "Sergey Brin": {
-      "departureTiming": "pre_snapshot"
+      "departureTiming": "pre_snapshot",
+      "evidence": "Fortune (2026-03-17) lists him among the six; NPR (2026-08-22) reports a move to the Nevada side of Lake Tahoe. Forbes lists Los Altos, California (checked 2026-09-17).",
+      "sources": [
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/",
+        "https://text.npr.org/nx-s1-5935597"
+      ]
     },
     "Peter Thiel": {
-      "departureTiming": "pre_snapshot"
+      "departureTiming": "pre_snapshot",
+      "evidence": "Fortune (2026-03-17) lists him among the six. Forbes moved him off its California list on 2026-09-03.",
+      "sources": [
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
     },
     "Don Hankey": {
-      "departureTiming": "pre_snapshot"
+      "departureTiming": "pre_snapshot",
+      "evidence": "Fortune (2026-03-17) lists him among the six. Forbes lists Las Vegas, Nevada (checked 2026-09-17).",
+      "sources": [
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
+    },
+    "Steven Spielberg": {
+      "departureTiming": "pre_snapshot",
+      "evidence": "Fortune (2026-03-17), citing the Los Angeles Times, reports he became a New York City resident on January 1, 2026. Forbes moved him off its California list on 2026-09-03.",
+      "sources": [
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
+    },
+    "Travis Kalanick": {
+      "departureTiming": "pre_snapshot",
+      "evidence": "Said on the record that he moved to Texas on December 18, 2025 (Fox Business, 2026-03-16). Forbes lists Austin, Texas (checked 2026-09-17).",
+      "sources": [
+        "https://www.foxbusiness.com/real-estate/billionaire-uber-co-founder-travis-kalanick-admits-strategically-moving-texas-before-california-wealth-tax",
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
     },
     "David Sacks": {
       "includeInRawForbes": false,
-      "departureTiming": "pre_snapshot"
-    },
-    "Steven Spielberg": {
-      "departureTiming": "pre_snapshot"
+      "departureTiming": "pre_snapshot",
+      "evidence": "Announced Craft Ventures' Austin office on 2025-12-31; Craft said he relocated to Austin in December 2025 (San Francisco Chronicle, 2026-01-02). Not on the Forbes billionaire list; Fortune reports his net worth as $250 million to $2 billion. The $2.0 billion row reproduces Rauh et al. Table 6 on the October 17, 2025 snapshot only.",
+      "sources": [
+        "https://finance.yahoo.com/news/david-sacks-opens-austin-office-220233399.html",
+        "https://fortune.com/2026/03/17/6-billionaires-left-california-billionaire-tax-newsom-brin-page-thiel-spielberg-revenue/"
+      ]
     },
     "Mark Zuckerberg": {
-      "departureTiming": "post_snapshot"
+      "departureTiming": "post_snapshot",
+      "evidence": "Rauh et al. Table 7 lists him as a post-January 1 departure; Boll, Saez and Zucman (2026) treat him as extremely likely a California resident on January 1, 2026. Forbes lists Palo Alto, California (checked 2026-09-17). A post-January 1 move does not change wealth-tax liability.",
+      "sources": [
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed",
+        "https://eml.berkeley.edu/~saez/BSZ26CAbillionaires.pdf"
+      ]
     },
     "Jan Koum": {
-      "departureTiming": "unconfirmed"
+      "departureTiming": "unconfirmed",
+      "evidence": "Listed in Rauh et al. Table 7 as a reported departure. No primary reporting of a move found as of 2026-09-17; Forbes lists Atherton, California.",
+      "sources": [
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed"
+      ]
     },
     "Reed Hastings": {
-      "departureTiming": "unconfirmed"
+      "departureTiming": "unconfirmed",
+      "evidence": "Listed in Rauh et al. Table 7 as a reported departure. No primary reporting of a move found as of 2026-09-17; Forbes lists Santa Cruz, California.",
+      "sources": [
+        "https://www.hoover.org/research/net-present-value-billionaire-tax-act-assessment-fiscal-effects-californias-proposed"
+      ]
     },
     "Andy Fang": {
-      "departureTiming": "unconfirmed"
+      "departureTiming": "unconfirmed",
+      "evidence": "Statement of intent only: the SF Standard tracker (2026-01-22) records him saying it would be irresponsible not to plan an exit, and does not list him as leaving. Forbes lists California.",
+      "sources": [
+        "https://sfstandard.com/2026/01/15/who-s-leaving-who-s-staying-sf-standard-s-billionaire-tax-tracker/",
+        "https://www.forbes.com/profile/andy-fang/"
+      ]
     }
   },
   "syntheticRowsBySnapshot": {

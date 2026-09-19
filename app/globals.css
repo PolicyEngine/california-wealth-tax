@@ -35,6 +35,13 @@
     --gray-700: #344054;
     --gray-800: #1E293B;
     --gray-900: #101828;
+
+    /* The charts and the negative headline use a red scale the 0.12 theme
+     * does not ship; without these, negative waterfall bars render black.
+     * Values are the theme's own error and destructive colors. */
+    --red-400: #F87171;
+    --red-500: #EF4444;
+    --red-600: #DC2626;
   }
 }
 

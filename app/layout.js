@@ -15,9 +15,10 @@ const GA_ID = "G-2YHG89FY0N";
 const TOOL_NAME = "california-wealth-tax";
 
 const SITE_URL = "https://policyengine.org/us/california-wealth-tax";
-const SITE_TITLE = "California Wealth Tax Calculator | PolicyEngine";
+const SITE_TITLE =
+  "California Proposition 40 billionaire tax calculator | PolicyEngine";
 const SITE_DESCRIPTION =
-  "Interactive tool analyzing fiscal impacts of California's proposed billionaire wealth tax under varying assumptions. Compare Berkeley and Hoover estimates with adjustable migration, avoidance, and income-tax parameters.";
+  "Scores California's Proposition 40 one-time billionaire tax person by person from current Forbes data, with adjustable residency, migration, valuation, timing and income-tax assumptions, including those behind the Berkeley and Hoover estimates.";
 const OG_IMAGE = `${SITE_URL}/policyengine-logo.svg`;
 
 export const metadata = {
