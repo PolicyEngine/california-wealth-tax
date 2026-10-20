@@ -50,21 +50,17 @@ of those papers' rosters.
 
 ## Related work
 
-Two other analyses compare the published estimates (`lib/relatedWork.js`;
-the page lists them at the bottom):
+Two other analyses compare versions of the Berkeley and Hoover estimates. The
+page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
 
 - Fernando Hoces de la Guardia, [California Proposition 40, Reconciliation of
-  the Two Analyses](https://fhoces.github.io/opa-prop40/) (Open Policy
-  Analysis, October 2026; [comparison
-  report](https://fhoces.github.io/opa-prop40/comparison/site/repro.html),
-  [code](https://github.com/fhoces/opa-prop40)). It reproduces the Boll, Saez
-  and Zucman analysis and the Jaros and Rauh analysis, puts both on one common
-  output, and explains the gap one disputed input at a time.
+  the Two Analyses](https://fhoces.github.io/opa-prop40/) (Open Policy Analysis
+  report, October 2026;
+  [comparison report](https://fhoces.github.io/opa-prop40/comparison/site/repro.html),
+  [code](https://github.com/fhoces/opa-prop40)).
 - Jeffrey L. Hoopes, [Galle v Rauh: Comparing Two Revenue Estimates for
-  California Billionaire
-  Taxation](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6428578)
-  (SSRN Working Paper 6428578, 2026). It compares the methods behind the Galle
-  et al. and Rauh et al. revenue estimates.
+  California Billionaire Taxation](https://doi.org/10.2139/ssrn.6428578) (SSRN
+  Working Paper 6428578, March 2026).
 
 ## Data
 
