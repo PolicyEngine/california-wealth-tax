@@ -5,6 +5,7 @@ import AssumptionPanel from "@/app/components/AssumptionPanels";
 import BillionaireTable from "@/app/components/BillionaireTable";
 import Heatmap from "@/app/components/Heatmap";
 import LiveBridge from "@/app/components/LiveBridge";
+import RelatedWork from "@/app/components/RelatedWork";
 import ResultStrip from "@/app/components/ResultStrip";
 import { ASSUMPTION_GROUPS, ASSUMPTION_GROUP_BY_ID, scenarioBridge } from "@/lib/bridge";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
@@ -922,6 +923,8 @@ export default function Home() {
               </section>
             </>
           )}
+
+          <RelatedWork />
         </div>
       </main>
     </div>
