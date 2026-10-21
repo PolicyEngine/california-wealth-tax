@@ -32,8 +32,8 @@ abstract: |
   addendum dated October 21, 2026 scores the calculator's current Hoover set,
   which follows Jaros and Rauh's later version and sets the share of the
   cohort's income tax lost at 45 percent; there the division does not move the
-  result. Every figure in this paper is computed by the calculator's code from
-  a dated snapshot.
+  result. Every calculator figure in this paper is computed by its code from a
+  dated snapshot.
 ---
 
 # Introduction
@@ -282,8 +282,10 @@ The Berkeley score embeds a reduced-form haircut in a static wealth tax
 estimate. Rauh et al.'s March version models behavioral response primarily
 through migration, which simultaneously lowers wealth tax collections and
 raises the present value of lost California income taxes. Jaros and Rauh's
-later version predicts no departures beyond those observed and draws the share
-of income tax lost separately from wealth-tax revenue (see the addendum).
+later version counts only the observed departures against wealth-tax revenue,
+an assumption it calls "extraordinarily conservative," and draws the share of
+income tax lost, including departures no one documented, separately from that
+revenue [@jarosrauh2026nber, pp. 22, 30, 32]. The addendum scores that version.
 
 ## California income tax loss
 
@@ -394,9 +396,9 @@ Forbes list, which the calculator holds as its October 17, 2025 snapshot.
 The Hoover set also departs from Rauh et al.'s formula on the income tax side. They tie the
 share of the cohort's income tax lost to the share of wealth-tax revenue lost,
 and their preferred estimate keeps Mark Zuckerberg in the base. The Hoover set
-here applies the four departures after January 1 in their Table 7: those
-people owe the wealth tax, and their income tax counts as lost on top of the
-share tied to the wealth-tax loss. Tying the share to the wealth-tax loss, as
+here applies the four later or unconfirmed departures in their Table 7: under
+the measure those people owe the wealth tax, and their income tax counts as
+lost on top of the share tied to the wealth-tax loss. Tying the share to the wealth-tax loss, as
 their formula does, gives -$21.4 billion in place of the -$37.6 billion below.
 
 # Why the estimates differ
@@ -421,7 +423,7 @@ orderings.
 | Avoidance and valuation haircut | +$8.2 | +$5.7 to +$11.8 |
 | Real estate exclusion and growth to valuation | -$0.3 | -$0.4 to -$0.1 |
 
-: Bridge from the Berkeley assumptions to the Hoover assumptions (Rauh et al.'s March 2026 version), net present value as of 2026 {#tbl-bridge}
+: Bridge from the Berkeley assumptions to the Hoover assumptions (Rauh et al.'s March 2026 version, as applied here), net present value as of 2026 {#tbl-bridge}
 
 The large steps all concern migration: whether reported departures are
 legally effective, how much of the base left before January 1 without public
@@ -474,9 +476,10 @@ Since October 21, 2026 the calculator's Hoover assumptions follow that
 version, with its three pre-filing departures added as residency claims and
 settings added for the litigation probability, the two legal exclusions and a
 total income-tax departure share. The figures in the body of this paper use
-Rauh et al.'s March 2026 version [@rauh2026], and the division result above
-applies to that version. In the calculator's NBER set the share of the
-cohort's income tax lost is fixed at 45 percent, so dividing that income tax
+the Hoover set based on Rauh et al.'s March 2026 version [@rauh2026], and the
+division result above applies to that set. In the calculator's NBER set the
+share of the cohort's income tax lost is set at 45 percent, above what the
+documented departures carry under either division, so dividing that income tax
 by the filings-based estimates instead of by wealth leaves its net present
 value unchanged. The addendum scores the NBER set on the same snapshot.
 
@@ -566,21 +569,25 @@ NBER version [@jarosrauh2026nber]. Against the March set, the NBER set:
   Marc Benioff, Meg Whitman and Frank Slootman;
 - leaves Mark Zuckerberg, who announced his departure in February 2026, and
   non-US citizens out of collection;
+- no longer counts Jan Koum, Reed Hastings and Andy Fang as leaving after
+  January 1, since Jaros and Rauh keep them in their central base;
 - grows wealth 7 percent a year to the valuation date;
 - models no unannounced departures;
 - applies a 50 percent probability that the measure survives legal challenge
   to the wealth tax; and
-- counts 45 percent of the cohort's $4.55 billion of income tax as lost, the
-  center of Jaros and Rauh's 30 to 60 percent range.
+- sets the share of the cohort's $4.55 billion of income tax lost at 45
+  percent, the center of Jaros and Rauh's 30 to 60 percent range.
 
-Documented departures count toward that share first; people who leave after
-January 1, and still owe the wealth tax, make up the rest.
+Documented departures, Mark Zuckerberg among them, count toward that share
+first; unnamed people who leave after January 1 make up the rest, and their
+leaving does not reduce wealth-tax receipts. The setting is a minimum: if the
+documented departures already carry more, the set loses what they carry.
 
 On this snapshot the NBER set gives -$33.6 billion. Jaros and Rauh report a
 mean of -$38.9 billion over draws of wealth-tax revenue, the share of income
-tax lost, the cohort total and the discount rate. The calculator reports one
-point: the share lost, the cohort total and the discount rate at the centers of
-their ranges, and wealth-tax revenue from its own roster.
+tax lost, the cohort total and the discount rate net of income growth. The
+calculator reports one point: the last three at the centers of their ranges,
+and wealth-tax revenue from its own roster.
 
 | Assumption | Worth ($ billions) | Range across orderings |
 |---|---|---|
@@ -598,34 +605,41 @@ movers' income tax and the legal challenges to collection carry most of the
 gap. The step for who pays the cohort's income tax comes entirely from the
 cohort total, $4.3 billion in the Berkeley assumptions and $4.55 billion here.
 
-The division of the cohort's income tax does not move this set. The documented
-departures carry 34.8 percent of the cohort's income tax divided by wealth and
+The division of the cohort's income tax does not move this set. The seven
+documented departures, Mark Zuckerberg among them, carry 34.8 percent of the cohort's income tax divided by wealth and
 8.1 percent with the filings-based estimates. Both are below 45 percent, so the
 set loses 45 percent of the total either way. With the filings-based
-estimates, people who leave after January 1 make up more of it. The division
-matters only when the share lost is below what the documented departures
-carry, as in @tbl-nber-share.
+estimates, unnamed people who leave after January 1 make up more of it. The
+division matters only when the setting is below what the documented departures
+carry under one of the divisions, as in @tbl-nber-share.
 
-| Share of the cohort's income tax lost | Divided by wealth | Filings-based estimates |
+| Setting for the share lost (a minimum) | Divided by wealth | Filings-based estimates |
 |---|---|---|
 | 30 percent | -$18.2 billion | -$10.9 billion |
 | 45 percent | -$33.6 billion | -$33.6 billion |
 | 60 percent | -$56.4 billion | -$56.4 billion |
 
-: Net present value of the calculator's NBER Hoover set by the share of the cohort's income tax lost {#tbl-nber-share}
+: Net present value of the calculator's NBER Hoover set by the setting for the share of the cohort's income tax lost {#tbl-nber-share}
+
+Divided by wealth, the documented departures already carry 34.8 percent, so at
+a 30 percent setting the set loses 34.8 percent.
 
 Jaros and Rauh define that share as the fraction of the cohort's income tax
 lost through departures, documented or not. They write that it addresses
 whether the people who left paid more or less than a proportionate share
-[@jarosrauh2026nber, p. 30]. In their version, then, the evidence on who pays bears
+[@jarosrauh2026nber, pp. 30, 32]. In their version, then, the evidence on who pays bears
 on how large the share is rather than on how it is divided.
 
-On this roster the probability that the measure survives legal challenge
-decides the sign of the NBER set: with survival certain it gives +$1.0 billion.
-That depends on the roster. Jaros and Rauh's own formula, applied to their
-recognized base of $59.15 billion with survival certain and the share lost, the
-cohort total and the discount rate at the centers of their ranges, gives
-about -$9.1 billion.
+On this roster the NBER set is negative unless survival is close to certain;
+with survival certain it gives +$1.0 billion. On Jaros and Rauh's own figures,
+the sign with survival certain turns on whether Mark Zuckerberg is collected.
+Their formula, with the share lost, the cohort total and the discount rate net
+of income growth at the centers of their ranges, gives about -$9.1 billion on
+their recognized base of $59.15 billion, which leaves him out, and about
++$3.8 billion on the $72 billion ceiling their net present value section uses,
+with him and the pre-filing exits in [@jarosrauh2026nber, p. 33].
+
+# References {.unnumbered}
 
 ::: {#refs}
 :::
