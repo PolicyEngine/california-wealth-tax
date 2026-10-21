@@ -57,6 +57,7 @@
   ],
   "nberHooverAtFullSurvivalB": 1,
   "nberOwnBaseAtFullSurvivalB": -9.1,
+  "nberCeilingAtFullSurvivalB": 3.8,
   "nberBridge": [
     {
       "id": "residency",
