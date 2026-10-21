@@ -21,7 +21,8 @@ abstract: |
   effective and which are attributable to the tax. On the September 18, 2026
   Forbes snapshot, the baseline covers 269 people and yields $121 billion of
   one-time revenue. Inside one model the Berkeley assumptions give a net
-  present value of $106.1 billion and the Hoover assumptions -$37.6 billion.
+  present value of $106.1 billion and the Hoover assumptions (Rauh et al.'s
+  March 2026 version) -$37.6 billion.
   The two teams' estimates of how much California income tax the state's
   billionaires pay in total overlap. They disagree on who pays it. Dividing
   Rauh et al.'s $4.55 billion by wealth assigns the four largest fortunes
@@ -374,8 +375,9 @@ decides the sign: at the Legislative Analyst's ceiling of $1 billion a year
 the same base nets $54.3 billion, and at Walczak's $3.09 billion of income tax
 it is -$15.4 billion.
 
-The Berkeley and Hoover starting points in the calculator apply those papers'
-assumptions to this roster. They do not reproduce the papers' rosters: Galle
+The Berkeley and Hoover assumption sets in this paper apply those papers'
+assumptions to this roster; the Hoover set here is Rauh et al.'s March 2026
+version. They do not reproduce the papers' rosters: Galle
 et al.'s is Forbes's July 1, 2026 list, and Rauh et al.'s is fixed at the 2025
 Forbes list, which the calculator holds as its October 17, 2025 snapshot.
 
@@ -447,9 +449,13 @@ base leaves out three people who left before the measure was filed, Mark
 Zuckerberg, and non-US citizens. It applies a 50 percent probability that the
 measure survives constitutional challenge to the base that remains. It draws
 the share of the cohort's income tax lost to departures from 30 to 60 percent.
+Its net present value simulation instead draws wealth-tax revenue between zero
+and the $72 billion ceiling after the confirmed departures, with Mark
+Zuckerberg and the pre-filing exits in.
 Since October 21, 2026 the calculator's Hoover assumptions follow that
-version, with settings added for the litigation probability, the two legal
-exclusions and a total income-tax departure share. The figures in this paper
+version, with its three pre-filing departures added as residency claims and
+settings added for the litigation probability, the two legal exclusions and a
+total income-tax departure share. The figures in this paper
 use Rauh et al.'s March 2026 version [@rauh2026].
 
 # Valuation remains the largest open issue

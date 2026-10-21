@@ -138,7 +138,7 @@ export default function AssumptionPanel({
               key: "post",
               title: "Reported or planned departures after January 1, 2026",
               category: "post_snapshot_departure",
-              note: "Rauh et al.'s Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way; applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
+              note: "Rauh et al.'s March 2026 Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way (the legal panel can leave them out of collection); applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
             },
           ].map((section) => (
             <div key={section.key} className="space-y-2">
@@ -309,6 +309,7 @@ export default function AssumptionPanel({
                 min={0}
                 max={1}
                 step={0.01}
+                alwaysShowValue={params.incomeTaxDepartureShare > 0}
                 format={(value) =>
                   value <= incomeTaxDepartureFloorShare
                     ? `Departures only (${(incomeTaxDepartureFloorShare * 100).toFixed(0)}%)`
@@ -328,9 +329,11 @@ export default function AssumptionPanel({
                 {modeledLaterDepartureShare > 0
                   ? ` (${(modeledLaterDepartureShare * 100).toFixed(1)}% of those still paying)`
                   : ""}
-                . Jaros and Rauh draw this share from 30% to 60%, centered on
-                45%, independently of the wealth-tax base, for departures
-                including those not publicly documented.
+                . Below that share the setting adds nothing. Jaros and Rauh draw
+                it from 30% to 60%, centered on 45%, independently of wealth-tax
+                revenue, for departures including those not publicly
+                documented; their total is not divided by wealth, so their low
+                end can sit below the share named departures take here.
               </p>
               <Slider
                 label="Share of movers' lost income tax caused by the measure"
@@ -573,7 +576,7 @@ export default function AssumptionPanel({
           </Field>
           <Field
             title="Non-US citizens"
-            note={`${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}). Jaros and Rauh leave all of them out, citing treaty, Supremacy Clause and apportionment risk, and note that the measure lets the taxable share be reduced to 25% or lower (RTC §50306(b) as proposed); Galle, Gamage, Saez and Shanske include them.`}
+            note={`${nonCitizenCount > 0 ? `This applies to the ${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}).` : "This snapshot lists no non-US citizens."} Jaros and Rauh leave out the 28 non-US citizens on their list (from Boll, Saez and Zucman), citing treaty, Supremacy Clause and apportionment risk, and note that the measure lets the taxable share be reduced to 25% or lower (RTC §50306(b) as proposed); Galle, Gamage, Saez and Shanske include the non-US citizens on their roster.`}
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip

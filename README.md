@@ -55,12 +55,16 @@ The "Berkeley assumptions" and "Hoover assumptions" starting points apply the
 assumptions of Galle, Gamage, Saez and Shanske and of Jaros and Rauh to this
 calculator's roster. They are settings inside the same model, not replications
 of those papers' rosters. Since October 21, 2026 the Hoover set follows Jaros
-and Rauh's NBER Working Paper 35899 (October 2026): their departures and
-pre-filing exits out of the base, Mark Zuckerberg and non-US citizens left
-out, 7% a year wealth growth to the valuation date, a 50% chance the measure
-survives challenge, no unannounced departures, and 45% of a $4.55B cohort
-income tax lost, divided by wealth. Before, it followed Rauh et al.'s March
-2026 paper; that set stays in `lib/presets.js` as
+and Rauh's NBER Working Paper 35899 (October 2026), as in their central
+revenue estimate: their departures and pre-filing exits out of the base, Mark
+Zuckerberg and non-US citizens left out, 7% a year wealth growth to the
+valuation date, a 50% chance the measure survives challenge, no unannounced
+departures in the wealth-tax base, and 45% of a $4.55B cohort income tax lost,
+divided by wealth. Their NPV section instead centers revenue on half of the
+$72B ceiling with Zuckerberg and the pre-filing exits in (a point NPV of
+−$32.25B) and reports a mean over a range of revenue and r − g (−$38.9B), so
+the set's point value is not their published mean. Before, the set followed
+Rauh et al.'s March 2026 paper; that set stays in `lib/presets.js` as
 `HOOVER_MARCH_2026_ASSUMPTIONS`, because the working paper's analysis is dated
 to it.
 
