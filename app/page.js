@@ -262,7 +262,7 @@ function BaseNotes({ notes, peopleInBase, includeNonCitizens, nonCitizenCount, n
     );
   } else if (!includeNonCitizens && nonCitizenCount > 0) {
     lines.push(
-      `The ${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}) are out of the base under the legal assumptions; their income tax stays in the cohort.`
+      `${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}) are out of the base under the legal assumptions; their income tax stays in the cohort.`
     );
   }
 
@@ -959,8 +959,8 @@ export default function Home() {
                   notes={current.micro.baseNotes}
                   peopleInBase={current.micro.wealthTaxBaseRows.length}
                   includeNonCitizens={params.includeNonCitizens}
-                  nonCitizenCount={current.micro.nonCitizenCount}
-                  nonCitizenWealthB={current.micro.nonCitizenWealthB}
+                  nonCitizenCount={current.micro.excludedNonCitizenCount}
+                  nonCitizenWealthB={current.micro.excludedNonCitizenWealthB}
                 />
                 <p className="text-xs leading-5 text-[var(--gray-500)]">
                   The income-tax column is what each person pays a year. The
