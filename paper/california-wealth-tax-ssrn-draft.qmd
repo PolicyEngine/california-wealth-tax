@@ -248,8 +248,9 @@ departures that can affect future California income tax without changing the
 one-time wealth tax. The calculator separates the first three: announced
 pre-January 1 departures as named adjustments, unannounced ones as a modeled
 share or semi-elasticity, and later departures as an income-tax-only effect.
-It does not model the retroactivity case; a post-January 1 mover always owes
-the wealth tax.
+Until October 21, 2026 it did not model the retroactivity case. A legal
+setting added then can leave the people marked as leaving after January 1 out
+of collection; by default they owe the wealth tax.
 
 Unannounced departures stand for people who left California before January 1,
 2026 without public notice; leaving after that date does not escape the tax.
