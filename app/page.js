@@ -495,19 +495,23 @@ export default function Home() {
   // two grids coincide to display precision (they differ by a few million
   // through cohort members outside the reachable base); the division only
   // changes what leaves with named movers.
-  const heatmapsCoincide = useMemo(
-    () =>
-      HEATMAP_SHARES.every((share) =>
-        HEATMAP_COHORT_TAX_B.every(
-          (tax) =>
-            Math.abs(
-              heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
-                heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
-            ) < 0.05
-        )
+  const heatmapAgreement = useMemo(() => {
+    const agrees = (share, tax) =>
+      Math.abs(
+        heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
+          heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
+      ) < 0.05;
+    return {
+      coincide: HEATMAP_SHARES.every((share) =>
+        HEATMAP_COHORT_TAX_B.every((tax) => agrees(share, tax))
       ),
-    [heatmapEvaluators]
-  );
+      // At a 100% unannounced share everyone has left under either division.
+      agreesShortOfAll: HEATMAP_SHARES.filter((share) => share < 1).some((share) =>
+        HEATMAP_COHORT_TAX_B.some((tax) => agrees(share, tax))
+      ),
+    };
+  }, [heatmapEvaluators]);
+  const heatmapsCoincide = heatmapAgreement.coincide;
   const heatmapExtent = useMemo(
     () =>
       Math.max(
@@ -855,10 +859,13 @@ export default function Home() {
                     assumptions as in your scenario.
                     {heatmapCaption({
                       coincide: heatmapsCoincide,
-                      departureClaimApplied: params.residencyExclusionIds.some((id) =>
+                      // The grids follow the deferred assumptions; so does
+                      // what the caption says about them.
+                      departureClaimApplied: deferredAssumptions.residencyExclusionIds.some((id) =>
                         DEPARTURE_CLAIM_IDS.includes(id)
                       ),
-                      targetShare: params.incomeTaxDepartureShare,
+                      targetShare: deferredAssumptions.incomeTaxDepartureShare,
+                      agreesWhereTargetBinds: heatmapAgreement.agreesShortOfAll,
                     })}
                   </p>
                 </div>

@@ -576,7 +576,7 @@ export default function AssumptionPanel({
           </Field>
           <Field
             title="Non-US citizens"
-            note={`${nonCitizenCount > 0 ? `This applies to the ${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}).` : "This snapshot lists no non-US citizens."} Jaros and Rauh leave out the 28 non-US citizens on their list (from Boll, Saez and Zucman), citing treaty, Supremacy Clause and apportionment risk, and note that the measure lets the taxable share be reduced to 25% or lower (RTC §50306(b) as proposed); Galle, Gamage, Saez and Shanske include the non-US citizens on their roster.`}
+            note={`${nonCitizenCount > 0 ? `This applies to the ${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}).` : "No one in this snapshot's base has a non-US citizenship on record."} Jaros and Rauh leave out the 28 non-US citizens on their list (from Boll, Saez and Zucman), citing treaty, Supremacy Clause and apportionment risk, and note that the measure lets the taxable share be reduced to 25% or lower (RTC §50306(b) as proposed); Galle, Gamage, Saez and Shanske include the non-US citizens on their roster.`}
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip

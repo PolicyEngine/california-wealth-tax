@@ -61,8 +61,9 @@ Zuckerberg and non-US citizens left out, 7% a year wealth growth to the
 valuation date, a 50% chance the measure survives challenge, no unannounced
 departures in the wealth-tax base, and 45% of a $4.55B cohort income tax lost,
 divided by wealth. Their NPV section instead centers revenue on half of the
-$72B ceiling with Zuckerberg and the pre-filing exits in (a point NPV of
-−$32.25B) and reports a mean over a range of revenue and r − g (−$38.9B), so
+$72B ceiling with Zuckerberg and the pre-filing exits in (their formula gives
+a point NPV of −$32.25B at f = 0.45, C = $4.55B and r − g = 3%) and reports a
+mean over draws of revenue, f, C and r − g (−$38.9B), so
 the set's point value is not their published mean. Before, the set followed
 Rauh et al.'s March 2026 paper; that set stays in `lib/presets.js` as
 `HOOVER_MARCH_2026_ASSUMPTIONS`, because the working paper's analysis is dated
