@@ -172,9 +172,17 @@ bun run build
 
 ### The paper
 
-`paper/california-wealth-tax-ssrn-draft.qmd` quotes only numbers that
-`lib/paperNumbers.js` computes from the dated snapshot;
+`paper/california-wealth-tax-ssrn-draft.qmd` quotes only calculator figures
+that `lib/paperNumbers.js` computes from the dated snapshot;
 `lib/paperNumbers.test.js` fails if the text and the code disagree.
+
+The body is dated to the September 18, 2026 snapshot and scores the Hoover
+assumptions as Rauh et al.'s March 2026 version (`HOOVER_MARCH_2026_ASSUMPTIONS`).
+That set counts the income tax of the four later or unconfirmed departures in
+their Table 7 as lost on top of the share their formula ties to the wealth-tax
+loss; the paper says so and reports the set with the share tied. An addendum
+dated October 21, 2026 scores the calculator's current Hoover set, which follows
+Jaros and Rauh's NBER version, on the same snapshot.
 
 ```bash
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json

@@ -34,6 +34,74 @@
   "hooverAnnualIncomeTaxLostB": 2.83,
   "hooverFromFilingsAnnualIncomeTaxLostB": 2.14,
   "hooverFromFilingsNetB": -14.5,
+  "hooverMarchCoupledNetB": -21.4,
+  "nberHooverNetB": -33.6,
+  "nberDocumentedIncomeTaxSharePct": 34.8,
+  "nberDocumentedIncomeTaxShareFromFilingsPct": 8.1,
+  "nberDepartureShareSweep": [
+    {
+      "sharePct": 30,
+      "byWealthB": -18.2,
+      "fromFilingsB": -10.9
+    },
+    {
+      "sharePct": 45,
+      "byWealthB": -33.6,
+      "fromFilingsB": -33.6
+    },
+    {
+      "sharePct": 60,
+      "byWealthB": -56.4,
+      "fromFilingsB": -56.4
+    }
+  ],
+  "nberHooverAtFullSurvivalB": 1,
+  "nberOwnBaseAtFullSurvivalB": -9.1,
+  "nberCeilingAtFullSurvivalB": 3.8,
+  "nberBridge": [
+    {
+      "id": "residency",
+      "label": "Residency: documented departures",
+      "valueB": -24.7,
+      "minB": -31.2,
+      "maxB": -18.9
+    },
+    {
+      "id": "incomeTax",
+      "label": "Count movers' future income tax",
+      "valueB": -66.4,
+      "minB": -68.3,
+      "maxB": -64.5
+    },
+    {
+      "id": "incomeAllocation",
+      "label": "Who pays the cohort's income tax",
+      "valueB": -1.9,
+      "minB": -3.8,
+      "maxB": 0
+    },
+    {
+      "id": "erosion",
+      "label": "Avoidance and valuation haircut",
+      "valueB": 7.5,
+      "minB": 3.4,
+      "maxB": 12
+    },
+    {
+      "id": "legal",
+      "label": "Legal challenges to collection",
+      "valueB": -55.4,
+      "minB": -63.8,
+      "maxB": -47.8
+    },
+    {
+      "id": "valuation",
+      "label": "Real estate exclusion and growth to valuation",
+      "valueB": 1.1,
+      "minB": 0.5,
+      "maxB": 2
+    }
+  ],
   "fourLargestWealthSharePct": 39.9,
   "fourLargestByWealthM": 1820,
   "fourLargestFromFilingsM": 252,
