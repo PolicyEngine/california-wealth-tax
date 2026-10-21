@@ -10,7 +10,7 @@ import ResultStrip from "@/app/components/ResultStrip";
 import { ASSUMPTION_GROUPS, ASSUMPTION_GROUP_BY_ID, scenarioBridge } from "@/lib/bridge";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
-import { INCOME_TAX_METHODS } from "@/lib/microModel";
+import { INCOME_TAX_METHODS, snapshotSourceDate } from "@/lib/microModel";
 import { formatBillions } from "@/lib/format";
 import { heatmapCaption, heatmapEvaluator } from "@/lib/heatmap";
 import { loadSnapshot, selectSnapshotRows, snapshotReducer } from "@/lib/snapshot";
@@ -378,7 +378,7 @@ export default function Home() {
     [loadedSnapshot]
   );
   const sourceDate = useMemo(
-    () => new Date(`${loadedDate}T00:00:00`),
+    () => snapshotSourceDate(loadedDate),
     [loadedDate]
   );
   const score = useMemo(
