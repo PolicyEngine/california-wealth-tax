@@ -12,12 +12,24 @@ on:
         required: false
         default: ""
 
+# A manual dispatch would otherwise race the scheduled run to push. A run that
+# starts while another is going waits for it rather than cancelling it.
+concurrency:
+  group: update-forbes
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
     permissions:
+      actions: write # dispatch CI on the data commit and watch it
       contents: write
       issues: write
+    env:
+      # The repository had no watchers in October 2026, so a failure issue
+      # reached no one unless it named someone. scripts/report_daily_update.py
+      # assigns it to this account and mentions it while an outage goes on.
+      ALERT_ASSIGNEE: MaxGhenis
     steps:
       - uses: actions/checkout@v6
 
@@ -44,6 +56,7 @@ jobs:
         run: python scripts/check_snapshot_sanity.py
 
       - name: Commit and push if changed
+        id: publish
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -53,17 +66,49 @@ jobs:
           else
             git commit -m "Update Forbes data ($(date -u +%Y-%m-%d))"
             git push
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
 
-      # Nothing is published when a step above fails, so the site keeps the last
-      # good data. Say so where someone will see it.
-      - name: Open an issue if the update failed
-        if: failure()
+      # A push made with GITHUB_TOKEN starts no workflow run, so the data commit
+      # would otherwise reach the branch with no lint, model tests, strict
+      # freshness check or build. A workflow_dispatch event is the documented
+      # exception. Waiting on the run lets a red CI fail this job, which the
+      # report below turns into an issue.
+      - name: Run CI on the data commit
+        id: ci
+        if: steps.publish.outputs.sha != ''
+        timeout-minutes: 30
         env:
           GH_TOKEN: ${{ github.token }}
+          DATA_COMMIT: ${{ steps.publish.outputs.sha }}
         run: |
-          title="Daily Forbes update failed"
-          if [ -z "$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number')" ]; then
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
-              --body "The run at $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID failed, so no new snapshot was published and the site is serving the last good data. If the sanity gate tripped on a real event, rerun the workflow with the check named in its log in the \`allow\` input."
+          run_id=$(gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/dispatches" \
+            -f ref="$GITHUB_REF_NAME" -F return_run_details=true \
+            --jq .workflow_run_id)
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status
+          # A dispatch runs on the branch's tip, which is the data commit unless
+          # someone pushed in between.
+          tested=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json headSha --jq .headSha)
+          if [ "$tested" != "$DATA_COMMIT" ]; then
+            echo "::notice::CI ran on $tested, pushed after data commit $DATA_COMMIT."
           fi
+
+      # Only main's outcome is reported: a test dispatch on a branch neither
+      # opens nor closes the outage issue. System python3, not setup-python, so
+      # the report runs even if an earlier setup step is what failed.
+      - name: Report the failure
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DATA_COMMIT: ${{ steps.publish.outputs.sha }}
+          CI_RUN_ID: ${{ steps.ci.outputs.run_id }}
+        run: python3 scripts/report_daily_update.py failure
+
+      - name: Close the outage issue
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/report_daily_update.py success

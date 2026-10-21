@@ -110,6 +110,13 @@ the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
 before anything is committed. Names are joined on a normalized key (aliases,
 trailing "& family", case), because Forbes changes display names.
 
+A push made with the workflow's token starts no CI run, so after pushing a data
+commit the job dispatches `ci.yml` on it and fails if CI fails. On any failure,
+`scripts/report_daily_update.py` opens a "Daily Forbes update failed" issue
+assigned to a maintainer. Once three days pass without a successful run it
+mentions them, and again every week the outage lasts. The next successful run
+closes the issue.
+
 Known gap: the January 1, 2026 list is a backfill of US-citizen Forbes
 profiles, so non-US citizens Forbes places in California enter the base only
 through the current list, with their January 1 residency assumed.
@@ -142,6 +149,7 @@ scripts/
 ├── fetch_forbes.py          # Daily Forbes fetch and roster valuations
 ├── check_snapshot_sanity.py # Gate between fetching and publishing
 ├── check_snapshot_freshness.py
+├── report_daily_update.py   # Opens, escalates and closes the outage issue
 ├── paper_numbers.mjs        # Writes paper/paper_numbers.json
 └── precompute.py            # Year-keyed income-tax lookup generator
 ```
