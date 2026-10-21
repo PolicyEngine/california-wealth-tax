@@ -110,8 +110,10 @@ the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
 before anything is committed. Names are joined on a normalized key (aliases,
 trailing "& family", case), because Forbes changes display names.
 
-A push made with the workflow's token starts no push run of `ci.yml`, so after
-pushing a data commit the job dispatches `ci.yml` on it. A failed daily run, or
+The branch may move while a run waits for a runner, so the job rebases its data
+commit onto the branch's current tip before pushing. A push made with the
+workflow's token starts no push run of `ci.yml`, so after pushing a data commit
+the job dispatches `ci.yml` on it. A failed daily run, or
 a failed CI run on its data commit, opens a "Daily Forbes update failed" issue
 (`scripts/report_daily_update.py`). If the issue is still open two days later,
 the next failure assigns it to a maintainer and mentions them, and mentions
