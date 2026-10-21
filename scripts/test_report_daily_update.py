@@ -13,42 +13,37 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from check_snapshot_freshness import MAX_SNAPSHOT_AGE_DAYS  # noqa: E402
 from report_daily_update import (  # noqa: E402
-    ESCALATE_AFTER_DAYS,
-    ESCALATION_MARKER,
     ISSUE_TITLE,
+    MENTION_AFTER_DAYS_OPEN,
+    MENTION_MARKER,
     REMIND_EVERY_DAYS,
     Context,
     GitHub,
+    main,
     report_failure,
     report_success,
-    should_escalate,
+    should_mention,
 )
 
 TODAY = date(2026, 10, 21)
 
 
+def days_ago(days):
+    return TODAY - timedelta(days=days)
+
+
 class FakeGitHub:
-    def __init__(
-        self,
-        issue=None,
-        last_success=None,
-        last_escalation=None,
-        source_date="2026-10-18",
-    ):
-        self.issue = issue
-        self.last_success = last_success
-        self.last_escalation = last_escalation
+    def __init__(self, opened=None, last_mention=None, source_date="2026-10-18"):
+        self.issue = None if opened is None else (20, opened)
+        self.last_mention = last_mention
         self._source_date = source_date
         self.writes = []
 
     def open_issue(self):
         return self.issue
 
-    def last_success_date(self):
-        return self.last_success
-
-    def last_escalation_date(self, issue):
-        return self.last_escalation
+    def last_mention_date(self, issue):
+        return self.last_mention
 
     def source_date(self):
         if isinstance(self._source_date, Exception):
@@ -75,12 +70,10 @@ def context(**overrides):
     return Context(**{**fields, **overrides})
 
 
-def days_ago(days):
-    return TODAY - timedelta(days=days)
-
-
-def test_the_first_mention_comes_when_the_data_turns_stale():
-    assert ESCALATE_AFTER_DAYS == MAX_SNAPSHOT_AGE_DAYS + 1
+def test_the_first_mention_comes_when_pre_outage_data_turns_stale():
+    # Last good run on day 0, issue opened on day 1: the first mention goes out
+    # on day 1 + MENTION_AFTER_DAYS_OPEN, the first day day-0 data is too old.
+    assert 1 + MENTION_AFTER_DAYS_OPEN == MAX_SNAPSHOT_AGE_DAYS + 1
 
 
 def test_a_first_failure_opens_an_assigned_issue():
@@ -95,22 +88,30 @@ def test_a_first_failure_opens_an_assigned_issue():
     assert "keeps the data from 2026-10-18" in body
 
 
-def test_a_failure_after_publishing_says_the_data_is_out():
+def test_a_failed_dispatch_after_publishing_says_the_data_is_out():
     github = FakeGitHub()
-    ctx = context(data_commit="abc123", ci_run_url="https://example.test/ci/2")
 
-    report_failure(github, ctx, TODAY)
+    report_failure(github, context(data_commit="abc123"), TODAY)
 
     [(_, body, _)] = github.writes
-    assert "pushed data commit abc123" in body
-    assert "CI on it (https://example.test/ci/2) did not pass" in body
+    assert "pushed data commit abc123 to main but could not start CI" in body
     assert "before publishing" not in body
 
 
-def test_an_unreadable_source_date_still_opens_the_issue():
-    github = FakeGitHub(
-        source_date=subprocess.CalledProcessError(1, ["gh", "api"]),
+def test_a_ci_failure_names_the_data_commit_and_the_ci_run():
+    github = FakeGitHub()
+
+    report_failure(github, context(data_commit="abc123"), TODAY, ci_failed=True)
+
+    [(_, body, _)] = github.writes
+    assert body.startswith(
+        "CI run https://github.com/PolicyEngine/california-wealth-tax/actions/runs/1"
+        " on main, dispatched for data commit abc123, failed."
     )
+
+
+def test_an_unreadable_source_date_still_opens_the_issue():
+    github = FakeGitHub(source_date=subprocess.CalledProcessError(1, ["gh", "api"]))
 
     report_failure(github, context(), TODAY)
 
@@ -119,9 +120,9 @@ def test_an_unreadable_source_date_still_opens_the_issue():
     assert "an unknown date" in body
 
 
-@pytest.mark.parametrize("days_down", range(ESCALATE_AFTER_DAYS))
-def test_an_open_issue_stays_quiet_early_in_an_outage(days_down):
-    github = FakeGitHub(issue=20, last_success=days_ago(days_down))
+@pytest.mark.parametrize("days_open", range(MENTION_AFTER_DAYS_OPEN))
+def test_an_open_issue_stays_quiet_early_in_an_outage(days_open):
+    github = FakeGitHub(opened=days_ago(days_open))
 
     report_failure(github, context(), TODAY)
 
@@ -129,29 +130,26 @@ def test_an_open_issue_stays_quiet_early_in_an_outage(days_down):
 
 
 def test_an_outage_that_runs_on_mentions_the_assignee():
-    github = FakeGitHub(issue=20, last_success=days_ago(ESCALATE_AFTER_DAYS))
+    github = FakeGitHub(opened=days_ago(MENTION_AFTER_DAYS_OPEN))
 
     report_failure(github, context(), TODAY)
 
     [(action, issue, body)] = github.writes
     assert (action, issue) == ("comment", 20)
-    assert body.startswith("@maintainer the daily Forbes update has not succeeded")
-    since = days_ago(ESCALATE_AFTER_DAYS).isoformat()
-    assert f"for {ESCALATE_AFTER_DAYS} days, since {since}" in body
-    assert ESCALATION_MARKER in body
+    opened = days_ago(MENTION_AFTER_DAYS_OPEN).isoformat()
+    assert body.startswith(
+        "@maintainer no daily Forbes update has succeeded since this issue "
+        f"opened on {opened}, {MENTION_AFTER_DAYS_OPEN} days ago."
+    )
+    assert "main has data from 2026-10-18" in body
+    assert MENTION_MARKER in body
 
 
 def test_mentions_repeat_weekly_not_daily():
     quiet = FakeGitHub(
-        issue=20,
-        last_success=days_ago(12),
-        last_escalation=days_ago(REMIND_EVERY_DAYS - 1),
+        opened=days_ago(12), last_mention=days_ago(REMIND_EVERY_DAYS - 1)
     )
-    due = FakeGitHub(
-        issue=20,
-        last_success=days_ago(12),
-        last_escalation=days_ago(REMIND_EVERY_DAYS),
-    )
+    due = FakeGitHub(opened=days_ago(12), last_mention=days_ago(REMIND_EVERY_DAYS))
 
     report_failure(quiet, context(), TODAY)
     report_failure(due, context(), TODAY)
@@ -160,17 +158,8 @@ def test_mentions_repeat_weekly_not_daily():
     assert [write[0] for write in due.writes] == ["comment"]
 
 
-def test_no_success_on_record_counts_as_a_long_outage():
-    github = FakeGitHub(issue=20, last_success=None)
-
-    report_failure(github, context(), TODAY)
-
-    [(_, _, body)] = github.writes
-    assert "has no successful run on record" in body
-
-
 def test_success_closes_the_open_issue():
-    github = FakeGitHub(issue=20, source_date="2026-10-21")
+    github = FakeGitHub(opened=days_ago(4), source_date="2026-10-21")
 
     report_success(github, context())
 
@@ -190,25 +179,25 @@ def test_success_without_an_issue_writes_nothing():
 def mentions(run_days):
     """Days a failing outage mentions the assignee, given the days it runs.
 
-    The last success was day 0. run_days is sorted and may repeat a day, as a
-    rerun does.
+    The issue opened on day 0. run_days is sorted and may repeat a day, as a
+    rerun or a ci.yml report on the same day does.
     """
     mentioned = []
     for day in run_days:
         since = day - mentioned[-1] if mentioned else None
-        if should_escalate(day, since):
+        if should_mention(day, since):
             mentioned.append(day)
     return mentioned
 
 
-def test_a_daily_outage_is_mentioned_on_day_3_then_weekly():
-    assert mentions(range(1, 32)) == [3, 10, 17, 24, 31]
+def test_a_daily_outage_is_mentioned_on_day_2_then_weekly():
+    assert mentions(range(1, 31)) == [2, 9, 16, 23, 30]
 
 
 def test_mention_schedule_for_every_pattern_of_missed_and_repeated_runs():
-    """For every way the job can run on days 1-12: not at all, once or twice.
+    """For every way failing runs can fall on days 1-12: none, one or two a day.
 
-    - nothing is said before day ESCALATE_AFTER_DAYS;
+    - nothing is said before day MENTION_AFTER_DAYS_OPEN;
     - two mentions are never closer than REMIND_EVERY_DAYS;
     - the first run once a mention is due always makes it, so a missed run
       delays a mention by at most the gap to the next run.
@@ -220,9 +209,9 @@ def test_mention_schedule_for_every_pattern_of_missed_and_repeated_runs():
         ]
         said = mentions(run_days)
 
-        assert all(day >= ESCALATE_AFTER_DAYS for day in said)
+        assert all(day >= MENTION_AFTER_DAYS_OPEN for day in said)
         assert all(b - a >= REMIND_EVERY_DAYS for a, b in zip(said, said[1:]))
-        expected, due = [], ESCALATE_AFTER_DAYS
+        expected, due = [], MENTION_AFTER_DAYS_OPEN
         for day in run_days:
             if day >= due:
                 expected.append(day)
@@ -247,27 +236,24 @@ def fake_gh(responses):
 def test_github_reads_parse_gh_output():
     run, _ = fake_gh(
         {
-            "issues?state=open": "31\n20\n",
-            "/runs?branch=main&status=success": "2026-10-18T12:14:48Z\n",
+            "issues?state=open": "31 2026-10-19T12:15:00Z\n20 2026-09-20T12:13:38Z\n",
             "/comments": "2026-10-01T12:00:00Z\n2026-10-08T12:00:00Z\n",
             "billionaires_live_meta.json": '{"sourceDate": "2026-10-18"}',
         }
     )
     github = GitHub("PolicyEngine/california-wealth-tax", "main", run=run)
 
-    assert github.open_issue() == 20
-    assert github.last_success_date() == date(2026, 10, 18)
-    assert github.last_escalation_date(20) == date(2026, 10, 8)
+    assert github.open_issue() == (20, date(2026, 9, 20))
+    assert github.last_mention_date(20) == date(2026, 10, 8)
     assert github.source_date() == "2026-10-18"
 
 
 def test_github_reads_handle_empty_results():
-    run, _ = fake_gh({"issues?state=open": "", "/runs?": "", "/comments": ""})
+    run, _ = fake_gh({"issues?state=open": "", "/comments": ""})
     github = GitHub("PolicyEngine/california-wealth-tax", "main", run=run)
 
     assert github.open_issue() is None
-    assert github.last_success_date() is None
-    assert github.last_escalation_date(20) is None
+    assert github.last_mention_date(20) is None
 
 
 def test_issue_lookup_matches_the_exact_title_and_skips_pull_requests():
@@ -293,3 +279,29 @@ def test_dry_run_reads_but_does_not_write(capsys):
     assert "would run: gh issue create" in printed
     assert "--assignee maintainer" in printed
     assert "would run: gh issue close 20" in printed
+
+
+@pytest.mark.parametrize(
+    "outcome, expected",
+    [
+        ("failure", "failed before publishing"),
+        ("ci-failure", "dispatched for data commit abc123, failed"),
+    ],
+)
+def test_main_routes_each_outcome(monkeypatch, outcome, expected):
+    github = FakeGitHub()
+    monkeypatch.setattr("report_daily_update.GitHub", lambda *a, **k: github)
+    for name, value in {
+        "GITHUB_REPOSITORY": "PolicyEngine/california-wealth-tax",
+        "GITHUB_REF_NAME": "main",
+        "GITHUB_RUN_ID": "7",
+        "DATA_COMMIT": "abc123" if outcome == "ci-failure" else "",
+    }.items():
+        monkeypatch.setenv(name, value)
+
+    main([outcome])
+
+    [(action, body, assignee)] = github.writes
+    assert action == "create"
+    assert expected in body
+    assert assignee == "MaxGhenis"

@@ -22,14 +22,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     permissions:
-      actions: write # dispatch CI on the data commit and watch it
+      actions: write # dispatch CI on the data commit
       contents: write
       issues: write
-    env:
-      # The repository had no watchers in October 2026, so a failure issue
-      # reached no one unless it named someone. scripts/report_daily_update.py
-      # assigns it to this account and mentions it while an outage goes on.
-      ALERT_ASSIGNEE: MaxGhenis
     steps:
       - uses: actions/checkout@v6
 
@@ -72,43 +67,36 @@ jobs:
       # A push made with GITHUB_TOKEN starts no workflow run, so the data commit
       # would otherwise reach the branch with no lint, model tests, strict
       # freshness check or build. A workflow_dispatch event is the documented
-      # exception. Waiting on the run lets a red CI fail this job, which the
-      # report below turns into an issue.
+      # exception. ci.yml reports the result on the outage issue itself; waiting
+      # for it here would hold a runner while the CI run queues for one.
       - name: Run CI on the data commit
-        id: ci
         if: steps.publish.outputs.sha != ''
-        timeout-minutes: 30
         env:
           GH_TOKEN: ${{ github.token }}
           DATA_COMMIT: ${{ steps.publish.outputs.sha }}
         run: |
-          run_id=$(gh api --method POST \
+          gh api --method POST \
             "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/dispatches" \
-            -f ref="$GITHUB_REF_NAME" -F return_run_details=true \
-            --jq .workflow_run_id)
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id"
-          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 15 --exit-status
-          # A dispatch runs on the branch's tip, which is the data commit unless
-          # someone pushed in between.
-          tested=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json headSha --jq .headSha)
-          if [ "$tested" != "$DATA_COMMIT" ]; then
-            echo "::notice::CI ran on $tested, pushed after data commit $DATA_COMMIT."
-          fi
+            -f ref="$GITHUB_REF_NAME" -f "inputs[data_commit]=$DATA_COMMIT" \
+            -F return_run_details=true --jq '"CI run: \(.html_url)"'
 
-      # Only main's outcome is reported: a test dispatch on a branch neither
-      # opens nor closes the outage issue. System python3, not setup-python, so
-      # the report runs even if an earlier setup step is what failed.
+      # scripts/report_daily_update.py keeps the outage issue; off main, such as
+      # in a test dispatch on a branch, it prints what it would do instead. It
+      # runs on the runner's python3 so that it works whichever step failed.
       - name: Report the failure
-        if: failure() && github.ref == 'refs/heads/main'
+        if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
           DATA_COMMIT: ${{ steps.publish.outputs.sha }}
-          CI_RUN_ID: ${{ steps.ci.outputs.run_id }}
-        run: python3 scripts/report_daily_update.py failure
+        run: >-
+          python3 scripts/report_daily_update.py failure
+          ${{ github.ref != 'refs/heads/main' && '--dry-run' || '' }}
 
+      # After a data commit, ci.yml closes the issue once CI passes on it.
       - name: Close the outage issue
-        if: success() && github.ref == 'refs/heads/main'
+        if: success() && steps.publish.outputs.sha == ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/report_daily_update.py success
+        run: >-
+          python3 scripts/report_daily_update.py success
+          ${{ github.ref != 'refs/heads/main' && '--dry-run' || '' }}

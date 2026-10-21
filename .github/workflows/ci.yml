@@ -7,6 +7,13 @@ on:
   # update-forbes.yml pushes its daily data commit with GITHUB_TOKEN, which
   # starts no push run, so it dispatches this workflow on the commit instead.
   workflow_dispatch:
+    inputs:
+      data_commit:
+        description: >-
+          Data commit the daily Forbes job pushed; when set, the result goes on
+          the outage issue
+        required: false
+        default: ""
 
 jobs:
   ci:
@@ -38,3 +45,25 @@ jobs:
       - name: Snapshot freshness
         run: python scripts/check_snapshot_freshness.py ${{ github.event_name == 'pull_request' && '--warn-only' || '' }}
       - run: bun run build
+
+  # GitHub notifies whoever triggered a run, and the daily job's dispatch is
+  # triggered by github-actions[bot], so this run's result would reach no one.
+  # Put it on the outage issue instead: open or escalate it on a failure, close
+  # it on a pass. Off main it prints what it would do.
+  report:
+    needs: ci
+    if: always() && inputs.data_commit != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report the data commit's CI result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DATA_COMMIT: ${{ inputs.data_commit }}
+        run: >-
+          python3 scripts/report_daily_update.py
+          ${{ needs.ci.result == 'success' && 'success' || 'ci-failure' }}
+          ${{ github.ref != 'refs/heads/main' && '--dry-run' || '' }}
