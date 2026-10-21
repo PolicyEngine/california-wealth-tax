@@ -48,6 +48,20 @@ assumptions of Galle, Gamage, Saez and Shanske and of Rauh et al. to this
 calculator's roster. They are settings inside the same model, not replications
 of those papers' rosters.
 
+## Related work
+
+Two other analyses compare versions of the Berkeley and Hoover estimates. The
+page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
+
+- Fernando Hoces de la Guardia, [California Proposition 40, Reconciliation of
+  the Two Analyses](https://fhoces.github.io/opa-prop40/) (Open Policy Analysis
+  report, October 2026;
+  [comparison report](https://fhoces.github.io/opa-prop40/comparison/site/repro.html),
+  [code](https://github.com/fhoces/opa-prop40)).
+- Jeffrey L. Hoopes, [Galle v Rauh: Comparing Two Revenue Estimates for
+  California Billionaire Taxation](https://doi.org/10.2139/ssrn.6428578) (SSRN
+  Working Paper 6428578, March 2026).
+
 ## Data
 
 - `public/snapshots/<date>.json`: daily Forbes California snapshots, indexed in
