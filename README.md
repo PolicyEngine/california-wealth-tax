@@ -116,7 +116,8 @@ a failed CI run on its data commit, opens a "Daily Forbes update failed" issue
 (`scripts/report_daily_update.py`). If the issue is still open two days later,
 the next failure assigns it to a maintainer and mentions them, and mentions
 them again every week the outage lasts. The next good run closes it: CI passing
-on its data commit, or no new data while the current data is still fresh. If
+on its data commit, or no new data while the current data is still fresh. A CI
+pass leaves open an issue opened after its data commit about something else. If
 the daily workflow stops running at all (disabled, or GitHub drops its
 scheduled runs), nothing reports it.
 

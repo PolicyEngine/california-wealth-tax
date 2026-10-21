@@ -34,6 +34,7 @@ import os
 import shlex
 import subprocess
 import sys
+from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,8 @@ BOT_LOGIN = "github-actions[bot]"
 MENTION_AFTER_DAYS_OPEN = MAX_SNAPSHOT_AGE_DAYS
 REMIND_EVERY_DAYS = 7
 MENTION_MARKER = "<!-- daily-update-mention -->"
+
+Issue = namedtuple("Issue", "number opened body")
 
 
 def should_mention(days_open, days_since_mention):
@@ -104,7 +107,7 @@ class GitHub:
         self._run(["gh", *args], check=True)
 
     def open_issues(self):
-        """(number, time opened) of each open outage issue, oldest first."""
+        """Each open outage issue, oldest first."""
         rows = self._read(
             "api",
             "--paginate",
@@ -112,10 +115,11 @@ class GitHub:
             "--jq",
             ".[] | select(.pull_request == null)"
             f" | select(.title == {json.dumps(ISSUE_TITLE)})"
-            ' | "\\(.number) \\(.created_at)"',
+            ' | [.number, .created_at, .body // ""] | @json',
         ).splitlines()
         return sorted(
-            (int(number), utc_time(created)) for number, created in map(str.split, rows)
+            Issue(number, utc_time(created), body)
+            for number, created, body in map(json.loads, rows)
         )
 
     def last_mention_time(self, issue):
@@ -207,9 +211,9 @@ def failure_summary(ctx, source_date, ci_failed):
         )
     return (
         f"The run at {ctx.run_url} failed before publishing, so {ctx.branch} "
-        f"keeps the data from {source_date}. If the sanity gate tripped on a "
-        "real event, rerun the workflow with the check named in its log in "
-        "the `allow` input."
+        f"keeps the data from {source_date}. Its log names the step that "
+        "failed. If the sanity gate tripped on a real event, rerun the "
+        "workflow with the check named in the log in the `allow` input."
     )
 
 
@@ -240,7 +244,7 @@ def report_failure(github, ctx, today, ci_failed=False):
     if not issues:
         github.create_issue(issue_body(ctx, source_date, ci_failed))
         return
-    number, opened = issues[0]
+    number, opened, _ = issues[0]
     days_open = (today - opened.date()).days
     last_mention = github.last_mention_time(number)
     since = None if last_mention is None else (today - last_mention.date()).days
@@ -260,7 +264,7 @@ def report_success(github, ctx):
 
     A CI pass on a data commit says nothing about a failure after that commit,
     such as a rerun that failed while this CI run waited for a runner, so an
-    issue opened after the commit stays open.
+    issue opened after the commit stays open unless it is about that commit.
     """
     issues = github.open_issues()
     if not issues:
@@ -276,11 +280,12 @@ def report_success(github, ctx):
         f"The run at {ctx.run_url} succeeded, and {ctx.branch} has data from "
         f"{known_source_date(github)}. Closing."
     )
-    for number, opened in issues:
-        if cutoff is not None and opened > cutoff:
-            print(f"Issue #{number} opened after {ctx.data_commit}; leaving it.")
+    for issue in issues:
+        later = cutoff is not None and issue.opened > cutoff
+        if later and ctx.data_commit not in issue.body:
+            print(f"Issue #{issue.number} opened after {ctx.data_commit}; leaving it.")
             continue
-        github.close_issue(number, comment)
+        github.close_issue(issue.number, comment)
 
 
 def main(argv=None):

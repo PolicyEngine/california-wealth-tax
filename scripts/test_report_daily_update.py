@@ -21,6 +21,7 @@ from report_daily_update import (  # noqa: E402
     REMIND_EVERY_DAYS,
     Context,
     GitHub,
+    Issue,
     main,
     report_failure,
     report_success,
@@ -33,6 +34,10 @@ NOON = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
 
 def days_ago(days):
     return NOON - timedelta(days=days)
+
+
+def outage_issue(number, days_open, body=""):
+    return Issue(number, days_ago(days_open), body)
 
 
 class FakeGitHub:
@@ -167,7 +172,7 @@ def test_an_unreadable_source_date_still_opens_the_issue():
 
 @pytest.mark.parametrize("days_open", range(MENTION_AFTER_DAYS_OPEN))
 def test_an_open_issue_stays_quiet_early_in_an_outage(days_open):
-    github = FakeGitHub(issues=[(20, days_ago(days_open))])
+    github = FakeGitHub(issues=[outage_issue(20, days_open)])
 
     report_failure(github, context(), TODAY)
 
@@ -175,7 +180,7 @@ def test_an_open_issue_stays_quiet_early_in_an_outage(days_open):
 
 
 def test_an_outage_that_runs_on_assigns_and_mentions_the_assignee():
-    github = FakeGitHub(issues=[(20, days_ago(MENTION_AFTER_DAYS_OPEN))])
+    github = FakeGitHub(issues=[outage_issue(20, MENTION_AFTER_DAYS_OPEN)])
 
     report_failure(github, context(), TODAY)
 
@@ -193,7 +198,7 @@ def test_an_outage_that_runs_on_assigns_and_mentions_the_assignee():
 
 def test_a_failed_assignment_still_mentions():
     github = FakeGitHub(
-        issues=[(20, days_ago(MENTION_AFTER_DAYS_OPEN))],
+        issues=[outage_issue(20, MENTION_AFTER_DAYS_OPEN)],
         assign_error=subprocess.CalledProcessError(1, ["gh", "issue", "edit"]),
     )
 
@@ -206,10 +211,10 @@ def test_a_failed_assignment_still_mentions():
 
 def test_mentions_repeat_weekly_not_daily():
     quiet = FakeGitHub(
-        issues=[(20, days_ago(12))], last_mention=days_ago(REMIND_EVERY_DAYS - 1)
+        issues=[outage_issue(20, 12)], last_mention=days_ago(REMIND_EVERY_DAYS - 1)
     )
     due = FakeGitHub(
-        issues=[(20, days_ago(12))], last_mention=days_ago(REMIND_EVERY_DAYS)
+        issues=[outage_issue(20, 12)], last_mention=days_ago(REMIND_EVERY_DAYS)
     )
 
     report_failure(quiet, context(), TODAY)
@@ -221,7 +226,7 @@ def test_mentions_repeat_weekly_not_daily():
 
 def test_a_failure_with_duplicate_issues_reports_on_the_oldest():
     github = FakeGitHub(
-        issues=[(31, days_ago(0)), (20, days_ago(MENTION_AFTER_DAYS_OPEN))]
+        issues=[outage_issue(31, 0), outage_issue(20, MENTION_AFTER_DAYS_OPEN)]
     )
 
     report_failure(github, context(), TODAY)
@@ -231,7 +236,7 @@ def test_a_failure_with_duplicate_issues_reports_on_the_oldest():
 
 def test_success_closes_every_open_issue():
     github = FakeGitHub(
-        issues=[(20, days_ago(4)), (31, days_ago(4))], source_date="2026-10-21"
+        issues=[outage_issue(20, 4), outage_issue(31, 4)], source_date="2026-10-21"
     )
 
     report_success(github, context())
@@ -242,7 +247,7 @@ def test_success_closes_every_open_issue():
 
 def test_a_ci_pass_leaves_an_issue_opened_after_its_data_commit():
     github = FakeGitHub(
-        issues=[(20, days_ago(3)), (31, days_ago(0))],
+        issues=[outage_issue(20, 3), outage_issue(31, 0)],
         commit_time=days_ago(1),
     )
 
@@ -251,15 +256,29 @@ def test_a_ci_pass_leaves_an_issue_opened_after_its_data_commit():
     assert [write[:2] for write in github.writes] == [("close", 20)]
 
 
-def test_an_undatable_data_commit_closes_every_issue():
+@pytest.mark.parametrize(
+    "error", [subprocess.CalledProcessError(1, ["gh", "api"]), ValueError("bad date")]
+)
+def test_an_undatable_data_commit_closes_every_issue(error):
     github = FakeGitHub(
-        issues=[(20, days_ago(3)), (31, days_ago(0))],
-        commit_time=subprocess.CalledProcessError(1, ["gh", "api"]),
+        issues=[outage_issue(20, 3), outage_issue(31, 0)], commit_time=error
     )
 
     report_success(github, context(data_commit="abc123"))
 
     assert [write[:2] for write in github.writes] == [("close", 20), ("close", 31)]
+
+
+def test_a_ci_pass_closes_the_issue_about_its_own_data_commit():
+    # The dispatch failed after pushing abc123, then CI was run on it by hand.
+    github = FakeGitHub(
+        issues=[outage_issue(20, 0, "pushed data commit abc123 to main but could not")],
+        commit_time=days_ago(1),
+    )
+
+    report_success(github, context(data_commit="abc123"))
+
+    assert [write[:2] for write in github.writes] == [("close", 20)]
 
 
 def test_success_without_an_issue_writes_nothing():
@@ -330,7 +349,8 @@ def fake_gh(responses):
 def test_github_reads_parse_gh_output():
     run, _ = fake_gh(
         {
-            "issues?state=open": "31 2026-10-19T12:15:00Z\n20 2026-09-20T12:13:38Z\n",
+            "issues?state=open": '[31,"2026-10-19T12:15:00Z","b\\nc"]\n'
+            '[20,"2026-09-20T12:13:38Z",""]\n',
             "/comments": "2026-10-01T12:00:00Z\n2026-10-08T12:00:00Z\n",
             "/commits/abc123": "2026-10-21T12:15:00Z\n",
             "billionaires_live_meta.json": '{"sourceDate": "2026-10-18"}',
@@ -339,8 +359,8 @@ def test_github_reads_parse_gh_output():
     github = GitHub("PolicyEngine/california-wealth-tax", "main", run=run)
 
     assert github.open_issues() == [
-        (20, datetime(2026, 9, 20, 12, 13, 38, tzinfo=timezone.utc)),
-        (31, datetime(2026, 10, 19, 12, 15, tzinfo=timezone.utc)),
+        Issue(20, datetime(2026, 9, 20, 12, 13, 38, tzinfo=timezone.utc), ""),
+        Issue(31, datetime(2026, 10, 19, 12, 15, tzinfo=timezone.utc), "b\nc"),
     ]
     assert github.last_mention_time(20) == datetime(
         2026, 10, 8, 12, tzinfo=timezone.utc
@@ -383,7 +403,8 @@ requires_jq = pytest.mark.skipif(shutil.which("jq") is None, reason="needs jq")
 @requires_jq
 def test_issue_filter_keeps_only_exact_title_issues():
     issues = [
-        {"number": 20, "title": ISSUE_TITLE, "created_at": "2026-09-20T12:13:38Z"},
+        {"number": 20, "title": ISSUE_TITLE, "created_at": "t20", "body": "a\nb"},
+        {"number": 24, "title": ISSUE_TITLE, "created_at": "t24", "body": None},
         {"number": 21, "title": ISSUE_TITLE, "pull_request": {}, "created_at": "x"},
         {"number": 22, "title": f"Re: {ISSUE_TITLE}", "created_at": "x"},
         {"number": 23, "title": ISSUE_TITLE.lower(), "created_at": "x"},
@@ -391,7 +412,7 @@ def test_issue_filter_keeps_only_exact_title_issues():
 
     rows = run_jq(jq_filter(GitHub.open_issues), issues)
 
-    assert rows == ["20 2026-09-20T12:13:38Z"]
+    assert [json.loads(row) for row in rows] == [[20, "t20", "a\nb"], [24, "t24", ""]]
 
 
 @requires_jq
@@ -430,7 +451,7 @@ def test_dry_run_reads_but_does_not_write(capsys):
     [
         ("failure", [], ("create", "failed before publishing")),
         ("ci-failure", [], ("create", "dispatched for data commit abc123, failed")),
-        ("success", [(20, NOON)], ("close", "succeeded")),
+        ("success", [Issue(20, NOON, "")], ("close", "succeeded")),
     ],
 )
 def test_main_routes_each_outcome(monkeypatch, outcome, issues, expected):
