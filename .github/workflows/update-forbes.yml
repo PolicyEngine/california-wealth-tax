@@ -25,6 +25,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # scripts/test_precompute.py runs lib/incomeTaxLookup.js under bun to check
+      # that the app can read the generated lookup. That module imports nothing,
+      # so the runtime is enough; no `bun install`.
+      - uses: oven-sh/setup-bun@v2
+
       - name: Test the fetcher before touching data
         run: |
           python -m pip install pytest
