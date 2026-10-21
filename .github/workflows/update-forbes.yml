@@ -27,7 +27,13 @@ jobs:
       contents: write
       issues: write
     steps:
+      # The branch's tip when the job starts, not the commit the run was queued
+      # for: the branch may have moved while the run waited for a runner, and
+      # the tests, fetch and sanity gate should see the tree that gets
+      # published. The workflow file itself still comes from the queued commit.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-python@v6
         with:
@@ -53,6 +59,8 @@ jobs:
 
       - name: Commit and push if changed
         id: publish
+        env:
+          SNAPSHOT_SANITY_ALLOW: ${{ inputs.allow }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -65,10 +73,13 @@ jobs:
             python scripts/check_snapshot_freshness.py
           else
             git commit -m "Update Forbes data ($(date -u +%Y-%m-%d))"
-            # The checkout is the commit the run was queued for, and the branch
-            # may have moved since. Put the data commit on its current tip; CI
-            # then runs on the result.
+            # Something may have landed since checkout. Put the data commit on
+            # the branch's current tip and gate the tree that will be pushed. A
+            # conflict, such as another data commit, fails the step. The rebase
+            # needs a clean tree: every tracked file the fetcher writes is
+            # staged above.
             git pull --rebase origin "$GITHUB_REF_NAME"
+            python scripts/check_snapshot_sanity.py
             git push
             echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
