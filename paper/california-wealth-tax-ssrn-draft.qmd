@@ -285,7 +285,8 @@ raises the present value of lost California income taxes. Jaros and Rauh's
 later version counts only the observed departures against wealth-tax revenue,
 an assumption it calls "extraordinarily conservative," and draws the share of
 income tax lost, including departures no one documented, separately from that
-revenue [@jarosrauh2026nber, pp. 22, 30, 32]. The addendum scores that version.
+revenue [@jarosrauh2026nber, pp. 22, 30, 32]. The addendum scores the
+calculator's set based on that version.
 
 ## California income tax loss
 
@@ -605,8 +606,8 @@ movers' income tax and the legal challenges to collection carry most of the
 gap. The step for who pays the cohort's income tax comes entirely from the
 cohort total, $4.3 billion in the Berkeley assumptions and $4.55 billion here.
 
-The division of the cohort's income tax does not move this set. The seven
-documented departures, Mark Zuckerberg among them, carry 34.8 percent of the cohort's income tax divided by wealth and
+The division of the cohort's income tax does not move this set. The
+documented departures in this set, Mark Zuckerberg among them, carry 34.8 percent of the cohort's income tax divided by wealth and
 8.1 percent with the filings-based estimates. Both are below 45 percent, so the
 set loses 45 percent of the total either way. With the filings-based
 estimates, unnamed people who leave after January 1 make up more of it. The
@@ -621,8 +622,8 @@ carry under one of the divisions, as in @tbl-nber-share.
 
 : Net present value of the calculator's NBER Hoover set by the setting for the share of the cohort's income tax lost {#tbl-nber-share}
 
-Divided by wealth, the documented departures already carry 34.8 percent, so at
-a 30 percent setting the set loses 34.8 percent.
+Divided by wealth, the documented departures already carry more than 30
+percent, so at that setting the set loses what they carry.
 
 Jaros and Rauh define that share as the fraction of the cohort's income tax
 lost through departures, documented or not. They write that it addresses
