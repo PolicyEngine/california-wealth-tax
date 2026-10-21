@@ -116,10 +116,12 @@ class GitHub:
             ".[] | select(.pull_request == null)"
             f" | select(.title == {json.dumps(ISSUE_TITLE)})"
             ' | [.number, .created_at, .body // ""] | @json',
-        ).splitlines()
+        )
+        # @json escapes newlines but not U+2028 and its kin, which
+        # str.splitlines() would also split on.
         return sorted(
             Issue(number, utc_time(created), body)
-            for number, created, body in map(json.loads, rows)
+            for number, created, body in map(json.loads, filter(None, rows.split("\n")))
         )
 
     def last_mention_time(self, issue):

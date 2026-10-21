@@ -349,7 +349,8 @@ def fake_gh(responses):
 def test_github_reads_parse_gh_output():
     run, _ = fake_gh(
         {
-            "issues?state=open": '[31,"2026-10-19T12:15:00Z","b\\nc"]\n'
+            # gh's @json leaves U+2028 raw, as it does for a pasted body.
+            "issues?state=open": '[31,"2026-10-19T12:15:00Z","b\\nc\u2028d"]\n'
             '[20,"2026-09-20T12:13:38Z",""]\n',
             "/comments": "2026-10-01T12:00:00Z\n2026-10-08T12:00:00Z\n",
             "/commits/abc123": "2026-10-21T12:15:00Z\n",
@@ -360,7 +361,7 @@ def test_github_reads_parse_gh_output():
 
     assert github.open_issues() == [
         Issue(20, datetime(2026, 9, 20, 12, 13, 38, tzinfo=timezone.utc), ""),
-        Issue(31, datetime(2026, 10, 19, 12, 15, tzinfo=timezone.utc), "b\nc"),
+        Issue(31, datetime(2026, 10, 19, 12, 15, tzinfo=timezone.utc), "b\nc\u2028d"),
     ]
     assert github.last_mention_time(20) == datetime(
         2026, 10, 8, 12, tzinfo=timezone.utc
