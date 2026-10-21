@@ -289,3 +289,34 @@ def test_summarize_rows_reports_raw_and_departure_totals():
     assert summary["corrected_wealth"] == 5e9
     assert summary["pre_snapshot_count"] == 1
     assert summary["pre_snapshot_wealth"] == 3e9
+
+
+def test_merge_citizenship_only_ever_adds_names():
+    table = {"jane doe": "Canada"}
+    merged, added = fetch_forbes.merge_citizenship(
+        table,
+        [
+            ("Jane Doe", "United States"),
+            ("Ann Roe & family", "Germany"),
+            ("No Record", None),
+            (None, "France"),
+        ],
+    )
+
+    assert merged == {"ann roe": "Germany", "jane doe": "Canada"}
+    assert added == ["ann roe"]
+    assert table == {"jane doe": "Canada"}
+
+
+def test_update_citizenship_table_keeps_every_existing_entry(tmp_path):
+    path = tmp_path / "citizenship_by_name.json"
+    path.write_text(json.dumps({"note": "kept", "byKey": {"jane doe": "Canada"}}))
+
+    added = fetch_forbes.update_citizenship_table([("New Person", "India")], path)
+    again = fetch_forbes.update_citizenship_table([("Jane Doe", "Mexico")], path)
+    stored = json.loads(path.read_text())
+
+    assert added == ["new person"]
+    assert again == []
+    assert stored == {"note": "kept", "byKey": {"jane doe": "Canada", "new person": "India"}}
+
