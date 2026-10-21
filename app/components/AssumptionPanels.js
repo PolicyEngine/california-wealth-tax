@@ -213,8 +213,10 @@ export default function AssumptionPanel({
             California domicile turns on a closest-connection test, and none of
             these claims has been tested. Galle, Gamage, Saez and Shanske argue
             it is unlikely many of these people have taken the steps a change
-            of residency requires; Rauh et al. treat all of theirs as
-            effective.
+            of residency requires. Jaros and Rauh&apos;s NBER version, which the
+            Hoover assumptions follow, removes its seven confirmed departures
+            and three pre-filing exits and keeps Jan Koum, Reed Hastings and
+            Andy Fang in the base.
           </p>
         </div>
       );

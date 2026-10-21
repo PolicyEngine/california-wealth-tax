@@ -191,10 +191,10 @@ income tax loss attributable to it, and
 six reported departures before January 1, five from Rauh et al.'s Table 6
 plus Travis Kalanick, who has said on the record that he moved to Texas on
 December 18, 2025. Four are reported or planned departures after January 1
-(Rauh et al.'s Table 7, which marks three of them unconfirmed); those people
-owe the wealth tax whatever happens next, so applying the claim keeps them in
-the base, counts their future income tax as lost, and takes them out of the
-pool the modeled migration response draws on. California domicile turns on a
+(Rauh et al.'s Table 7, which marks three of them unconfirmed); under the
+measure those people owe the wealth tax whatever happens next, so by default
+applying the claim keeps them in the base, counts their future income tax as
+lost, and takes them out of the pool the modeled migration response draws on. California domicile turns on a
 closest-connection test, and none of these claims has been tested. Galle et
 al. [-@galle2026response] argue that few of these people are likely to have
 taken the steps a change of residency requires as a matter of law; Rauh et
@@ -253,7 +253,8 @@ setting added then can leave the people marked as leaving after January 1 out
 of collection; by default the calculator collects from them.
 
 Unannounced departures stand for people who left California before January 1,
-2026 without public notice; leaving after that date does not escape the tax.
+2026 without public notice; under the measure as written, leaving after that
+date does not escape the tax.
 They can be entered either as a direct share of the base the response can
 still reach or via a migration semi-elasticity. In the second form the
 calculator solves for the share of the base the response can still reach at
@@ -320,8 +321,8 @@ stronger claim than observing that someone left. The calculator therefore
 keeps income tax effects as an optional second stage and ties the loss to the
 residency choices the user applies. A pre-January 1 departure removes the
 person's income tax; the wealth-tax unit's liability remains if a spouse was
-still a resident that day. A post-January 1 mover owes the wealth tax and loses
-the income tax. Attribution, horizon, return migration, and growth are separate
+still a resident that day. A post-January 1 mover owes the wealth tax, which
+the calculator collects by default, and loses the income tax. Attribution, horizon, return migration, and growth are separate
 settings, and income-tax departures remain person-based.
 
 ## Discounting and payment timing
@@ -514,7 +515,9 @@ tax. The measure makes those funds legally separate, and only the income tax
 side enters the state's school funding guarantee.
 
 Seventh, the model does not forecast the outcome of Propositions 41 and 42,
-the validation action the measure provides for, or later litigation.
+the validation action the measure provides for, or later litigation; since
+October 21, 2026 it takes the chance that the measure survives legal challenge
+as an input.
 
 # Conclusion
 
