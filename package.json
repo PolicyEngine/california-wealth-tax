@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run"
+    "test": "TZ=America/Los_Angeles vitest run"
   },
   "dependencies": {
     "@policyengine/ui-kit": "^0.12.0",
