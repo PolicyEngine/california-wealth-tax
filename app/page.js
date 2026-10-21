@@ -12,7 +12,7 @@ import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { formatBillions } from "@/lib/format";
-import { bilinearGrid } from "@/lib/heatmap";
+import { bilinearGrid, scoresAreBilinear } from "@/lib/heatmap";
 import { loadSnapshot, selectSnapshotRows, snapshotReducer } from "@/lib/snapshot";
 import {
   BASELINE_ASSUMPTIONS,
@@ -447,22 +447,33 @@ export default function Home() {
   const heatmapEvaluators = useMemo(
     () =>
       Object.fromEntries(
-        [INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].map((method) => [
-          method,
-          bilinearGrid(
-            (share, cohortIncomeTaxB) =>
-              score({
-                ...deferredAssumptions,
-                includeIncomeTaxEffects: true,
-                departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-                unannouncedDepartureShare: share,
-                incomeTaxMethod: method,
-                cohortIncomeTaxB,
-              }).result.netFiscalImpact,
-            HEATMAP_SHARES,
-            HEATMAP_COHORT_TAX_B
-          ),
-        ])
+        [INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].map((method) => {
+          const evaluate = (share, cohortIncomeTaxB) =>
+            score({
+              ...deferredAssumptions,
+              includeIncomeTaxEffects: true,
+              departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
+              unannouncedDepartureShare: share,
+              incomeTaxMethod: method,
+              cohortIncomeTaxB,
+            }).result.netFiscalImpact;
+
+          // Cell by cell, the grid, the coincidence check and the color scale
+          // all read the same cells; score each once.
+          const cells = new Map();
+          const evaluateOnce = (share, cohortIncomeTaxB) => {
+            const key = `${share}|${cohortIncomeTaxB}`;
+            if (!cells.has(key)) cells.set(key, evaluate(share, cohortIncomeTaxB));
+            return cells.get(key);
+          };
+
+          return [
+            method,
+            scoresAreBilinear(deferredAssumptions)
+              ? bilinearGrid(evaluate, HEATMAP_SHARES, HEATMAP_COHORT_TAX_B)
+              : evaluateOnce,
+          ];
+        })
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [score, heatmapBaseKey]
