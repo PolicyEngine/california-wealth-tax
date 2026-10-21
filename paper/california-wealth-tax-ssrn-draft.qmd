@@ -433,6 +433,13 @@ exclusion together. It does not by itself change the sign of the Hoover
 estimate; the migration response and the decision to count income tax at all
 do that.
 
+Two other analyses compare versions of the Berkeley and Hoover estimates.
+Hoopes [-@hoopes2026] compares the methodology of the Galle et al. and
+Rauh et al. reports. Hoces de la Guardia [-@hoces2026] reproduces the Boll,
+Saez and Zucman analysis [-@bsz2026] and a later version of Rauh et al.'s
+analysis by Jaros and Rauh [-@jarosrauh2026nber], puts the two on one common
+output, and explains the gap between them one disputed input at a time.
+
 # Valuation remains the largest open issue
 
 The largest remaining uncertainty may be the gap between public Forbes wealth
