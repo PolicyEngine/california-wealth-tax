@@ -181,7 +181,7 @@ function summarizeGroup(group, assumptions, context) {
           : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the reachable base left unannounced (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
-        ? `Counted: ${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
+        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
         : "Wealth tax only";
     case "incomeAllocation":
       return assumptions.incomeTaxMethod === INCOME_TAX_METHODS.YIELD
@@ -191,6 +191,18 @@ function summarizeGroup(group, assumptions, context) {
       return assumptions.avoidanceRate === 0
         ? "No haircut"
         : `${(assumptions.avoidanceRate * 100).toFixed(0)}% haircut on receipts`;
+    case "legal": {
+      const parts = [
+        assumptions.litigationSurvivalRate >= 1
+          ? "Survives challenge"
+          : `${(assumptions.litigationSurvivalRate * 100).toFixed(0)}% chance it survives`,
+      ];
+      if (!assumptions.collectFromPostSnapshotMovers) parts.push("later movers not collected");
+      if (!assumptions.includeNonCitizens) parts.push("non-US citizens out");
+      return parts.length === 1 && assumptions.litigationSurvivalRate >= 1
+        ? "As written: survives, collects from everyone resident on January 1"
+        : parts.join("; ");
+    }
     case "valuation":
       return `${assumptions.excludeRealEstate ? "Real estate excluded" : "Real estate included"}; ${assumptions.wealthGrowthRate === 0 ? "wealth held at the snapshot" : `${assumptions.wealthGrowthRate > 0 ? "+" : ""}${(assumptions.wealthGrowthRate * 100).toFixed(1)}% a year to valuation`}`;
     case "timing":
@@ -200,7 +212,7 @@ function summarizeGroup(group, assumptions, context) {
   }
 }
 
-function BaseNotes({ notes, peopleInBase }) {
+function BaseNotes({ notes, peopleInBase, includeNonCitizens, nonCitizenCount, nonCitizenWealthB }) {
   const lines = [];
 
   if (notes.assumedResidencyCount > 0) {
@@ -244,7 +256,9 @@ function BaseNotes({ notes, peopleInBase }) {
   }
 
   lines.push(
-    `The January 1 list is rebuilt from US-citizen Forbes profiles, so the ${notes.assumedResidencyNonCitizenCount} non-US citizens Forbes now places in California (${formatBillions(notes.assumedResidencyNonCitizenWealthB)}) enter only through the current list, with their January 1 residency assumed. Galle, Gamage, Saez and Shanske add the same group.`
+    includeNonCitizens
+      ? `The January 1 list is rebuilt from US-citizen Forbes profiles, so the ${notes.assumedResidencyNonCitizenCount} non-US citizens Forbes now places in California (${formatBillions(notes.assumedResidencyNonCitizenWealthB)}) enter only through the current list, with their January 1 residency assumed. Galle, Gamage, Saez and Shanske add the same group.`
+      : `The ${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}) are out of the base under the legal assumptions; their income tax stays in the cohort.`
   );
 
   return (
@@ -814,6 +828,14 @@ export default function Home() {
                     modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
                     snapshotDate: loadedDate,
                     allocationComparison,
+                    incomeTaxDepartureFloorShare:
+                      current.micro.cohortIncomeTaxTotalB > 0
+                        ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
+                          current.micro.cohortIncomeTaxTotalB
+                        : 0,
+                    modeledLaterDepartureShare: current.modeledLaterDepartureShare,
+                    nonCitizenCount: current.micro.nonCitizenCount,
+                    nonCitizenWealthB: current.micro.nonCitizenWealthB,
                   }}
                   onClose={() => setActiveGroup(null)}
                 />
@@ -894,11 +916,20 @@ export default function Home() {
                       Derivation
                     </summary>
                     <div className="mt-2 divide-y divide-[var(--gray-100)]">
-                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB)} />
+                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB + current.micro.legallyExcludedGrossWealthTaxB)} />
+                      {current.micro.legallyExcludedGrossWealthTaxB > 0 && (
+                        <DerivationRow label="Less people left out on legal assumptions" value={`−${formatBillions(current.micro.legallyExcludedGrossWealthTaxB)}`} />
+                      )}
                       {current.micro.unannouncedWealthTaxLossB > 0 && (
                         <DerivationRow label="Less modeled further departures" value={`−${formatBillions(current.micro.unannouncedWealthTaxLossB)}`} />
                       )}
-                      <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxCollected)} />
+                      <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxAfterHaircutB)} />
+                      {current.result.litigationSurvivalRate < 1 && (
+                        <DerivationRow
+                          label={`Expected, at a ${(current.result.litigationSurvivalRate * 100).toFixed(0)}% chance it survives challenge`}
+                          value={formatBillions(current.result.wealthTaxCollected)}
+                        />
+                      )}
                       {current.result.wealthTaxDeferralChargeB > 0 && (
                         <DerivationRow label="Installment deferral charges" value={formatBillions(current.result.wealthTaxDeferralChargeB)} />
                       )}
@@ -907,6 +938,12 @@ export default function Home() {
                       {pitEffectsEnabled && (
                         <>
                           <DerivationRow label="Movers' income tax lost, attributed" value={`$${current.result.annualIncomeTaxLost.toFixed(2)}B a year`} />
+                          {current.micro.laterDepartureIncomeTaxB > 0 && (
+                            <DerivationRow
+                              label="of which people leaving after January 1 (income tax only)"
+                              value={`$${current.micro.laterDepartureIncomeTaxB.toFixed(2)}B a year`}
+                            />
+                          )}
                           <DerivationRow label="Present value of lost income tax" value={formatBillions(current.result.pvLostIncomeTax)} />
                         </>
                       )}
@@ -914,7 +951,13 @@ export default function Home() {
                     </div>
                   </details>
                 </div>
-                <BaseNotes notes={current.micro.baseNotes} peopleInBase={current.micro.wealthTaxBaseRows.length} />
+                <BaseNotes
+                  notes={current.micro.baseNotes}
+                  peopleInBase={current.micro.wealthTaxBaseRows.length}
+                  includeNonCitizens={params.includeNonCitizens}
+                  nonCitizenCount={current.micro.nonCitizenCount}
+                  nonCitizenWealthB={current.micro.nonCitizenWealthB}
+                />
                 <p className="text-xs leading-5 text-[var(--gray-500)]">
                   The income-tax column is what each person pays a year. The
                   derivation&apos;s lost income tax is the rows of people

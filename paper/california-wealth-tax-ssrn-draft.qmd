@@ -440,6 +440,18 @@ Saez and Zucman analysis [-@bsz2026] and a later version of Rauh et al.'s
 analysis by Jaros and Rauh [-@jarosrauh2026nber], puts the two on one common
 output, and explains the gap between them one disputed input at a time.
 
+That later version estimates about $30 billion collected (range $28 billion to
+$36 billion) and a mean net present value of -$38.9 billion across 100,000
+draws [@jarosrauh2026nber]. Besides the documented departures, its recognized
+base leaves out three people who left before the measure was filed, Mark
+Zuckerberg, and non-US citizens. It applies a 50 percent probability that the
+measure survives constitutional challenge to the base that remains. It draws
+the share of the cohort's income tax lost to departures from 30 to 60 percent.
+Since October 21, 2026 the calculator's Hoover assumptions follow that
+version, with settings added for the litigation probability, the two legal
+exclusions and a total income-tax departure share. The figures in this paper
+use Rauh et al.'s March 2026 version [@rauh2026].
+
 # Valuation remains the largest open issue
 
 The largest remaining uncertainty may be the gap between public Forbes wealth

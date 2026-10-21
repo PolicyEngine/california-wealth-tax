@@ -24,6 +24,14 @@ function getRowStatuses(row) {
     statuses.push({ label: "Excluded from 2026 tax base", tone: "danger" });
   }
 
+  if (row.uncollectedPostSnapshotMover && !row.inBase) {
+    statuses.push({ label: "Left after Jan. 1; not collected (legal assumption)", tone: "danger" });
+  }
+
+  if (row.excludedNonCitizen && !row.inBase) {
+    statuses.push({ label: "Non-US citizen; out of the base (legal assumption)", tone: "danger" });
+  }
+
   if (row.departureTiming === "pre_snapshot") {
     statuses.push({ label: "Pre-snapshot departure", tone: "danger" });
   }

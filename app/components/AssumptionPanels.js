@@ -87,6 +87,10 @@ export default function AssumptionPanel({
     modeledAdditionalDepartureShare,
     snapshotDate,
     allocationComparison = [],
+    incomeTaxDepartureFloorShare = 0,
+    modeledLaterDepartureShare = 0,
+    nonCitizenCount = 0,
+    nonCitizenWealthB = 0,
   } = context;
 
   let body = null;
@@ -127,7 +131,7 @@ export default function AssumptionPanel({
               key: "residency",
               title: "Contested residency",
               category: "residency",
-              note: "Rauh et al. classify both as having left before the measure existed, so removing them takes them out of the base and loses no income tax that the measure caused.",
+              note: "Rauh et al. classify Drew Houston and Lynsi Snyder as having left before the measure existed; Jaros and Rauh's NBER version adds three people who left before it was filed in October 2025. Removing them takes them out of the base and loses no income tax that the measure caused.",
             },
             { key: "pre", title: "Reported departures before January 1, 2026", category: "pre_snapshot_departure" },
             {
@@ -298,6 +302,36 @@ export default function AssumptionPanel({
           </Field>
           {params.includeIncomeTaxEffects && (
             <>
+              <Slider
+                label="Income tax lost to departures, as a total share of the cohort's"
+                value={params.incomeTaxDepartureShare}
+                onChange={(value) => update("incomeTaxDepartureShare", value)}
+                min={0}
+                max={1}
+                step={0.01}
+                format={(value) =>
+                  value <= incomeTaxDepartureFloorShare
+                    ? `Departures only (${(incomeTaxDepartureFloorShare * 100).toFixed(0)}%)`
+                    : `${(value * 100).toFixed(0)}%`
+                }
+                quickPicks={[
+                  { label: "Departures only", value: 0 },
+                  { label: "Jaros and Rauh: 45%", value: 0.45 },
+                ]}
+              />
+              <p className="text-xs leading-5 text-[var(--gray-500)]">
+                Documented and modeled departures take{" "}
+                {(incomeTaxDepartureFloorShare * 100).toFixed(1)}% of the
+                cohort&apos;s income tax in this scenario. A higher total adds
+                people who leave after January 1, 2026: they still owe the wealth
+                tax, but their income tax is lost
+                {modeledLaterDepartureShare > 0
+                  ? ` (${(modeledLaterDepartureShare * 100).toFixed(1)}% of those still paying)`
+                  : ""}
+                . Jaros and Rauh draw this share from 30% to 60%, centered on
+                45%, independently of the wealth-tax base, for departures
+                including those not publicly documented.
+              </p>
               <Slider
                 label="Share of movers' lost income tax caused by the measure"
                 value={params.incomeTaxAttributionRate}
@@ -493,6 +527,73 @@ export default function AssumptionPanel({
       );
       break;
 
+    case "legal":
+      body = (
+        <div className="space-y-5">
+          <Slider
+            label="Chance the measure survives legal challenge"
+            value={params.litigationSurvivalRate}
+            onChange={(value) => update("litigationSurvivalRate", value)}
+            min={0}
+            max={1}
+            step={0.01}
+            format={percent(0)}
+            quickPicks={[
+              { label: "Survives (100%)", value: 1 },
+              { label: "Jaros and Rauh: 50%", value: 0.5 },
+            ]}
+          />
+          <p className="text-xs leading-5 text-[var(--gray-500)]">
+            Expected receipts are this share of what the measure would collect
+            if it stands. It does not touch the income-tax loss: people who
+            have left stay gone whatever the courts decide. Jaros and Rauh set
+            it at 50%, citing the &ldquo;more likely than not&rdquo; standard
+            for uncertain tax positions (ASC 740-10) and challenges under the
+            Due Process, Commerce and Supremacy Clauses and equal protection.
+            The statutory and Berkeley assumptions apply no such discount.
+          </p>
+          <Field
+            title="People who left after January 1, 2026"
+            note="The measure fixes residency on January 1, 2026, so people who left later still owe the tax (RTC §50301(a) and §50306(a) as proposed). Jaros and Rauh leave out Mark Zuckerberg, who announced his departure in February 2026: collecting from him depends on that date surviving challenge. This applies to the people marked as leaving after January 1 in the residency panel; their future income tax counts as lost either way."
+          >
+            <div className="flex flex-wrap gap-2">
+              <ToggleChip
+                selected={params.collectFromPostSnapshotMovers}
+                onClick={() => update("collectFromPostSnapshotMovers", true)}
+              >
+                Collect from them
+              </ToggleChip>
+              <ToggleChip
+                selected={!params.collectFromPostSnapshotMovers}
+                onClick={() => update("collectFromPostSnapshotMovers", false)}
+              >
+                Leave them out
+              </ToggleChip>
+            </div>
+          </Field>
+          <Field
+            title="Non-US citizens"
+            note={`${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}). Jaros and Rauh leave all of them out, citing treaty, Supremacy Clause and apportionment risk, and note that the measure lets the taxable share be reduced to 25% or lower (RTC §50306(b) as proposed); Galle, Gamage, Saez and Shanske include them.`}
+          >
+            <div className="flex flex-wrap gap-2">
+              <ToggleChip
+                selected={params.includeNonCitizens}
+                onClick={() => update("includeNonCitizens", true)}
+              >
+                In the base
+              </ToggleChip>
+              <ToggleChip
+                selected={!params.includeNonCitizens}
+                onClick={() => update("includeNonCitizens", false)}
+              >
+                Out of the base
+              </ToggleChip>
+            </div>
+          </Field>
+        </div>
+      );
+      break;
+
     case "valuation":
       body = (
         <div className="space-y-5">
@@ -520,6 +621,7 @@ export default function AssumptionPanel({
             quickPicks={[
               { label: "Hold at snapshot", value: 0 },
               { label: "−20%", value: -0.2 },
+              { label: "Jaros and Rauh: +7%", value: 0.07 },
               { label: "+7.5% (historical)", value: 0.075 },
             ]}
           />
