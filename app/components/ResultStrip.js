@@ -104,6 +104,13 @@ export default function ResultStrip({
               ongoing income-tax decrease of &ldquo;less than $1 billion per
               year&rdquo; possible.
             </p>
+            <p className="mt-1 text-xs leading-5 text-[var(--gray-500)]">
+              Since October 21, 2026 the Hoover assumptions follow Jaros and
+              Rauh&apos;s NBER version (a 50% chance the measure survives legal
+              challenge, Mark Zuckerberg and non-US citizens out of the base, and
+              45% of the cohort&apos;s income tax lost); before, they followed
+              Rauh et al.&apos;s March 2026 paper.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

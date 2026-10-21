@@ -24,6 +24,7 @@
     "@tailwindcss/postcss": "^4.2.4",
     "eslint": "^9",
     "eslint-config-next": "^16",
+    "fast-check": "^4.10.2",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.2.4",
     "vitest": "^4.1.0"

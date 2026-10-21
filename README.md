@@ -21,10 +21,14 @@ One model, scored person by person, in two stages.
   is excluded, then the $1 billion threshold and rate ramp apply to each
   observed wealth-tax unit. Documented separately listed spouses share one
   threshold and rate (Jay-Z/Beyoncé and Lynda/Stewart Resnick); other family
-  assets remain unobserved. The model then applies an optional erosion haircut
-  and the payment election (lump sum due in 2027, or five installments with a
-  7.5% charge on the unpaid balance). With stage 2 off, the headline is
-  nominal receipts.
+  assets remain unobserved. The model then applies an optional erosion haircut,
+  the legal assumptions, and the payment election (lump sum due in 2027, or
+  five installments with a 7.5% charge on the unpaid balance). The legal
+  assumptions are a probability that the measure survives legal challenge,
+  which scales expected receipts and nothing else, and two switches that take
+  people out of the base without moving them: people who left after
+  January 1, and non-US citizens. Each defaults to the measure as written.
+  With stage 2 off, the headline is nominal receipts.
 - **Stage 2 (optional): future California income tax.** The cohort's total
   California income tax is an input ($4.3B a year by default; Rauh et al. and
   Boll, Saez and Zucman overlap on it). It is divided among people either by
@@ -35,8 +39,12 @@ One model, scored person by person, in two stages.
   present value as of 2026. Income-tax departures remain person-based: a
   departing spouse can lose California income tax while the unit's wealth-tax
   liability remains because the other spouse was a resident on January 1.
+  An optional total share of the cohort's income tax lost to departures
+  (Jaros and Rauh's f) counts documented and modeled departures first; any
+  remainder is a proportional share of the people still paying who leave after
+  January 1, owing the wealth tax but no longer California income tax.
 
-The baseline takes no position on contested residency. Eight documented claims
+The baseline takes no position on contested residency. Eleven documented claims
 that a roster member was not a resident on January 1, 2026 are individual
 adjustments, each shown with its evidence and source
 (`lib/residencyAdjustments.js`, `data/billionaire_metadata.json`). Larry
@@ -44,9 +52,22 @@ Ellison is the one exclusion from every base: Forbes lists him in Florida and
 both published estimates now exclude him.
 
 The "Berkeley assumptions" and "Hoover assumptions" starting points apply the
-assumptions of Galle, Gamage, Saez and Shanske and of Rauh et al. to this
+assumptions of Galle, Gamage, Saez and Shanske and of Jaros and Rauh to this
 calculator's roster. They are settings inside the same model, not replications
-of those papers' rosters.
+of those papers' rosters. Since October 21, 2026 the Hoover set follows Jaros
+and Rauh's NBER Working Paper 35899 (October 2026), as in their central
+revenue estimate: their departures and pre-filing exits out of the base, Mark
+Zuckerberg and non-US citizens left out, 7% a year wealth growth to the
+valuation date, a 50% chance the measure survives challenge, no unannounced
+departures in the wealth-tax base, and 45% of a $4.55B cohort income tax lost,
+divided by wealth. Their NPV section instead centers revenue on half of the
+$72B ceiling with Zuckerberg and the pre-filing exits in (their formula gives
+a point NPV of −$32.25B at f = 0.45, C = $4.55B and r − g = 3%) and reports a
+mean over draws of revenue, f, C and r − g (−$38.9B), so
+the set's point value is not their published mean. Before, the set followed
+Rauh et al.'s March 2026 paper; that set stays in `lib/presets.js` as
+`HOOVER_MARCH_2026_ASSUMPTIONS`, because the working paper's analysis is dated
+to it.
 
 ## Related work
 
@@ -71,6 +92,11 @@ page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
 - `data/roster_valuations.json`: current Forbes worth, in any state, for
   everyone on the residency roster.
 - `data/billionaire_metadata.json`: per-person residency evidence with sources.
+- `data/citizenship_by_name.json`: citizenship by name, for snapshots before
+  2026-09-17, which carry no citizenship field. The daily fetch only adds
+  names to it, so for everyone already in it a stored snapshot scores the
+  same whatever Forbes lists later. People not in it count as US citizens; a
+  wrong entry is corrected by hand.
 - `data/wealth_tax_households.json`: sourced, separately valued spouse groups.
 - `data/billionaires_rauh.json`: the October 17, 2025 list with Rauh et al.'s
   directly held real estate values (personal residences; a lower bound).

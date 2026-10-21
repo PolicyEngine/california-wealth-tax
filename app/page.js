@@ -12,7 +12,7 @@ import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { formatBillions } from "@/lib/format";
-import { bilinearGrid } from "@/lib/heatmap";
+import { heatmapCaption, heatmapEvaluator } from "@/lib/heatmap";
 import { loadSnapshot, selectSnapshotRows, snapshotReducer } from "@/lib/snapshot";
 import {
   BASELINE_ASSUMPTIONS,
@@ -20,6 +20,7 @@ import {
   HOOVER_ASSUMPTIONS,
 } from "@/lib/presets";
 import {
+  DEPARTURE_CLAIM_IDS,
   normalizeResidencyExclusionIds,
   RESIDENCY_ADJUSTMENTS,
   RESIDENCY_ROSTER_DATE,
@@ -181,7 +182,7 @@ function summarizeGroup(group, assumptions, context) {
           : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the reachable base left unannounced (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
-        ? `Counted: ${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
+        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
         : "Wealth tax only";
     case "incomeAllocation":
       return assumptions.incomeTaxMethod === INCOME_TAX_METHODS.YIELD
@@ -191,6 +192,18 @@ function summarizeGroup(group, assumptions, context) {
       return assumptions.avoidanceRate === 0
         ? "No haircut"
         : `${(assumptions.avoidanceRate * 100).toFixed(0)}% haircut on receipts`;
+    case "legal": {
+      const parts = [
+        assumptions.litigationSurvivalRate >= 1
+          ? "Survives challenge"
+          : `${(assumptions.litigationSurvivalRate * 100).toFixed(0)}% chance it survives`,
+      ];
+      if (!assumptions.collectFromPostSnapshotMovers) parts.push("later movers not collected");
+      if (!assumptions.includeNonCitizens) parts.push("non-US citizens out");
+      return parts.length === 1 && assumptions.litigationSurvivalRate >= 1
+        ? "As written: survives, collects from everyone resident on January 1"
+        : parts.join("; ");
+    }
     case "valuation":
       return `${assumptions.excludeRealEstate ? "Real estate excluded" : "Real estate included"}; ${assumptions.wealthGrowthRate === 0 ? "wealth held at the snapshot" : `${assumptions.wealthGrowthRate > 0 ? "+" : ""}${(assumptions.wealthGrowthRate * 100).toFixed(1)}% a year to valuation`}`;
     case "timing":
@@ -200,7 +213,7 @@ function summarizeGroup(group, assumptions, context) {
   }
 }
 
-function BaseNotes({ notes, peopleInBase }) {
+function BaseNotes({ notes, peopleInBase, includeNonCitizens, nonCitizenCount, nonCitizenWealthB }) {
   const lines = [];
 
   if (notes.assumedResidencyCount > 0) {
@@ -243,9 +256,15 @@ function BaseNotes({ notes, peopleInBase }) {
     );
   }
 
-  lines.push(
-    `The January 1 list is rebuilt from US-citizen Forbes profiles, so the ${notes.assumedResidencyNonCitizenCount} non-US citizens Forbes now places in California (${formatBillions(notes.assumedResidencyNonCitizenWealthB)}) enter only through the current list, with their January 1 residency assumed. Galle, Gamage, Saez and Shanske add the same group.`
-  );
+  if (includeNonCitizens && notes.assumedResidencyNonCitizenCount > 0) {
+    lines.push(
+      `The January 1 list is rebuilt from US-citizen Forbes profiles, so the ${notes.assumedResidencyNonCitizenCount} non-US citizens Forbes now places in California (${formatBillions(notes.assumedResidencyNonCitizenWealthB)}) enter only through the current list, with their January 1 residency assumed. Galle, Gamage, Saez and Shanske add the same group.`
+    );
+  } else if (!includeNonCitizens && nonCitizenCount > 0) {
+    lines.push(
+      `${nonCitizenCount} non-US citizens Forbes places in California (${formatBillions(nonCitizenWealthB)}) are out of the base under the legal assumptions; their income tax stays in the cohort.`
+    );
+  }
 
   return (
     <ul className="space-y-2 text-xs leading-5 text-[var(--gray-500)]">
@@ -449,18 +468,22 @@ export default function Home() {
       Object.fromEntries(
         [INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].map((method) => [
           method,
-          bilinearGrid(
-            (share, cohortIncomeTaxB) =>
-              score({
+          heatmapEvaluator(
+            (share, cohortIncomeTaxB, incomeTaxDepartureShare) => {
+              const { result } = score({
                 ...deferredAssumptions,
                 includeIncomeTaxEffects: true,
                 departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
                 unannouncedDepartureShare: share,
                 incomeTaxMethod: method,
                 cohortIncomeTaxB,
-              }).result.netFiscalImpact,
+                incomeTaxDepartureShare,
+              });
+              return { npv: result.netFiscalImpact, pvReceipts: result.pvWealthTaxReceipts };
+            },
             HEATMAP_SHARES,
-            HEATMAP_COHORT_TAX_B
+            HEATMAP_COHORT_TAX_B,
+            deferredAssumptions.incomeTaxDepartureShare ?? 0
           ),
         ])
       ),
@@ -472,26 +495,32 @@ export default function Home() {
   // two grids coincide to display precision (they differ by a few million
   // through cohort members outside the reachable base); the division only
   // changes what leaves with named movers.
-  const heatmapsCoincide = useMemo(
-    () =>
-      HEATMAP_SHARES.every((share) =>
-        HEATMAP_COHORT_TAX_B.every(
-          (tax) =>
-            Math.abs(
-              heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
-                heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
-            ) < 0.05
-        )
+  const heatmapAgreement = useMemo(() => {
+    const agrees = (share, tax) =>
+      Math.abs(
+        heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
+          heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
+      ) < 0.05;
+    return {
+      coincide: HEATMAP_SHARES.every((share) =>
+        HEATMAP_COHORT_TAX_B.every((tax) => agrees(share, tax))
       ),
-    [heatmapEvaluators]
-  );
+      // At a 100% unannounced share everyone has left under either division.
+      agreesShortOfAll: HEATMAP_SHARES.filter((share) => share < 1).some((share) =>
+        HEATMAP_COHORT_TAX_B.some((tax) => agrees(share, tax))
+      ),
+    };
+  }, [heatmapEvaluators]);
+  const heatmapsCoincide = heatmapAgreement.coincide;
   const heatmapExtent = useMemo(
     () =>
       Math.max(
         1,
+        // Every cell: with a total departure share the surface is a minimum
+        // of two bilinear ones and can peak inside the grid.
         ...[INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].flatMap((method) =>
-          [HEATMAP_SHARES[0], HEATMAP_SHARES.at(-1)].flatMap((share) =>
-            [HEATMAP_COHORT_TAX_B[0], HEATMAP_COHORT_TAX_B.at(-1)]
+          HEATMAP_SHARES.flatMap((share) =>
+            HEATMAP_COHORT_TAX_B
               .map((tax) => Math.abs(heatmapEvaluators[method](share, tax)))
               // A divergent present value is painted neutral, not scaled to.
               .filter((value) => Number.isFinite(value))
@@ -803,6 +832,14 @@ export default function Home() {
                     modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
                     snapshotDate: loadedDate,
                     allocationComparison,
+                    incomeTaxDepartureFloorShare:
+                      current.micro.cohortIncomeTaxTotalB > 0
+                        ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
+                          current.micro.cohortIncomeTaxTotalB
+                        : 0,
+                    modeledLaterDepartureShare: current.modeledLaterDepartureShare,
+                    nonCitizenCount: current.micro.nonCitizenCount,
+                    nonCitizenWealthB: current.micro.nonCitizenWealthB,
                   }}
                   onClose={() => setActiveGroup(null)}
                 />
@@ -820,9 +857,16 @@ export default function Home() {
                     income tax the cohort pays in total. Same axes, same colors,
                     two ways of dividing that total among people. Other
                     assumptions as in your scenario.
-                    {heatmapsCoincide
-                      ? " The two grids coincide right now: with no documented departure applied, the unannounced share takes the same slice of everyone's income tax under either division. Apply a departure claim in the residency panel and the grids separate."
-                      : " The grids differ because the departure claims applied in the residency panel name specific people, and the two divisions assign them different amounts."}
+                    {heatmapCaption({
+                      coincide: heatmapsCoincide,
+                      // The grids follow the deferred assumptions; so does
+                      // what the caption says about them.
+                      departureClaimApplied: deferredAssumptions.residencyExclusionIds.some((id) =>
+                        DEPARTURE_CLAIM_IDS.includes(id)
+                      ),
+                      targetShare: deferredAssumptions.incomeTaxDepartureShare,
+                      agreesWhereTargetBinds: heatmapAgreement.agreesShortOfAll,
+                    })}
                   </p>
                 </div>
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -883,11 +927,20 @@ export default function Home() {
                       Derivation
                     </summary>
                     <div className="mt-2 divide-y divide-[var(--gray-100)]">
-                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB)} />
+                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB + current.micro.legallyExcludedGrossWealthTaxB)} />
+                      {current.micro.legallyExcludedGrossWealthTaxB > 0 && (
+                        <DerivationRow label="Less people left out on legal assumptions" value={`−${formatBillions(current.micro.legallyExcludedGrossWealthTaxB)}`} />
+                      )}
                       {current.micro.unannouncedWealthTaxLossB > 0 && (
                         <DerivationRow label="Less modeled further departures" value={`−${formatBillions(current.micro.unannouncedWealthTaxLossB)}`} />
                       )}
-                      <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxCollected)} />
+                      <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxAfterHaircutB)} />
+                      {current.result.litigationSurvivalRate < 1 && (
+                        <DerivationRow
+                          label={`Expected, at a ${(current.result.litigationSurvivalRate * 100).toFixed(0)}% chance it survives challenge`}
+                          value={formatBillions(current.result.wealthTaxCollected)}
+                        />
+                      )}
                       {current.result.wealthTaxDeferralChargeB > 0 && (
                         <DerivationRow label="Installment deferral charges" value={formatBillions(current.result.wealthTaxDeferralChargeB)} />
                       )}
@@ -896,6 +949,12 @@ export default function Home() {
                       {pitEffectsEnabled && (
                         <>
                           <DerivationRow label="Movers' income tax lost, attributed" value={`$${current.result.annualIncomeTaxLost.toFixed(2)}B a year`} />
+                          {current.micro.laterDepartureIncomeTaxB > 0 && (
+                            <DerivationRow
+                              label="of which people leaving after January 1 (income tax only)"
+                              value={`$${(current.micro.laterDepartureIncomeTaxB * current.result.incomeTaxAttributionRate).toFixed(2)}B a year`}
+                            />
+                          )}
                           <DerivationRow label="Present value of lost income tax" value={formatBillions(current.result.pvLostIncomeTax)} />
                         </>
                       )}
@@ -903,7 +962,13 @@ export default function Home() {
                     </div>
                   </details>
                 </div>
-                <BaseNotes notes={current.micro.baseNotes} peopleInBase={current.micro.wealthTaxBaseRows.length} />
+                <BaseNotes
+                  notes={current.micro.baseNotes}
+                  peopleInBase={current.micro.wealthTaxBaseRows.length}
+                  includeNonCitizens={params.includeNonCitizens}
+                  nonCitizenCount={current.micro.excludedNonCitizenCount}
+                  nonCitizenWealthB={current.micro.excludedNonCitizenWealthB}
+                />
                 <p className="text-xs leading-5 text-[var(--gray-500)]">
                   The income-tax column is what each person pays a year. The
                   derivation&apos;s lost income tax is the rows of people

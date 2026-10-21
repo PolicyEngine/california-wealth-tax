@@ -24,6 +24,9 @@ export default function Slider({
   step,
   format,
   quickPicks = [],
+  // Show the value even when it equals a quick pick, for sliders whose
+  // formatted value says something the pick's label does not.
+  alwaysShowValue = false,
 }) {
   const inputId = useId();
 
@@ -39,7 +42,7 @@ export default function Slider({
         >
           {label}
         </label>
-        {!matchesQuickPick && (
+        {(alwaysShowValue || !matchesQuickPick) && (
           <span className="text-sm font-semibold text-[var(--teal-700)]">
             {format(value)}
           </span>
@@ -56,6 +59,7 @@ export default function Slider({
                 key={`${label}-${quickPick.label}`}
                 type="button"
                 onClick={() => onChange(quickPick.value)}
+                aria-pressed={isActive}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-[var(--teal-700)] text-white"
@@ -76,6 +80,7 @@ export default function Slider({
         max={max}
         step={step}
         value={value === Infinity ? max : value}
+        aria-valuetext={format(value)}
         onChange={(event) => {
           const raw = parseFloat(event.target.value);
           onChange(snapToStep(clamp(raw, min, max), min, step));

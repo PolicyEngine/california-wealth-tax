@@ -66,6 +66,39 @@ CSV_FIELDS = [
 ]
 
 
+CITIZENSHIP_PATH = DATA_DIR / "citizenship_by_name.json"
+
+
+def merge_citizenship(table, named_citizenships):
+    """Add each person's citizenship under their join key.
+
+    Append-only: an entry is never overwritten or removed, so a stored
+    snapshot that predates the citizenship field scores the same whatever
+    Forbes lists later. Returns the merged table (sorted) and the keys added.
+    """
+    merged = dict(table)
+    added = []
+    for name, citizenship in named_citizenships:
+        if not name or not citizenship:
+            continue
+        key = normalize_name(name)
+        if key not in merged:
+            merged[key] = citizenship
+            added.append(key)
+    return dict(sorted(merged.items())), added
+
+
+def update_citizenship_table(named_citizenships, path=None):
+    path = CITIZENSHIP_PATH if path is None else path
+    current = load_json(path) if path.exists() else {"byKey": {}}
+    merged, added = merge_citizenship(current.get("byKey", {}), named_citizenships)
+    if added or not path.exists():
+        with open(path, "w") as f:
+            json.dump({**current, "byKey": merged}, f, indent=0, sort_keys=True)
+            f.write("\n")
+    return added
+
+
 def load_json(path):
     with open(path) as f:
         return json.load(f)
@@ -77,8 +110,12 @@ def canonicalize_name(name):
 
 
 def normalize_name(name):
-    """Join key: alias applied, trailing '& family' removed, case-folded."""
-    return FAMILY_SUFFIX.sub("", canonicalize_name(name).strip()).casefold()
+    """Join key: alias applied, trailing '& family' removed, lowercased.
+
+    str.lower(), not casefold(), so keys match JavaScript's toLowerCase() in
+    lib/microModel.js (casefold maps "ß" to "ss"; toLowerCase does not).
+    """
+    return FAMILY_SUFFIX.sub("", canonicalize_name(name).strip()).lower()
 
 
 def load_rauh_real_estate():
@@ -449,6 +486,15 @@ def main(argv=None):
                 f"  Wrote {roster_valuations_path} "
                 f"({len(roster_valuations['rows'])} people)"
             )
+
+    named = [(row["name"], row.get("citizenship")) for row in billionaires]
+    if roster_path.exists():
+        named += [
+            (name, row.get("citizenship"))
+            for name, row in roster_valuations["rows"].items()
+        ]
+    added = update_citizenship_table(named)
+    print(f"  Citizenship table: {len(added)} names added")
 
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     snapshot_path = SNAPSHOTS_DIR / f"{source_date}.json"
