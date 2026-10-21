@@ -3,19 +3,20 @@
 The repository had no watchers in October 2026, so an issue the workflow opens
 notified no one unless it named someone. From September 20 to October 20 the
 daily job failed every day; it opened one unassigned issue on the first day
-and said nothing after that. This script keeps one issue per outage and points
-it at a person:
+and said nothing after that. This script keeps one issue per outage and makes
+an outage that lasts reach a person:
 
-- the first failure opens the issue, assigned to ALERT_ASSIGNEE;
-- once the issue has been open MENTION_AFTER_DAYS_OPEN days, a comment
-  mentions the assignee, and another follows every REMIND_EVERY_DAYS while
-  the outage lasts;
-- the next good run closes the issue, so an open issue always means an outage
-  that is still going on, and its age is the outage's length.
+- a failure opens the issue, unassigned, so a one-day blip that the next run
+  fixes notifies no one;
+- once the issue has been open MENTION_AFTER_DAYS_OPEN days, a failure assigns
+  it to ALERT_ASSIGNEE and mentions them, and every REMIND_EVERY_DAYS after
+  that another mention follows;
+- the next good run closes the issue.
 
-A daily run is good when it publishes nothing new or CI passes on the data
-commit it published. update-forbes.yml reports its own failures and its runs
-that publish nothing; ci.yml reports the CI result on each data commit.
+A daily run is good when CI passes on the data commit it published, or when it
+publishes nothing and the data on the branch is still fresh. update-forbes.yml
+reports its own failures and its good runs that publish nothing; ci.yml
+reports the CI result on each data commit.
 
     python3 scripts/report_daily_update.py failure      # update-forbes.yml
     python3 scripts/report_daily_update.py ci-failure   # ci.yml
@@ -102,8 +103,8 @@ class GitHub:
             return
         self._run(["gh", *args], check=True)
 
-    def open_issue(self):
-        """(number, UTC date opened) of the oldest open outage issue, or None."""
+    def open_issues(self):
+        """(number, time opened) of each open outage issue, oldest first."""
         rows = self._read(
             "api",
             "--paginate",
@@ -113,14 +114,13 @@ class GitHub:
             f" | select(.title == {json.dumps(ISSUE_TITLE)})"
             ' | "\\(.number) \\(.created_at)"',
         ).splitlines()
-        issues = sorted(
-            (int(number), utc_date(created)) for number, created in map(str.split, rows)
+        return sorted(
+            (int(number), utc_time(created)) for number, created in map(str.split, rows)
         )
-        return issues[0] if issues else None
 
-    def last_mention_date(self, issue):
-        """The UTC date of the issue's last mention comment, or None."""
-        dates = self._read(
+    def last_mention_time(self, issue):
+        """When the bot last mentioned the assignee on the issue, or None."""
+        times = self._read(
             "api",
             "--paginate",
             f"repos/{self.repo}/issues/{issue}/comments?per_page=100",
@@ -129,7 +129,17 @@ class GitHub:
             f" and (.body | contains({json.dumps(MENTION_MARKER)})))"
             " | .created_at",
         ).split()
-        return max(map(utc_date, dates)) if dates else None
+        return max(map(utc_time, times)) if times else None
+
+    def commit_time(self, sha):
+        return utc_time(
+            self._read(
+                "api",
+                f"repos/{self.repo}/commits/{sha}",
+                "--jq",
+                ".commit.committer.date",
+            ).strip()
+        )
 
     def source_date(self):
         """sourceDate of the data on the branch."""
@@ -141,7 +151,7 @@ class GitHub:
         )
         return json.loads(meta)["sourceDate"]
 
-    def create_issue(self, body, assignee):
+    def create_issue(self, body):
         self._write(
             "issue",
             "create",
@@ -151,8 +161,11 @@ class GitHub:
             ISSUE_TITLE,
             "--body",
             body,
-            "--assignee",
-            assignee,
+        )
+
+    def assign(self, issue, assignee):
+        self._write(
+            "issue", "edit", str(issue), "--repo", self.repo, "--add-assignee", assignee
         )
 
     def comment(self, issue, body):
@@ -164,11 +177,9 @@ class GitHub:
         )
 
 
-def utc_date(timestamp):
-    return (
-        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        .astimezone(timezone.utc)
-        .date()
+def utc_time(timestamp):
+    return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).astimezone(
+        timezone.utc
     )
 
 
@@ -205,16 +216,17 @@ def failure_summary(ctx, source_date, ci_failed):
 def issue_body(ctx, source_date, ci_failed):
     return (
         f"{failure_summary(ctx, source_date, ci_failed)}\n\n"
-        "The next good run closes this issue. Until then the assignee is "
-        f"mentioned once it has been open {MENTION_AFTER_DAYS_OPEN} days, and "
-        f"every {REMIND_EVERY_DAYS} days after that."
+        "The next good run closes this issue. If it is still open after "
+        f"{MENTION_AFTER_DAYS_OPEN} days, a failing run assigns it to "
+        f"{ctx.assignee} and mentions them, and mentions them again every "
+        f"{REMIND_EVERY_DAYS} days after that."
     )
 
 
 def mention_body(ctx, source_date, ci_failed, opened, days_open):
     return (
         f"@{ctx.assignee} no daily Forbes update has succeeded since this "
-        f"issue opened on {opened.isoformat()}, {days_open} days ago. "
+        f"issue opened on {opened.date().isoformat()}, {days_open} days ago. "
         f"{ctx.branch} has data from {source_date}.\n\n"
         f"Latest failure: {failure_summary(ctx, source_date, ci_failed)}\n\n"
         f"{MENTION_MARKER}"
@@ -224,33 +236,51 @@ def mention_body(ctx, source_date, ci_failed, opened, days_open):
 def report_failure(github, ctx, today, ci_failed=False):
     """Open the outage issue, or mention the assignee if the outage has run on."""
     source_date = known_source_date(github)
-    issue = github.open_issue()
-    if issue is None:
-        github.create_issue(issue_body(ctx, source_date, ci_failed), ctx.assignee)
+    issues = github.open_issues()
+    if not issues:
+        github.create_issue(issue_body(ctx, source_date, ci_failed))
         return
-    number, opened = issue
-    days_open = (today - opened).days
-    last_mention = github.last_mention_date(number)
-    since = None if last_mention is None else (today - last_mention).days
-    if should_mention(days_open, since):
-        github.comment(
-            number, mention_body(ctx, source_date, ci_failed, opened, days_open)
-        )
-    else:
+    number, opened = issues[0]
+    days_open = (today - opened.date()).days
+    last_mention = github.last_mention_time(number)
+    since = None if last_mention is None else (today - last_mention.date()).days
+    if not should_mention(days_open, since):
         print(f"Issue #{number} is open, but no mention is due.")
+        return
+    try:
+        github.assign(number, ctx.assignee)
+    except subprocess.CalledProcessError as error:
+        # The mention below still reaches them.
+        print(f"::warning::Could not assign #{number}: {error}")
+    github.comment(number, mention_body(ctx, source_date, ci_failed, opened, days_open))
 
 
 def report_success(github, ctx):
-    """Close the outage issue, if one is open."""
-    issue = github.open_issue()
-    if issue is None:
+    """Close the open outage issues this run's success answers.
+
+    A CI pass on a data commit says nothing about a failure after that commit,
+    such as a rerun that failed while this CI run waited for a runner, so an
+    issue opened after the commit stays open.
+    """
+    issues = github.open_issues()
+    if not issues:
         print("No outage issue is open.")
         return
-    github.close_issue(
-        issue[0],
+    cutoff = None
+    if ctx.data_commit:
+        try:
+            cutoff = github.commit_time(ctx.data_commit)
+        except (subprocess.CalledProcessError, ValueError) as error:
+            print(f"::warning::Could not date {ctx.data_commit}: {error}")
+    comment = (
         f"The run at {ctx.run_url} succeeded, and {ctx.branch} has data from "
-        f"{known_source_date(github)}. Closing.",
+        f"{known_source_date(github)}. Closing."
     )
+    for number, opened in issues:
+        if cutoff is not None and opened > cutoff:
+            print(f"Issue #{number} opened after {ctx.data_commit}; leaving it.")
+            continue
+        github.close_issue(number, comment)
 
 
 def main(argv=None):

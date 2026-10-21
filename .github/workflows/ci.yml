@@ -49,10 +49,11 @@ jobs:
   # GitHub notifies whoever triggered a run, and the daily job's dispatch is
   # triggered by github-actions[bot], so this run's result would reach no one.
   # Put it on the outage issue instead: open or escalate it on a failure, close
-  # it on a pass. Off main it prints what it would do.
+  # it on a pass. A cancelled run reports nothing. Off main it prints what it
+  # would do.
   report:
     needs: ci
-    if: always() && inputs.data_commit != ''
+    if: ${{ !cancelled() && inputs.data_commit != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
