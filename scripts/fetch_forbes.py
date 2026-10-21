@@ -110,8 +110,12 @@ def canonicalize_name(name):
 
 
 def normalize_name(name):
-    """Join key: alias applied, trailing '& family' removed, case-folded."""
-    return FAMILY_SUFFIX.sub("", canonicalize_name(name).strip()).casefold()
+    """Join key: alias applied, trailing '& family' removed, lowercased.
+
+    str.lower(), not casefold(), so keys match JavaScript's toLowerCase() in
+    lib/microModel.js (casefold maps "ß" to "ss"; toLowerCase does not).
+    """
+    return FAMILY_SUFFIX.sub("", canonicalize_name(name).strip()).lower()
 
 
 def load_rauh_real_estate():

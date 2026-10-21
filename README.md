@@ -94,8 +94,9 @@ page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
 - `data/billionaire_metadata.json`: per-person residency evidence with sources.
 - `data/citizenship_by_name.json`: citizenship by name, for snapshots before
   2026-09-17, which carry no citizenship field. The daily fetch only adds
-  names to it, so a stored snapshot scores the same whatever Forbes lists
-  later.
+  names to it, so for everyone already in it a stored snapshot scores the
+  same whatever Forbes lists later. People not in it count as US citizens; a
+  wrong entry is corrected by hand.
 - `data/wealth_tax_households.json`: sourced, separately valued spouse groups.
 - `data/billionaires_rauh.json`: the October 17, 2025 list with Rauh et al.'s
   directly held real estate values (personal residences; a lower bound).

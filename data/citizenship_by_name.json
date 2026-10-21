@@ -270,5 +270,5 @@
 "william hockey": "United States",
 "yuri milner": "Israel"
 },
-"note": "Citizenship by join key (scripts/fetch_forbes.py normalize_name), append-only: the daily job adds names and never overwrites or removes one, so stored snapshots without a citizenship field score the same over time."
+"note": "Citizenship by join key (scripts/fetch_forbes.py normalize_name), append-only: the daily job adds names and never overwrites or removes one, so for everyone already here a stored snapshot without a citizenship field scores the same over time. People not here count as US citizens; correct a wrong entry by hand."
 }
