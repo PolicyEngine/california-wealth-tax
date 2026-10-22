@@ -110,16 +110,18 @@ the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
 before anything is committed. Names are joined on a normalized key (aliases,
 trailing "& family", case), because Forbes changes display names.
 
-A push made with the workflow's token starts no push run of `ci.yml`, so after
-pushing a data commit the job dispatches `ci.yml` on it. A failed daily run, or
-a failed CI run on its data commit, opens a "Daily Forbes update failed" issue
-(`scripts/report_daily_update.py`). If the issue is still open two days later,
-the next failure assigns it to a maintainer and mentions them, and mentions
-them again every week the outage lasts. The next good run closes it: CI passing
-on its data commit, or no new data while the current data is still fresh. A CI
-pass leaves open an issue opened after its data commit about something else. If
-the daily workflow stops running at all (disabled, or GitHub drops its
-scheduled runs), nothing reports it.
+The job checks out the branch's tip when it starts, not the commit it was queued
+for, and rebases its data commit onto the current tip before pushing, re-running
+the sanity gate on the result. A push made with the workflow's token starts no
+push run of `ci.yml`, so after pushing a data commit the job dispatches `ci.yml`
+on it. A failed daily run, or a failed CI run on its data commit, opens a "Daily
+Forbes update failed" issue (`scripts/report_daily_update.py`). If the issue is
+still open two days later, the next failure assigns it to a maintainer and
+mentions them, and mentions them again every week the outage lasts. The next
+good run closes it: CI passing on its data commit, or no new data while the
+current data is still fresh. A CI pass leaves open an issue opened after its
+data commit about something else. If the daily workflow stops running at all
+(disabled, or GitHub drops its scheduled runs), nothing reports it.
 
 Known gap: the January 1, 2026 list is a backfill of US-citizen Forbes
 profiles, so non-US citizens Forbes places in California enter the base only
