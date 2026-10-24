@@ -188,7 +188,7 @@ the list says nothing about net worth. People on Forbes's California list today 
 January 1 list are added, with their January 1 residency assumed; on the
 October 23, 2026 snapshot there are 60 people in this group holding $264
 billion. After the real estate exclusion, 59 of them remain in the taxable
-base with $263 billion; 25 of those are not US citizens, with $154 billion
+base, worth $263 billion; 25 of those are not US citizens, with $154 billion
 between them. The join knows list membership and nothing else. The January 1 list is rebuilt
 from the histories of US-citizen Forbes profiles whose profile placed them in
 California when the backfill ran in March 2026, so it lacks every non-US
