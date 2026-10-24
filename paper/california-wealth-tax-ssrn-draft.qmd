@@ -1,5 +1,5 @@
 ---
-title: "Scoring California's Proposition 40 billionaire tax: one model for the static, migration, and valuation assumptions"
+title: "Scoring California's Proposition 40 billionaire tax: an open model of the contested assumptions"
 author:
   - name: "Max Ghenis"
     affiliation: "PolicyEngine"
