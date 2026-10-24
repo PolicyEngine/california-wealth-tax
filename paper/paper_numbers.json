@@ -8,6 +8,8 @@
   "peopleInRateRamp": 8,
   "rateRampCostB": 0.28,
   "topFourWealthSharePercent": 39,
+  "newEntrantAddedPeople": 60,
+  "newEntrantAddedWealthB": 264,
   "newEntrantPeople": 59,
   "newEntrantWealthB": 263,
   "newEntrantNonCitizenPeople": 25,
@@ -57,7 +59,7 @@
   "hooverAtFullSurvivalB": -0.4,
   "jarosRauhRecognizedBaseAtFullSurvivalB": -9.1,
   "jarosRauhCeilingAtFullSurvivalB": 3.8,
-  "fourLargestWealthSharePct": 39.3,
+  "fourLargestWealthSharePct": 39.2,
   "fourLargestByWealthM": 1785,
   "fourLargestFromFilingsM": 252,
   "fourLargest": [

@@ -186,9 +186,10 @@ history: Forbes drops people for several reasons, death among them, and
 several of the ten were last listed well above $1 billion, so absence from
 the list says nothing about net worth. People on Forbes's California list today who were not on its
 January 1 list are added, with their January 1 residency assumed; on the
-October 23, 2026 snapshot there are 59 people in this group holding $263
-billion; 25 of them are not US citizens, with $154 billion between them. The
-join knows list membership and nothing else. The January 1 list is rebuilt
+October 23, 2026 snapshot there are 60 people in this group holding $264
+billion. After the real estate exclusion, 59 of them remain in the taxable
+base with $263 billion; 25 of those are not US citizens, with $154 billion
+between them. The join knows list membership and nothing else. The January 1 list is rebuilt
 from the histories of US-citizen Forbes profiles whose profile placed them in
 California when the backfill ran in March 2026, so it lacks every non-US
 citizen, anyone Forbes had not yet added to its real-time list, and anyone
@@ -335,7 +336,7 @@ payments of the four largest fortunes from securities filings on their company
 stakes, 97 percent of their Forbes wealth: stock sales, donations, option
 exercises, dividends, and compensation, which they and this paper take as each
 person's whole California income tax. On this roster, with the Hoover set's
-residency claims applied, those four people hold 39.3 percent of the cohort's
+residency claims applied, those four people hold 39.2 percent of the cohort's
 wealth. Dividing the Hoover set's $4.55 billion total by wealth assigns them
 $1,785 million a year; the filings-based estimates, our average of the 2023 to
 2025 rows, total $252 million. Founders whose
@@ -501,7 +502,7 @@ four largest fortunes.
 | Mark Zuckerberg | 9.5% | $433 million | $101 million |
 | Jensen Huang | 7.9% | $357 million | $57 million |
 
-: California income tax a year assigned to the four largest fortunes in the Hoover set's cohort, with a cohort total of $4.55 billion {#tbl-allocation}
+: California income tax a year assigned to the four largest fortunes in the Hoover set's cohort, with a cohort total of $4.55 billion; shares are rounded individually {#tbl-allocation}
 
 The division of the cohort's income tax does not move the Hoover set. The
 documented departures in this set, Mark Zuckerberg among them, carry 33.9
