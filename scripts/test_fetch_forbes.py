@@ -1,7 +1,11 @@
 """Tests for the Forbes snapshot fetcher."""
 
+import http.client
+import itertools
 import json
+import ssl
 import sys
+import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -11,6 +15,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import fetch_forbes  # noqa: E402
 from fetch_forbes import (  # noqa: E402
+    FORBES_FETCH_ATTEMPTS,
+    FORBES_RETRY_BASE_SECONDS,
     MIN_CALIFORNIA_PEOPLE,
     MIN_FORBES_PEOPLE,
     augment_tracked_departures,
@@ -19,9 +25,11 @@ from fetch_forbes import (  # noqa: E402
     canonicalize_name,
     check_payload_complete,
     fetch_forbes_people,
+    is_transient_fetch_error,
     last_listed_valuations,
     load_fallback_rows,
     normalize_name,
+    read_forbes_json,
     summarize_rows,
     validate_payload,
 )
@@ -76,6 +84,204 @@ def test_fetch_forbes_people_dates_the_snapshot_by_the_latest_timestamp():
     assert source_date == "2026-03-26"
     assert source_timestamp_ms == 1774511402170
     assert source_timestamp_iso == "2026-03-26T07:50:02.170000+00:00"
+
+
+FORBES_URL_FOR_TESTS = "https://www.forbes.com/forbesapi/test.json"
+
+
+def http_error(code):
+    return urllib.error.HTTPError(FORBES_URL_FOR_TESTS, code, "error", {}, None)
+
+
+class FakeResponse:
+    """A urlopen response whose read() returns a body or raises an error."""
+
+    def __init__(self, body=None, error=None):
+        self.body = body
+        self.error = error
+        self.exited = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.exited = True
+        return False
+
+    def read(self):
+        if self.error is not None:
+            raise self.error
+        return self.body
+
+
+OK_BODY = json.dumps(MOCK_RESPONSE).encode()
+
+# What one request does, and whether a retry should follow it. "open" outcomes
+# make urlopen raise; "read" outcomes return a response whose read() raises or
+# returns a body that json.loads rejects, as truncated and error-page responses
+# do in production.
+FETCH_OUTCOMES = {
+    "ok": ("read", lambda: None, None),
+    "503": ("open", lambda: http_error(503), True),
+    "429": ("open", lambda: http_error(429), True),
+    "404": ("open", lambda: http_error(404), False),
+    "no-connection": ("open", lambda: urllib.error.URLError("unreachable"), True),
+    "connect-timeout": ("open", lambda: TimeoutError("timed out"), True),
+    "connect-reset": ("open", lambda: ConnectionResetError("reset"), True),
+    "bad-status": ("open", lambda: http.client.BadStatusLine("HTTP/9"), True),
+    "read-truncated": ("read", lambda: http.client.IncompleteRead(b"{", 10), True),
+    "read-timeout": ("read", lambda: TimeoutError("timed out"), True),
+    "read-reset": ("read", lambda: ConnectionResetError("reset"), True),
+    "read-tls": ("read", lambda: ssl.SSLError("bad record mac"), True),
+    "read-not-json": ("read", lambda: b"<html>503 first byte timeout</html>", True),
+    "read-cut-utf8": ("read", lambda: b'{"personName": "Jos\xc3', True),
+    "read-other": ("read", lambda: RuntimeError("unexpected"), False),
+}
+
+
+def run_fetch(outcomes, attempts):
+    """Run read_forbes_json against scripted outcomes; return what happened."""
+    calls, waits, raised, responses = [], [], [], []
+
+    def fake_urlopen(req, timeout):
+        calls.append(None)
+        if len(calls) > len(outcomes):
+            pytest.fail(f"request {len(calls)} exceeds the scripted {outcomes}")
+        if timeout != 60:
+            pytest.fail(f"request timeout is {timeout}, expected 60 seconds")
+        name = outcomes[len(calls) - 1]
+        phase, make, _ = FETCH_OUTCOMES[name]
+        made = make()
+        if phase == "open":
+            raised.append(made)
+            raise made
+        if name == "ok":
+            response = FakeResponse(body=OK_BODY)
+        elif isinstance(made, bytes):
+            response = FakeResponse(body=made)
+        else:
+            raised.append(made)
+            response = FakeResponse(error=made)
+        responses.append(response)
+        return response
+
+    with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        try:
+            result = read_forbes_json(
+                object(), attempts=attempts, sleep=waits.append
+            )
+        except Exception as error:  # noqa: BLE001 - the test inspects any raise
+            outcome = ("raise", error, raised[-1] if raised else None)
+        else:
+            outcome = ("ok", result, None)
+    return len(calls), waits, responses, outcome
+
+
+@pytest.mark.parametrize("attempts", [1, 2, 3, FORBES_FETCH_ATTEMPTS])
+def test_read_forbes_json_retries_exactly_the_transient_failures(attempts):
+    """Every sequence of request outcomes, against a reference model.
+
+    Invariants: at most `attempts` requests; a non-transient failure stops at
+    once; the payload comes back iff an "ok" arrives before that; waits double
+    from the base and none follows the last request; a failure re-raises the
+    last request's own error; every response urlopen returns is closed.
+    """
+    for outcomes in itertools.product(FETCH_OUTCOMES, repeat=attempts):
+        calls, waits, responses, (kind, value, last_error) = run_fetch(
+            outcomes, attempts
+        )
+
+        expected_calls = attempts
+        for k, name in enumerate(outcomes, start=1):
+            if name == "ok" or not FETCH_OUTCOMES[name][2]:
+                expected_calls = k
+                break
+        assert calls == expected_calls, outcomes
+        assert waits == [
+            FORBES_RETRY_BASE_SECONDS * 2**i for i in range(expected_calls - 1)
+        ], outcomes
+        assert all(response.exited for response in responses), outcomes
+
+        last = outcomes[expected_calls - 1]
+        if last == "ok":
+            assert kind == "ok", outcomes
+            assert value == MOCK_RESPONSE, outcomes
+        else:
+            assert kind == "raise", outcomes
+            if last == "read-not-json":
+                assert isinstance(value, json.JSONDecodeError), outcomes
+            elif last == "read-cut-utf8":
+                assert isinstance(value, UnicodeDecodeError), outcomes
+            else:
+                assert value is last_error, outcomes
+
+
+def test_is_transient_fetch_error_splits_server_and_client_errors():
+    for code in range(400, 600):
+        expected = code == 429 or code >= 500
+        assert is_transient_fetch_error(http_error(code)) == expected, code
+    assert is_transient_fetch_error(ssl.SSLError("bad record mac"))
+    assert is_transient_fetch_error(http.client.RemoteDisconnected("closed"))
+    assert is_transient_fetch_error(json.JSONDecodeError("bad", "<html>", 0))
+    assert is_transient_fetch_error(
+        UnicodeDecodeError("utf-8", b"\xc3", 0, 1, "unexpected end of data")
+    )
+    assert not is_transient_fetch_error(ValueError("not a fetch failure"))
+    assert not is_transient_fetch_error(KeyError("personList"))
+
+
+def test_fetch_forbes_people_uses_the_full_retry_budget(capsys):
+    """Three 503s, then a good payload: four requests, waits of 30, 60, 120s."""
+    responses = [http_error(503)] * 3 + [FakeResponse(body=OK_BODY)]
+    with (
+        patch("urllib.request.urlopen", side_effect=responses) as urlopen,
+        patch.object(fetch_forbes.time, "sleep") as sleep,
+    ):
+        people, *_ = fetch_forbes_people()
+    assert urlopen.call_count == 4
+    assert [c.args[0] for c in sleep.call_args_list] == [30, 60, 120]
+    assert len(people) == 4
+    err = capsys.readouterr().err
+    assert "retrying in 30s (attempt 2 of 4)" in err
+    assert "retrying in 120s (attempt 4 of 4)" in err
+
+
+def test_fetch_forbes_people_gives_up_after_the_retry_budget(capsys):
+    with (
+        patch("urllib.request.urlopen", side_effect=[http_error(503)] * 4) as urlopen,
+        patch.object(fetch_forbes.time, "sleep") as sleep,
+        pytest.raises(urllib.error.HTTPError) as raised,
+    ):
+        fetch_forbes_people()
+    assert raised.value.code == 503
+    assert urlopen.call_count == 4
+    assert sleep.call_count == 3
+    assert capsys.readouterr().err.count("retrying in") == 3
+
+
+def test_fetch_forbes_people_recovers_from_a_first_byte_timeout():
+    """The 2026-10-24 failure: a 503 from Forbes, which a retry got past."""
+    responses = [http_error(503), FakeResponse(body=OK_BODY)]
+    with (
+        patch("urllib.request.urlopen", side_effect=responses) as urlopen,
+        patch.object(fetch_forbes.time, "sleep") as sleep,
+    ):
+        people, source_date, *_ = fetch_forbes_people()
+    assert urlopen.call_count == 2
+    sleep.assert_called_once_with(FORBES_RETRY_BASE_SECONDS)
+    assert len(people) == 4
+    assert source_date == "2026-03-26"
+
+
+def test_fetch_forbes_people_does_not_retry_a_client_error():
+    with (
+        patch("urllib.request.urlopen", side_effect=[http_error(404)]) as urlopen,
+        patch.object(fetch_forbes.time, "sleep") as sleep,
+        pytest.raises(urllib.error.HTTPError),
+    ):
+        fetch_forbes_people()
+    assert urlopen.call_count == 1
+    sleep.assert_not_called()
 
 
 def test_fetch_forbes_people_rejects_an_empty_payload():

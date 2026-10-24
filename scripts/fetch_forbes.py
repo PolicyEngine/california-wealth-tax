@@ -24,9 +24,12 @@ case-folded) so a Forbes display-name change does not drop a person.
 """
 
 import csv
+import http.client
 import json
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,6 +48,11 @@ RESIDENCY_ROSTER_DATE = "2026-01-01"
 FORBES_REQUEST_LIMIT = 10000
 MIN_FORBES_PEOPLE = 1000
 MIN_CALIFORNIA_PEOPLE = 100
+# The fetch retries a transient Forbes failure before the run fails: waits of
+# 30, 60 and 120 seconds, three and a half minutes of waiting in all. A longer
+# outage still fails the run, and the outage issue tracks it.
+FORBES_FETCH_ATTEMPTS = 4
+FORBES_RETRY_BASE_SECONDS = 30
 NAME_ALIASES = {
     "Sergey Jr Brin": "Sergey Brin",
     "Archie Aldis Emmerson & family": "Archie Aldis Emmerson",
@@ -154,12 +162,52 @@ def check_payload_complete(people, reported_count, limit=FORBES_REQUEST_LIMIT):
         )
 
 
+def is_transient_fetch_error(error):
+    """True for a failure a later request may not repeat.
+
+    That is an HTTP 5xx or 429; any network, TLS or HTTP protocol failure, while
+    connecting or while reading the body; and a body that does not decode as
+    UTF-8 JSON, which is what a truncated or error-page response becomes. Other
+    4xx responses are not.
+    """
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code == 429 or error.code >= 500
+    return isinstance(
+        error,
+        (
+            OSError,
+            http.client.HTTPException,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+        ),
+    )
+
+
+def read_forbes_json(req, attempts=FORBES_FETCH_ATTEMPTS, sleep=None):
+    """Read the Forbes payload, retrying transient failures with doubling waits."""
+    if sleep is None:
+        sleep = time.sleep
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return json.loads(resp.read())
+        except Exception as error:
+            if attempt == attempts or not is_transient_fetch_error(error):
+                raise
+            wait = FORBES_RETRY_BASE_SECONDS * 2 ** (attempt - 1)
+            print(
+                f"Forbes request failed ({error}); retrying in {wait}s "
+                f"(attempt {attempt + 1} of {attempts})",
+                file=sys.stderr,
+            )
+            sleep(wait)
+
+
 def fetch_forbes_people():
     """Fetch the full Forbes billionaire payload."""
     url = f"{FORBES_API}?limit={FORBES_REQUEST_LIMIT}&fields={FORBES_FIELDS}"
     req = urllib.request.Request(url, headers={"User-Agent": "PolicyEngine"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read())
+    data = read_forbes_json(req)
 
     people = data["personList"]["personsLists"]
     if not people:
