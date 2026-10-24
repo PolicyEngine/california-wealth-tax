@@ -200,3 +200,25 @@ the script below, and rewrite the text until the test passes.
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json
 bun run paper:render            # requires Quarto
 ```
+
+## License
+
+The code is released under the [MIT license](LICENSE). The working paper's
+text (`paper/` and the rendered `public/papers/`) is released under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+Data from third-party sources keep their sources' terms:
+
+- Forbes-derived files: `public/snapshots/`, `data/billionaires_live*`, the
+  roster valuations (`data/roster_valuations.json`, `public/roster_valuations/`
+  and `paper/data/roster_valuations_*.json`) and
+  `data/citizenship_by_name.json`;
+- Boll, Saez and Zucman's filings-based estimates, in
+  `data/income_tax_filings.json`;
+- Rauh et al.'s real estate values, in `data/billionaires_rauh.json`.
+
+`scripts/precompute.py` writes `data/income_tax_lookup.json` with the
+`policyengine` package, which is AGPL-3.0 and builds on policyengine-core, a
+fork of OpenFisca-Core. The script installs that package only when it runs,
+through `uv run --with`. The repository does not include it, and the app reads
+only the JSON the script writes.
