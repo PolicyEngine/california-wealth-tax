@@ -106,8 +106,12 @@ page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
 
 `.github/workflows/update-forbes.yml` refreshes the Forbes data daily. It runs
 the fetcher's tests first, and `scripts/check_snapshot_sanity.py` must pass
-before anything is committed. Names are joined on a normalized key (aliases,
-trailing "& family", case), because Forbes changes display names.
+before anything is committed. The fetch retries a Forbes server error (5xx), a
+rate limit (429), a network or TLS failure, or a truncated or non-JSON body up
+to three times, waiting 30, 60 and 120 seconds, before the run fails; any other
+client error, such as a 404, fails at once.
+Names are joined on a normalized key (aliases, trailing "& family", case),
+because Forbes changes display names.
 
 The job checks out the branch's tip when it starts, not the commit it was queued
 for, and rebases its data commit onto the current tip before pushing, re-running
