@@ -1,70 +1,100 @@
 {
-  "snapshotDate": "2026-09-18",
-  "baselinePeople": 269,
-  "baselineWealthB": 2434,
-  "baselineGrossB": 121,
-  "baselineAfterTenPercentErosionB": 108.9,
+  "snapshotDate": "2026-10-23",
+  "baselinePeople": 272,
+  "baselineWealthB": 2368,
+  "baselineGrossB": 117.7,
+  "baselineAfterTenPercentErosionB": 105.9,
   "realEstateExclusionTaxB": 0.44,
-  "peopleInRateRamp": 7,
-  "rateRampCostB": 0.24,
-  "topFourWealthSharePercent": 40,
-  "newEntrantPeople": 56,
-  "newEntrantWealthB": 264,
-  "newEntrantNonCitizenPeople": 24,
-  "newEntrantNonCitizenWealthB": 159,
-  "movedPerForbesPeople": 6,
-  "lastListedPeople": 9,
-  "lastListedWealthB": 24,
-  "belowThresholdPeople": 5,
+  "peopleInRateRamp": 8,
+  "rateRampCostB": 0.28,
+  "topFourWealthSharePercent": 39,
+  "newEntrantPeople": 59,
+  "newEntrantWealthB": 263,
+  "newEntrantNonCitizenPeople": 25,
+  "newEntrantNonCitizenWealthB": 154,
+  "movedPerForbesPeople": 8,
+  "lastListedPeople": 10,
+  "lastListedWealthB": 25,
+  "belowThresholdPeople": 4,
   "excludedFromEveryBase": 1,
-  "residencyAdjustmentCount": 12,
-  "baseExclusionCount": 8,
+  "residencyAdjustmentCount": 15,
+  "baseExclusionCount": 11,
   "adjustedPeople": 261,
-  "adjustedGrossB": 90.3,
-  "residencyAdjustmentsTaxB": 30.7,
-  "baselineCohortIncomeTaxAtDefaultYieldB": 6.4,
+  "adjustedGrossB": 87.7,
+  "residencyAdjustmentsTaxB": 29.9,
+  "baselineCohortIncomeTaxAtDefaultYieldB": 6.3,
   "adjustedAnnualIncomeTaxLostB": 0.43,
-  "adjustedPvReceiptsB": 87.6,
-  "adjustedPvIncomeTaxLostB": 14.2,
-  "adjustedNetB": 73.5,
-  "adjustedNetAtLaoCeilingB": 54.3,
-  "adjustedNetAtWalczakIncomeTaxB": -15.4,
+  "adjustedPvReceiptsB": 85.2,
+  "adjustedPvIncomeTaxLostB": 14.4,
+  "adjustedNetB": 70.8,
+  "adjustedNetAtLaoCeilingB": 51.8,
+  "adjustedNetAtWalczakIncomeTaxB": -17.8,
   "installmentReceiptsPer100": 115,
   "installmentPvAtTwoPercentInflationPer100": 99.4,
-  "hooverAnnualIncomeTaxLostB": 2.83,
-  "hooverFromFilingsAnnualIncomeTaxLostB": 2.14,
-  "hooverFromFilingsNetB": -14.5,
-  "hooverMarchCoupledNetB": -21.4,
-  "nberHooverNetB": -33.6,
-  "nberDocumentedIncomeTaxSharePct": 34.8,
-  "nberDocumentedIncomeTaxShareFromFilingsPct": 8.1,
-  "nberDepartureShareSweep": [
+  "hooverCollectedB": 35,
+  "hooverPvReceiptsB": 33.95,
+  "hooverAnnualIncomeTaxLostB": 2.05,
+  "hooverPvIncomeTaxLostB": 68.25,
+  "hooverDocumentedIncomeTaxSharePct": 33.9,
+  "hooverDocumentedIncomeTaxShareFromFilingsPct": 8.2,
+  "hooverDepartureShareSweep": [
     {
       "sharePct": 30,
-      "byWealthB": -18.2,
-      "fromFilingsB": -10.9
+      "byWealthB": -17.5,
+      "fromFilingsB": -11.6
     },
     {
       "sharePct": 45,
-      "byWealthB": -33.6,
-      "fromFilingsB": -33.6
+      "byWealthB": -34.3,
+      "fromFilingsB": -34.3
     },
     {
       "sharePct": 60,
-      "byWealthB": -56.4,
-      "fromFilingsB": -56.4
+      "byWealthB": -57.1,
+      "fromFilingsB": -57.1
     }
   ],
-  "nberHooverAtFullSurvivalB": 1,
-  "nberOwnBaseAtFullSurvivalB": -9.1,
-  "nberCeilingAtFullSurvivalB": 3.8,
-  "nberBridge": [
+  "hooverAtFullSurvivalB": -0.4,
+  "jarosRauhRecognizedBaseAtFullSurvivalB": -9.1,
+  "jarosRauhCeilingAtFullSurvivalB": 3.8,
+  "fourLargestWealthSharePct": 39.3,
+  "fourLargestByWealthM": 1785,
+  "fourLargestFromFilingsM": 252,
+  "fourLargest": [
+    {
+      "name": "Larry Page",
+      "wealthSharePct": 11.4,
+      "byWealthM": 518,
+      "fromFilingsM": 57
+    },
+    {
+      "name": "Sergey Brin",
+      "wealthSharePct": 10.5,
+      "byWealthM": 477,
+      "fromFilingsM": 37
+    },
+    {
+      "name": "Mark Zuckerberg",
+      "wealthSharePct": 9.5,
+      "byWealthM": 433,
+      "fromFilingsM": 101
+    },
+    {
+      "name": "Jensen Huang",
+      "wealthSharePct": 7.9,
+      "byWealthM": 357,
+      "fromFilingsM": 57
+    }
+  ],
+  "bridgeStartB": 103.2,
+  "bridgeEndB": -34.3,
+  "bridge": [
     {
       "id": "residency",
       "label": "Residency: documented departures",
-      "valueB": -24.7,
-      "minB": -31.2,
-      "maxB": -18.9
+      "valueB": -23.3,
+      "minB": -29.4,
+      "maxB": -18
     },
     {
       "id": "incomeTax",
@@ -83,98 +113,23 @@
     {
       "id": "erosion",
       "label": "Avoidance and valuation haircut",
-      "valueB": 7.5,
+      "valueB": 7.3,
       "minB": 3.4,
-      "maxB": 12
+      "maxB": 11.6
     },
     {
       "id": "legal",
       "label": "Legal challenges to collection",
-      "valueB": -55.4,
-      "minB": -63.8,
-      "maxB": -47.8
+      "valueB": -53.8,
+      "minB": -61.6,
+      "maxB": -46.7
     },
     {
       "id": "valuation",
       "label": "Real estate exclusion and growth to valuation",
-      "valueB": 1.1,
-      "minB": 0.5,
-      "maxB": 2
-    }
-  ],
-  "fourLargestWealthSharePct": 39.9,
-  "fourLargestByWealthM": 1820,
-  "fourLargestFromFilingsM": 252,
-  "fourLargest": [
-    {
-      "name": "Larry Page",
-      "wealthSharePct": 11.7,
-      "byWealthM": 534,
-      "fromFilingsM": 57
-    },
-    {
-      "name": "Sergey Brin",
-      "wealthSharePct": 10.8,
-      "byWealthM": 491,
-      "fromFilingsM": 37
-    },
-    {
-      "name": "Mark Zuckerberg",
-      "wealthSharePct": 9.6,
-      "byWealthM": 439,
-      "fromFilingsM": 101
-    },
-    {
-      "name": "Jensen Huang",
-      "wealthSharePct": 7.8,
-      "byWealthM": 356,
-      "fromFilingsM": 57
-    }
-  ],
-  "bridgeStartB": 106.1,
-  "bridgeEndB": -37.6,
-  "bridge": [
-    {
-      "id": "residency",
-      "label": "Residency: documented departures",
-      "valueB": -23.1,
-      "minB": -83.4,
-      "maxB": 6.2
-    },
-    {
-      "id": "migration",
-      "label": "Unannounced departures before January 1",
-      "valueB": -70.7,
-      "minB": -139,
-      "maxB": -28
-    },
-    {
-      "id": "incomeTax",
-      "label": "Count movers' future income tax",
-      "valueB": -47.5,
-      "minB": -94.3,
-      "maxB": 0
-    },
-    {
-      "id": "incomeAllocation",
-      "label": "Who pays the cohort's income tax",
-      "valueB": -10.4,
-      "minB": -39.9,
-      "maxB": 0
-    },
-    {
-      "id": "erosion",
-      "label": "Avoidance and valuation haircut",
-      "valueB": 8.2,
-      "minB": 5.7,
-      "maxB": 11.8
-    },
-    {
-      "id": "valuation",
-      "label": "Real estate exclusion and growth to valuation",
-      "valueB": -0.3,
-      "minB": -0.4,
-      "maxB": -0.1
+      "valueB": 0.6,
+      "minB": 0.3,
+      "maxB": 1.1
     }
   ]
 }
