@@ -1,5 +1,5 @@
 ---
-title: "Scoring California's Proposition 40 billionaire tax: one model for the static, migration, and valuation assumptions"
+title: "Scoring California's Proposition 40 billionaire tax: an open model of the contested assumptions"
 author:
   - name: "Max Ghenis"
     affiliation: "PolicyEngine"
@@ -50,8 +50,10 @@ Analyst's Office expects revenue in the "tens of billions of dollars spread
 over several years" and a "possible ongoing decrease of less than $1 billion
 per year" in income tax [@lao2026prop40].
 
-This paper documents a public calculator built at PolicyEngine
-[@policyengine2026]. The calculator is one model with its own baseline: the
+This paper documents an open calculator built at PolicyEngine
+[@policyengine2026]. Its code and this paper's source are public at
+<https://github.com/PolicyEngine/california-wealth-tax>, the code under the
+MIT license and the paper under CC BY 4.0. The calculator is one model with its own baseline: the
 statutory base applied person by person, one residency standard applied to
 everyone, and receipts and losses dated and discounted on the same clock. The
 assumptions behind each published estimate are settings inside that model: the

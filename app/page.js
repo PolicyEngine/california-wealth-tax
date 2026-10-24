@@ -751,14 +751,24 @@ export default function Home() {
                     computed by the calculator&apos;s code from a dated snapshot.
                   </p>
                 </div>
-                <a
-                  href={paperPdfHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-                >
-                  Open PDF
-                </a>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={paperPdfHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                  >
+                    Open PDF
+                  </a>
+                  <a
+                    href="https://github.com/PolicyEngine/california-wealth-tax"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gray-300)] bg-white px-4 py-2 text-sm font-medium text-[var(--gray-700)] transition-colors hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
+                  >
+                    Code (MIT)
+                  </a>
+                </div>
               </div>
               <div className="overflow-hidden rounded-[24px] border border-[var(--gray-200)] bg-white">
                 <iframe

@@ -9,7 +9,7 @@
 <meta name="author" content="Max Ghenis">
 <meta name="dcterms.date" content="2026-10-23">
 
-<title>Scoring California’s Proposition 40 billionaire tax: one model for the static, migration, and valuation assumptions</title>
+<title>Scoring California’s Proposition 40 billionaire tax: an open model of the contested assumptions</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2355,7 +2355,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Scoring California’s Proposition 40 billionaire tax: one model for the static, migration, and valuation assumptions</h1>
+<h1 class="title">Scoring California’s Proposition 40 billionaire tax: an open model of the contested assumptions</h1>
 </div>
 
 
@@ -2400,7 +2400,7 @@ window.Quarto = {
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
 <p>California’s Proposition 40, the 2026 Billionaire Tax Act, has produced one of the widest gaps in recent state tax scoring. Galle et al. <span class="citation" data-cites="galle2025 galle2026july">(<a href="#ref-galle2025" role="doc-biblioref">2025</a>, <a href="#ref-galle2026july" role="doc-biblioref">2026a</a>)</span> report a roughly $100 billion static score using Forbes data and a 10 percent haircut for avoidance or evasion. Rauh et al. build a person-level base, adjust the residency roster, model departures, and estimate that the policy may have negative net present value once foregone California income tax is counted <span class="citation" data-cites="rauh2026">(<a href="#ref-rauh2026" role="doc-biblioref">Rauh et al. 2026</a>)</span>; in a later version, Jaros and Rauh put the mean net present value at -$38.9 billion <span class="citation" data-cites="jarosrauh2026nber">(<a href="#ref-jarosrauh2026nber" role="doc-biblioref">Jaros and Rauh 2026</a>)</span>. The Legislative Analyst’s Office expects revenue in the “tens of billions of dollars spread over several years” and a “possible ongoing decrease of less than $1 billion per year” in income tax <span class="citation" data-cites="lao2026prop40">(<a href="#ref-lao2026prop40" role="doc-biblioref">Legislative Analyst’s Office 2026</a>)</span>.</p>
-<p>This paper documents a public calculator built at PolicyEngine <span class="citation" data-cites="policyengine2026">(<a href="#ref-policyengine2026" role="doc-biblioref">PolicyEngine 2026</a>)</span>. The calculator is one model with its own baseline: the statutory base applied person by person, one residency standard applied to everyone, and receipts and losses dated and discounted on the same clock. The assumptions behind each published estimate are settings inside that model: the billionaire base, contested residency claims, directly held real estate, observed and modeled departures, California income tax exposure, the chance that legal challenges stop collection, payment timing, growth, and discounting.</p>
+<p>This paper documents an open calculator built at PolicyEngine <span class="citation" data-cites="policyengine2026">(<a href="#ref-policyengine2026" role="doc-biblioref">PolicyEngine 2026</a>)</span>. Its code and this paper’s source are public at <a href="https://github.com/PolicyEngine/california-wealth-tax" class="uri">https://github.com/PolicyEngine/california-wealth-tax</a>, the code under the MIT license and the paper under CC BY 4.0. The calculator is one model with its own baseline: the statutory base applied person by person, one residency standard applied to everyone, and receipts and losses dated and discounted on the same clock. The assumptions behind each published estimate are settings inside that model: the billionaire base, contested residency claims, directly held real estate, observed and modeled departures, California income tax exposure, the chance that legal challenges stop collection, payment timing, growth, and discounting.</p>
 <p>The paper’s argument is narrow. The main disagreement is not about arithmetic inside a shared model. It is about a short list of modeling choices. A useful public model should therefore expose those choices directly rather than hide them behind a single headline number.</p>
 </section>
 <section id="the-measure-and-existing-estimates" class="level1">

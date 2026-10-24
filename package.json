@@ -2,6 +2,7 @@
   "name": "california-wealth-tax",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "paper:html": "cd paper && quarto render california-wealth-tax-ssrn-draft.qmd --to html --output index.html --output-dir ../public/papers/web",
