@@ -219,6 +219,7 @@ Data from third-party sources keep their sources' terms:
 
 `scripts/precompute.py` writes `data/income_tax_lookup.json` with the
 `policyengine` package, which is AGPL-3.0 and builds on policyengine-core, a
-fork of OpenFisca-Core. The script installs that package only when it runs,
-through `uv run --with`. The repository does not include it, and the app reads
-only the JSON the script writes.
+fork of OpenFisca-Core. The documented command,
+`uv run --with "policyengine[us]"`, installs it only for that run. The
+repository does not include it, and the app reads only the JSON the script
+writes.
