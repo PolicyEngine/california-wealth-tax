@@ -66,8 +66,7 @@ a point NPV of −$32.25B at f = 0.45, C = $4.55B and r − g = 3%) and reports 
 mean over draws of revenue, f, C and r − g (−$38.9B), so
 the set's point value is not their published mean. Before, the set followed
 Rauh et al.'s March 2026 paper; that set stays in `lib/presets.js` as
-`HOOVER_MARCH_2026_ASSUMPTIONS`, because the working paper's analysis is dated
-to it.
+`HOOVER_MARCH_2026_ASSUMPTIONS`, and the tests still score it.
 
 ## Related work
 
@@ -190,13 +189,12 @@ bun run build
 that `lib/paperNumbers.js` computes from the dated snapshot;
 `lib/paperNumbers.test.js` fails if the text and the code disagree.
 
-The body is dated to the September 18, 2026 snapshot and scores the Hoover
-assumptions as Rauh et al.'s March 2026 version (`HOOVER_MARCH_2026_ASSUMPTIONS`).
-That set counts the income tax of the four later or unconfirmed departures in
-their Table 7 as lost on top of the share their formula ties to the wealth-tax
-loss; the paper says so and reports the set with the share tied. An addendum
-dated October 21, 2026 scores the calculator's current Hoover set, which follows
-Jaros and Rauh's NBER version, on the same snapshot.
+The paper is one version, dated to its snapshot (`PAPER_SNAPSHOT_DATE`, now
+October 23, 2026), and scores the calculator's current assumption sets on it:
+the Hoover set follows Jaros and Rauh's NBER version. To move the paper to a
+newer snapshot, copy `public/roster_valuations/<date>.json` to
+`paper/data/roster_valuations_<date>.json`, set `PAPER_SNAPSHOT_DATE`, rerun
+the script below, and rewrite the text until the test passes.
 
 ```bash
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json
