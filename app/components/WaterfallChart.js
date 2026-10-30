@@ -26,14 +26,15 @@ function WaterfallTooltip({ active, payload }) {
   }
 
   const entry = payload[0].payload;
+  const detail = entry.detail;
 
   return (
-    <div className="rounded-2xl border border-[var(--gray-200)] bg-white/95 px-4 py-3 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+    <div className="max-w-[20rem] rounded-2xl border border-[var(--gray-200)] bg-white/95 px-4 py-3 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--gray-400)]">
         {entry.isTotal ? "Result" : entry.isStart ? "Starting point" : "Step effect"}
       </p>
       <p className="mt-1 text-sm font-semibold text-[var(--gray-700)]">
-        {entry.label}
+        {detail?.title ?? entry.label}
       </p>
       <div className="mt-3 space-y-1 text-sm text-[var(--gray-600)]">
         <div className="flex min-w-[12rem] items-center justify-between gap-4">
@@ -50,6 +51,21 @@ function WaterfallTooltip({ active, payload }) {
             </span>
           </div>
         )}
+        {detail && (
+          <dl className="space-y-1 pt-2 text-xs leading-5 text-[var(--gray-500)]">
+            {detail.endpoints.map((endpoint) => (
+              <div key={endpoint.label}>
+                <dt className="font-medium text-[var(--gray-600)]">{endpoint.label}</dt>
+                <dd>
+                  {endpoint.setting}
+                  {endpoint.matches.length > 0 && (
+                    <span className="text-[var(--gray-400)]"> · as in {endpoint.matches.join(", ")}</span>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
         {entry.clickable && (
           <p className="pt-1 text-xs text-[var(--teal-700)]">Click to adjust</p>
         )}
@@ -58,8 +74,8 @@ function WaterfallTooltip({ active, payload }) {
   );
 }
 
-// Below this width the category labels overlap into a smear; the cards under
-// the chart and the tooltip carry the names there.
+// Below this width the category labels overlap into a smear; the assumption
+// list and the tooltip carry the names there.
 function useIsNarrow(maxWidth = 640) {
   const [isNarrow, setIsNarrow] = useState(false);
 
@@ -82,6 +98,7 @@ export default function WaterfallChart({
   activeId = null,
   clickableIds = null,
   referenceLines = [],
+  stepDetails = null,
 }) {
   const isNarrow = useIsNarrow();
   const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {}).map(
@@ -89,6 +106,7 @@ export default function WaterfallChart({
       ...entry,
       isStart: index === 0,
       clickable: Boolean(onBarClick) && (clickableIds?.has(entry.id) ?? false),
+      detail: stepDetails?.[entry.id],
     })
   );
 
@@ -125,12 +143,13 @@ export default function WaterfallChart({
               }}
             />
           ))}
-          {/* Invisible base */}
-          <Bar dataKey="base" stackId="waterfall" fill="transparent" />
+          {/* Invisible base. Neither bar animates: the chart follows a dragged slider. */}
+          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           {/* Visible bar */}
           <Bar
             dataKey="height"
             stackId="waterfall"
+            isAnimationActive={false}
             onClick={(item) => {
               // recharts 3 passes the rectangle item; the data row is its payload.
               const entry = item?.payload ?? item;
@@ -145,7 +164,6 @@ export default function WaterfallChart({
               <Cell
                 key={entry.id}
                 radius={entry.isNegative ? [0, 0, 4, 4] : [4, 4, 0, 0]}
-                opacity={activeId && entry.id !== activeId ? 0.55 : 1}
                 stroke={entry.id === activeId ? "var(--gray-700)" : "none"}
                 strokeWidth={entry.id === activeId ? 2 : 0}
                 fill={
