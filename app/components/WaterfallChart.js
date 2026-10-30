@@ -131,7 +131,7 @@ export default function WaterfallChart({
       <ResponsiveContainer width="100%" height={height}>
         <BarChart
           data={data}
-          margin={{ top: 18, right: 16, left: 10, bottom: 5 }}
+          margin={{ top: 18, right: 16, left: isNarrow ? 10 : 44, bottom: 5 }}
           onMouseMove={(state) => setPointingAtStep(isClickableIndex(state?.activeTooltipIndex))}
           onMouseLeave={() => setPointingAtStep(false)}
           style={pointingAtStep ? { cursor: "pointer" } : undefined}

@@ -9,7 +9,7 @@ const SET_LABELS = {
   hoover: "Hoover assumptions",
 };
 const SET_NOTES = {
-  baseline: "no behavioral response",
+  baseline: "no behavior",
 };
 
 export default function ResultStrip({

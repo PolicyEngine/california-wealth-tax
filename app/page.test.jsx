@@ -192,6 +192,13 @@ describe("entering step two from a bar", () => {
 });
 
 describe("building a scenario", () => {
+  it("says what the cohort loses in the income tax summary", async () => {
+    await open();
+    await click(column("incomeTax"));
+
+    expect(pageText()).toContain("at least 45% of the cohort's income tax lost");
+  });
+
   it("names the change that moved nothing", async () => {
     await open("?cohortpit=5");
 

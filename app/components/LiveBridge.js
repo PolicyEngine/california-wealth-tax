@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { StartFrom } from "@/app/components/ResultStrip";
 import WaterfallChart from "@/app/components/WaterfallChart";
-import { formatBillions } from "@/lib/format";
+import { formatBillions, longDate } from "@/lib/format";
 
 export const BRIDGE_ENDPOINTS = {
   baseline: "Statutory score, no behavior",
@@ -150,7 +150,7 @@ export function CompareStep({
             {" \u2192 "}
             {BRIDGE_ENDPOINTS[to]} {formatBillions(bridge.endValue, { showPlus: true })}
           </span>
-          , on the same people, Forbes data as of {snapshotDate}, net present
+          , on the same people, Forbes data as of {longDate(snapshotDate)}, net present
           value as of 2026. Each bar is one assumption&apos;s worth, averaged
           over every order the assumptions could be applied in, so the bars sum
           exactly to the gap.
@@ -371,7 +371,7 @@ export function BuildStep({
                     onClick={() => selectGroup(isActive ? null : group.id)}
                     aria-expanded={isActive}
                     aria-controls={isActive ? `panel-${group.id}` : undefined}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:-outline-offset-2 ${
                       isActive ? "bg-[var(--teal-50)]" : "bg-white hover:bg-[var(--teal-50)]"
                     }`}
                   >

@@ -161,7 +161,7 @@ function summarizeGroup(group, assumptions, context) {
           : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the reachable base left unannounced (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
-        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
+        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's income tax lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
         : "Wealth tax only";
     case "incomeAllocation":
       return assumptions.incomeTaxMethod === INCOME_TAX_METHODS.YIELD
@@ -448,7 +448,7 @@ export default function Home() {
   const referenceLines = [];
   if (bridgeStart !== "baseline" && bridgeEnd !== "baseline") {
     referenceLines.push({
-      label: "Statutory, no behavior",
+      label: "Statutory score, no behavior",
       value: campValues.baseline,
       stroke: "var(--gray-400)",
     });
@@ -582,7 +582,7 @@ export default function Home() {
         className="min-w-0 max-w-full rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
         <option value="live">Latest Forbes data ({LIVE_DATE})</option>
-        <option value="paper">October 17, 2025 Forbes snapshot (Rauh asset data)</option>
+        <option value="paper">October 17, 2025 (Rauh asset data)</option>
         <option value="other">Another stored date</option>
       </select>
       {params.snapshotDate !== LIVE_DATE && params.snapshotDate !== PAPER_DATE && (
