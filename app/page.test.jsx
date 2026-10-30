@@ -145,7 +145,80 @@ describe("step one", () => {
     await click(button(/^1\. Why the estimates differ/));
 
     expect(publishedGapSummary()).toBe(summary);
-    expect(pageText()).toContain("Picking a starting point replaces your scenario.");
+    expect(pageText()).toContain("Picking a starting point replaces it.");
+  });
+
+  const menuOptions = (id) =>
+    [...document.getElementById(id).options].map((option) => option.value);
+
+  async function choose(id, value) {
+    await act(async () => {
+      fireEvent.change(document.getElementById(id), { target: { value } });
+    });
+    await settle();
+  }
+
+  it("adds your scenario to the menus once it exists", async () => {
+    await open();
+    expect(menuOptions("bridge-to")).not.toContain("your");
+
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+    await click(button(/^1\. Why the estimates differ/));
+
+    expect(menuOptions("bridge-from")).toContain("your");
+    expect(menuOptions("bridge-to")).toContain("your");
+  });
+
+  it("compares a published set with your scenario, either way round", async () => {
+    await open();
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+    await click(button(/^1\. Why the estimates differ/));
+
+    await choose("bridge-to", "your");
+    expect(pageText()).toMatch(/Berkeley assumptions \+\$[\d.]+B → Your scenario -\$14\.\dB/);
+    expect(column("legal")).toBeTruthy();
+
+    await choose("bridge-to", "hoover");
+    await choose("bridge-from", "your");
+    expect(pageText()).toMatch(/Your scenario -\$14\.\dB → Hoover assumptions -\$34\.\dB/);
+    expect([...document.querySelectorAll("[data-column]")].map((entry) => entry.dataset.column)).toEqual(["legal"]);
+  });
+
+  it("keeps the scenario when a bar in its comparison opens a step", async () => {
+    await open();
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+    await click(button(/^1\. Why the estimates differ/));
+    await choose("bridge-to", "your");
+    const search = window.location.search;
+
+    await click(column("incomeTax"));
+
+    expect(stepTwoPressed()).toBe("true");
+    expect(window.location.search).toBe(search);
+    expect(assumptionRow("Count movers").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("falls back to a published set when the scenario goes", async () => {
+    await open();
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+    await click(button(/^1\. Why the estimates differ/));
+    await choose("bridge-to", "your");
+
+    await click(button(/^Back to your scenario/));
+    await click(button(/^Reset to/));
+    await click(button(/^1\. Why the estimates differ/));
+
+    expect(document.getElementById("bridge-to").value).toBe("hoover");
+    expect(menuOptions("bridge-to")).not.toContain("your");
+    expect(publishedGapSummary()).toBeTruthy();
+
+    await click(column("legal"));
+    expect(stepTwoPressed()).toBe("true");
+    expect(pageText()).not.toContain("Your scenario");
   });
 
   it("goes back to the scenario with its edits intact", async () => {
@@ -234,6 +307,41 @@ describe("entering step two from a bar", () => {
     await click(button(/^Legal challenges to collection/));
     expect(stepTwoPressed()).toBe("true");
     expect(assumptionRow("Legal challenges").getAttribute("aria-expanded")).toBe("true");
+  });
+});
+
+describe("copying the scenario link", () => {
+  function blockClipboard() {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new DOMException("blocked", "NotAllowedError")) },
+    });
+  }
+
+  it("falls back to a selection copy where an embed blocks the clipboard", async () => {
+    blockClipboard();
+    let selected = "";
+    document.execCommand = vi.fn(() => {
+      selected = document.activeElement.value;
+      return true;
+    });
+    await open("?survive=0.8");
+
+    await click(button(/^Copy link to this scenario/));
+
+    expect(selected).toContain("survive=0.8");
+    expect(button(/^Copied link/)).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+  });
+
+  it("says so when neither copy works", async () => {
+    blockClipboard();
+    document.execCommand = vi.fn(() => false);
+    await open("?survive=0.8");
+
+    await click(button(/^Copy link to this scenario/));
+
+    expect(button(/^Copy failed/)).toBeTruthy();
   });
 });
 
