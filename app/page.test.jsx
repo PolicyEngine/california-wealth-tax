@@ -312,10 +312,8 @@ describe("step one", () => {
     expect(pageText()).toMatch(/→ Your scenario -\$41\.\dB/);
   });
 
-  it("names your scenario in the tooltip when it sits on the from end", async () => {
-    await scenarioOn("bridge-from");
-    const target = column("legal");
-
+  async function hover(id) {
+    const target = column(id);
     await act(async () => {
       fireEvent.mouseMove(target, {
         clientX: Number(target.getAttribute("x")) + Number(target.getAttribute("width")) / 2,
@@ -324,10 +322,25 @@ describe("step one", () => {
       await new Promise((resolve) => setTimeout(resolve, 60));
     });
     await settle();
+    return document.querySelector(".recharts-tooltip-wrapper").textContent;
+  }
 
-    const tooltip = document.querySelector(".recharts-tooltip-wrapper").textContent;
+  it("names your scenario in the tooltip when it sits on the from end", async () => {
+    await scenarioOn("bridge-from");
+
+    const tooltip = await hover("legal");
+
     expect(tooltip).toContain("Your scenario");
     expect(tooltip).toContain("Hoover assumptions");
+  });
+
+  it("keeps the tooltip's settings current when the scenario changes", async () => {
+    await scenarioOn("bridge-from");
+    expect(await hover("legal")).toContain("80% chance it survives");
+
+    await slideLegalAndCompare("0.4");
+
+    expect(await hover("legal")).toContain("40% chance it survives");
   });
 
   it("goes back to the scenario with its edits intact", async () => {
