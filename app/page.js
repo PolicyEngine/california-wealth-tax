@@ -779,8 +779,14 @@ export default function Home() {
                     bridge={bridge}
                     from={compareFrom}
                     to={compareTo}
-                    onChangeFrom={setBridgeFrom}
-                    onChangeTo={setBridgeTo}
+                    onChangeFrom={(key) => {
+                      setBridgeFrom(key);
+                      setBridgeTo(compareTo);
+                    }}
+                    onChangeTo={(key) => {
+                      setBridgeTo(key);
+                      setBridgeFrom(compareFrom);
+                    }}
                     hasEdits={hasEdits}
                     campValues={campValues}
                     onStartFrom={buildFrom}

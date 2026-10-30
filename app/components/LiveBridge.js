@@ -209,9 +209,11 @@ export function CompareStep({
               Build your own
             </h3>
             <p className="mt-0.5 text-sm text-[var(--gray-500)]">
-              {hasEdits
-                ? "Pick Your scenario in the From or To menu to compare it. Picking a starting point replaces it."
-                : "Pick a starting point, then change what you disagree with."}
+              {!hasEdits
+                ? "Pick a starting point, then change what you disagree with."
+                : from === "your" || to === "your"
+                  ? "Picking a starting point replaces your scenario."
+                  : "Pick Your scenario in the From or To menu to compare it. Picking a starting point replaces it."}
             </p>
           </div>
           {hasEdits && (

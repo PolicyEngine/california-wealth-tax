@@ -179,6 +179,9 @@ describe("step one", () => {
     await choose("bridge-to", "your");
     expect(pageText()).toMatch(/Berkeley assumptions \+\$[\d.]+B → Your scenario -\$14\.\dB/);
     expect(column("legal")).toBeTruthy();
+    expect(menuOptions("bridge-from")).not.toContain("your");
+    expect(pageText()).not.toContain("Pick Your scenario");
+    expect(pageText()).toContain("Picking a starting point replaces your scenario.");
 
     await choose("bridge-to", "hoover");
     await choose("bridge-from", "your");
@@ -219,6 +222,73 @@ describe("step one", () => {
     await click(column("legal"));
     expect(stepTwoPressed()).toBe("true");
     expect(pageText()).not.toContain("Your scenario");
+  });
+
+  async function resetScenario() {
+    await click(button(/^Back to your scenario/));
+    await click(button(/^Reset to/));
+    await click(button(/^1\. Why the estimates differ/));
+  }
+
+  async function scenarioOn(id) {
+    await open();
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+    await click(button(/^1\. Why the estimates differ/));
+    await choose(id, "your");
+  }
+
+  it("falls back on either end", async () => {
+    await scenarioOn("bridge-from");
+
+    await resetScenario();
+
+    expect(document.getElementById("bridge-from").value).toBe("berkeley");
+    expect(document.getElementById("bridge-to").value).toBe("hoover");
+    expect(publishedGapSummary()).toBeTruthy();
+  });
+
+  it("falls back to a set the other end does not hold", async () => {
+    await scenarioOn("bridge-to");
+    await choose("bridge-from", "baseline");
+
+    await resetScenario();
+
+    expect(document.getElementById("bridge-to").value).toBe("berkeley");
+  });
+
+  it("leaves the other end alone when a menu changes after the scenario goes", async () => {
+    await scenarioOn("bridge-to");
+    await resetScenario();
+
+    await choose("bridge-from", "baseline");
+
+    expect(document.getElementById("bridge-from").value).toBe("baseline");
+    expect(document.getElementById("bridge-to").value).toBe("hoover");
+  });
+
+  it("does the same when the scenario sat on the from end", async () => {
+    await scenarioOn("bridge-from");
+    await choose("bridge-to", "berkeley");
+    await resetScenario();
+    expect(document.getElementById("bridge-from").value).toBe("hoover");
+
+    await choose("bridge-to", "baseline");
+
+    expect(document.getElementById("bridge-from").value).toBe("hoover");
+    expect(document.getElementById("bridge-to").value).toBe("baseline");
+  });
+
+  it("recomputes the comparison when the scenario changes on the from end", async () => {
+    await scenarioOn("bridge-from");
+    expect(pageText()).toMatch(/Your scenario -\$14\.\dB → Hoover/);
+
+    await click(button(/^Back to your scenario/));
+    await slideLegalTo("1");
+    await click(button(/^1\. Why the estimates differ/));
+
+    expect(pageText()).not.toMatch(/Your scenario -\$14\.\dB → Hoover/);
+    expect(pageText()).toMatch(/Your scenario [+-]\$[\d.]+B → Hoover assumptions -\$34\.\dB/);
   });
 
   it("goes back to the scenario with its edits intact", async () => {
@@ -311,27 +381,49 @@ describe("entering step two from a bar", () => {
 });
 
 describe("copying the scenario link", () => {
-  function blockClipboard() {
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: vi.fn().mockRejectedValue(new DOMException("blocked", "NotAllowedError")) },
-    });
+  function stubClipboard(writeText) {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
   }
+
+  const blockClipboard = () =>
+    stubClipboard(vi.fn().mockRejectedValue(new DOMException("blocked", "NotAllowedError")));
+
+  afterEach(() => {
+    delete navigator.clipboard;
+    delete document.execCommand;
+  });
+
+  it("uses the clipboard API where the page allows it", async () => {
+    const writeText = vi.fn().mockResolvedValue();
+    stubClipboard(writeText);
+    document.execCommand = vi.fn();
+    await open("?survive=0.8");
+
+    await click(button(/^Copy link to this scenario/));
+
+    expect(writeText.mock.calls[0][0]).toContain("survive=0.8");
+    expect(document.execCommand).not.toHaveBeenCalled();
+    expect(button(/^Copied link/)).toBeTruthy();
+  });
 
   it("falls back to a selection copy where an embed blocks the clipboard", async () => {
     blockClipboard();
     let selected = "";
     document.execCommand = vi.fn(() => {
-      selected = document.activeElement.value;
+      const { value, selectionStart, selectionEnd } = document.activeElement;
+      selected = value.slice(selectionStart, selectionEnd);
       return true;
     });
     await open("?survive=0.8");
+    const copy = button(/^Copy link to this scenario/);
+    copy.focus();
 
-    await click(button(/^Copy link to this scenario/));
+    await click(copy);
 
     expect(selected).toContain("survive=0.8");
     expect(button(/^Copied link/)).toBeTruthy();
     expect(document.querySelector("textarea")).toBeNull();
+    expect(document.activeElement).toBe(copy);
   });
 
   it("says so when neither copy works", async () => {
@@ -342,6 +434,22 @@ describe("copying the scenario link", () => {
     await click(button(/^Copy link to this scenario/));
 
     expect(button(/^Copy failed/)).toBeTruthy();
+  });
+
+  it("cleans up and says so when the selection copy throws", async () => {
+    blockClipboard();
+    document.execCommand = vi.fn(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    await open("?survive=0.8");
+    const copy = button(/^Copy link to this scenario/);
+    copy.focus();
+
+    await click(copy);
+
+    expect(button(/^Copy failed/)).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.activeElement).toBe(copy);
   });
 });
 
