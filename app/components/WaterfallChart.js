@@ -143,12 +143,13 @@ export default function WaterfallChart({
               }}
             />
           ))}
-          {/* Invisible base */}
-          <Bar dataKey="base" stackId="waterfall" fill="transparent" />
+          {/* Invisible base. Neither bar animates: the chart follows a dragged slider. */}
+          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           {/* Visible bar */}
           <Bar
             dataKey="height"
             stackId="waterfall"
+            isAnimationActive={false}
             onClick={(item) => {
               // recharts 3 passes the rectangle item; the data row is its payload.
               const entry = item?.payload ?? item;
