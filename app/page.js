@@ -636,6 +636,14 @@ export default function Home() {
     }
   }
 
+  // The selects show the resolved endpoints, so a choice builds on those rather
+  // than on the raw state an undo left behind.
+  function chooseBridge(from, to) {
+    setBridgeFrom(from);
+    setBridgeTo(to);
+    if (to !== "your") setDisplacedBridgeTo(to);
+  }
+
   function update(key, value) {
     setParams((prev) => normalizeParams({ ...prev, [key]: value }));
     markEdited();
@@ -676,7 +684,7 @@ export default function Home() {
   }
 
   const dataControl = (
-    <label className="inline-flex items-center gap-2 text-sm text-[var(--gray-600)]">
+    <label className="inline-flex max-w-full flex-wrap items-center gap-2 text-sm text-[var(--gray-600)]">
       <span>Data</span>
       <select
         value={
@@ -696,7 +704,7 @@ export default function Home() {
                 : resolveSnapshotDate("2026-03-30");
           setParams((prev) => normalizeParams({ ...prev, snapshotDate: nextDate }));
         }}
-        className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
+        className="min-w-0 max-w-full rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
         <option value="live">Latest Forbes data ({LIVE_DATE})</option>
         <option value="paper">October 17, 2025 Forbes snapshot (Rauh asset data)</option>
@@ -716,7 +724,7 @@ export default function Home() {
               })
             )
           }
-          className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
+          className="min-w-0 max-w-full rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
         />
       )}
     </label>
@@ -823,8 +831,8 @@ export default function Home() {
                 from={bridgeStart}
                 to={bridgeEnd}
                 hasScenario={!activeSet}
-                onChangeFrom={setBridgeFrom}
-                onChangeTo={setBridgeTo}
+                onChangeFrom={(from) => chooseBridge(from, bridgeEnd)}
+                onChangeTo={(to) => chooseBridge(bridgeStart, to)}
                 groups={ASSUMPTION_GROUPS}
                 activeGroup={activeGroup}
                 onSelectGroup={setActiveGroup}
