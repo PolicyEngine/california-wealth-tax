@@ -181,7 +181,7 @@ export default function WaterfallChart({
             stackId="waterfall"
             isAnimationActive={false}
             maxBarSize={96}
-            background={{ fill: "transparent" }}
+            background={{ fill: "transparent", stroke: "none" }}
             onClick={openStep}
           >
             {!isNarrow && (

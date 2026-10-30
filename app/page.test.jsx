@@ -73,6 +73,14 @@ async function click(element) {
   await settle();
 }
 
+async function slideLegalTo(value) {
+  const slider = document.querySelector("#panel-legal input[type=range]");
+  await act(async () => {
+    fireEvent.change(slider, { target: { value } });
+  });
+  await settle();
+}
+
 const button = (pattern) =>
   [...document.querySelectorAll("button")].find((candidate) =>
     pattern.test(candidate.textContent.trim()),
@@ -108,11 +116,7 @@ describe("step one", () => {
     await click(button(/^Hoover assumptions/));
     expect(stepTwoPressed()).toBe("true");
     await click(assumptionRow("Legal challenges"));
-    const slider = document.querySelector("#panel-legal input[type=range]");
-    await act(async () => {
-      fireEvent.change(slider, { target: { value: "0.8" } });
-    });
-    await settle();
+    await slideLegalTo("0.8");
     expect(pageText()).toContain("Your scenario");
 
     await click(button(/^1\. Why the estimates differ/));
@@ -142,6 +146,17 @@ describe("entering step two from a bar", () => {
 
     expect(stepTwoPressed()).toBe("true");
     expect(assumptionRow("Count movers").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("outlines the open bar, not its whole column", async () => {
+    await open();
+
+    await click(column("legal"));
+    await slideLegalTo("0.8");
+
+    expect(column("legal").getAttribute("stroke")).toBe("none");
+    const [, visibleBars] = document.querySelectorAll(".recharts-bar");
+    expect(visibleBars.querySelector('.recharts-bar-rectangle [id="legal"]').getAttribute("stroke")).toBe("var(--gray-700)");
   });
 
   it("keeps a scenario already under way", async () => {
