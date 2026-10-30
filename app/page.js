@@ -272,6 +272,7 @@ export default function Home() {
   const [bridgeFrom, setBridgeFrom] = useState("berkeley");
   const [bridgeTo, setBridgeTo] = useState("hoover");
   const [step, setStep] = useState("compare");
+  const [focusOnArrival, setFocusOnArrival] = useState(false);
   const [scenarioBase, setScenarioBase] = useState("baseline");
   const [copyStatus, setCopyStatus] = useState("idle");
   const [loadedSnapshot, dispatchSnapshot] = useReducer(snapshotReducer, {
@@ -379,9 +380,13 @@ export default function Home() {
       ),
     [score]
   );
-  const endpointAssumptions = (key) =>
-    key === "your" ? deferredAssumptions : ASSUMPTION_SETS[key];
   const activeSet = matchingSetKey(assumptions);
+  // A jump to a named set lands at once, so the chart never pairs the new
+  // origin with the old assumptions. Only the sliders wait.
+  const yourAssumptions = activeSet ? ASSUMPTION_SETS[activeSet] : deferredAssumptions;
+  const endpointAssumptions = (key) =>
+    key === "your" ? yourAssumptions : ASSUMPTION_SETS[key];
+  const hasEdits = activeSet !== scenarioBase;
   // Step one compares published sets and never moves with the sliders; step
   // two measures the sliders against the set they started from.
   const building = step === "build";
@@ -396,7 +401,7 @@ export default function Home() {
         score,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bridgeStart, bridgeEnd, building ? deferredAssumptions : null, score]
+    [bridgeStart, bridgeEnd, building ? yourAssumptions : null, score]
   );
   // What each bar compares: its assumption at the two ends of the bridge.
   const stepDetails = useMemo(() => {
@@ -429,7 +434,7 @@ export default function Home() {
       ])
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeStart, bridgeEnd, bridgeEndLabel, building ? deferredAssumptions : null, score]);
+  }, [bridgeStart, bridgeEnd, bridgeEndLabel, building ? yourAssumptions : null, score]);
   const remainingResidentWealthB = residentWealthB(current);
   const summaryContext = { remainingResidentWealthB };
   const groupMatches = Object.fromEntries(
@@ -505,20 +510,30 @@ export default function Home() {
     setScenarioBase(key);
   }
 
+  function showStep(next) {
+    setFocusOnArrival(false);
+    setStep(next);
+  }
+
+  function enterBuild() {
+    setFocusOnArrival(true);
+    setStep("build");
+  }
+
   function buildFrom(key) {
     startFrom(key);
     setActiveGroup(null);
-    setStep("build");
+    enterBuild();
   }
 
   // A bar opens at the comparison's destination, so the first change moves one
   // bar. Changes already under way stay.
   function openFromComparison(groupId) {
-    if (activeSet === scenarioBase) {
+    if (!hasEdits) {
       startFrom(bridgeTo);
     }
     setActiveGroup(groupId);
-    setStep("build");
+    enterBuild();
   }
 
   function applyGroupFrom(groupId, setKey) {
@@ -687,13 +702,14 @@ export default function Home() {
           ) : (
             <>
               <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
-                <StepTabs step={step} onChange={setStep} />
+                <StepTabs step={step} onChange={showStep} />
                 {building ? (
                   <BuildStep
                     bridge={bridge}
                     from={scenarioBase}
                     endLabel={bridgeEndLabel}
-                    hasEdits={activeSet !== scenarioBase}
+                    hasEdits={hasEdits}
+                    focusOnArrival={focusOnArrival}
                     campValues={campValues}
                     onStartFrom={startFrom}
                     groups={ASSUMPTION_GROUPS}
@@ -762,9 +778,11 @@ export default function Home() {
                     to={bridgeTo}
                     onChangeFrom={setBridgeFrom}
                     onChangeTo={setBridgeTo}
+                    hasEdits={hasEdits}
                     campValues={campValues}
                     onStartFrom={buildFrom}
                     onOpenAssumption={openFromComparison}
+                    onResumeScenario={enterBuild}
                     stepDetails={stepDetails}
                     referenceLines={referenceLines}
                     snapshotDate={loadedDate}

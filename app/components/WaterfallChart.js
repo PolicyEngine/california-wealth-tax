@@ -9,6 +9,7 @@ import {
   YAxis,
   Tooltip,
   Cell,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
@@ -103,19 +104,38 @@ export default function WaterfallChart({
   hideTotal = false,
 }) {
   const isNarrow = useIsNarrow();
+  const [pointingAtStep, setPointingAtStep] = useState(false);
+  // On a phone a tap shows the tooltip, and the list on the page opens the step.
+  const canClick = Boolean(onBarClick) && !isNarrow;
   const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {})
     .map((entry, index) => ({
       ...entry,
       isStart: index === 0,
-      clickable: Boolean(onBarClick) && (clickableIds?.has(entry.id) ?? false),
+      clickable: canClick && (clickableIds?.has(entry.id) ?? false),
       detail: stepDetails?.[entry.id],
     }))
     .filter((entry) => !(hideTotal && entry.isTotal));
+  const openStep = (item) => {
+    // recharts 3 passes the rectangle item; the data row is its payload.
+    const entry = item?.payload ?? item;
+
+    if (entry?.clickable) {
+      onBarClick(entry.id);
+    }
+  };
+  const isClickableIndex = (index) =>
+    index != null && Boolean(data[Number(index)]?.clickable);
 
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} margin={{ top: 18, right: 16, left: 10, bottom: 5 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 18, right: 16, left: 10, bottom: 5 }}
+          onMouseMove={(state) => setPointingAtStep(isClickableIndex(state?.activeTooltipIndex))}
+          onMouseLeave={() => setPointingAtStep(false)}
+          style={pointingAtStep ? { cursor: "pointer" } : undefined}
+        >
           <XAxis
             dataKey="label"
             tick={isNarrow ? false : { fontSize: 11 }}
@@ -146,23 +166,34 @@ export default function WaterfallChart({
             />
           ))}
           {/* Invisible base. Neither bar animates: the chart follows a dragged slider. */}
-          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} maxBarSize={96} />
-          {/* Visible bar */}
+          <Bar
+            dataKey="base"
+            stackId="waterfall"
+            fill="transparent"
+            isAnimationActive={false}
+            maxBarSize={96}
+            onClick={openStep}
+          />
+          {/* Visible bar. The background makes the whole column a target: the
+              smallest steps draw bars a pixel tall. */}
           <Bar
             dataKey="height"
             stackId="waterfall"
             isAnimationActive={false}
             maxBarSize={96}
-            onClick={(item) => {
-              // recharts 3 passes the rectangle item; the data row is its payload.
-              const entry = item?.payload ?? item;
-
-              if (onBarClick && entry?.clickable) {
-                onBarClick(entry.id);
-              }
-            }}
-            className={onBarClick ? "cursor-pointer" : undefined}
+            background={{ fill: "transparent" }}
+            onClick={openStep}
           >
+            {!isNarrow && (
+              <LabelList
+                dataKey="value"
+                position="top"
+                formatter={(value) => formatBillions(value, { showPlus: true })}
+                fontSize={11}
+                fontWeight={600}
+                fill="var(--gray-600)"
+              />
+            )}
             {data.map((entry) => (
               <Cell
                 key={entry.id}

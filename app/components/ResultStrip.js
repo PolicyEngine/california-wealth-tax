@@ -55,6 +55,7 @@ export function StartFrom({ campValues, selected = null, onSelect }) {
             key={key}
             type="button"
             onClick={() => onSelect(key)}
+            aria-pressed={selected === null ? undefined : isSelected}
             className={`rounded-2xl border px-3.5 py-2 text-left text-sm transition-colors ${
               isSelected
                 ? "border-[var(--teal-600)] bg-[var(--teal-700)] text-white"

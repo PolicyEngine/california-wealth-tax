@@ -89,6 +89,18 @@ function UnboundedNote() {
   );
 }
 
+function StepValue({ value }) {
+  return (
+    <span
+      className={`shrink-0 text-sm font-semibold tabular-nums ${
+        value >= 0 ? "text-[var(--teal-700)]" : "text-[var(--red-600)]"
+      }`}
+    >
+      {formatBillions(value, { showPlus: true })}
+    </span>
+  );
+}
+
 function waterfallSteps(bridge, startLabel) {
   return [
     { id: "start", label: startLabel, value: bridge.startValue },
@@ -106,9 +118,11 @@ export function CompareStep({
   to,
   onChangeFrom,
   onChangeTo,
+  hasEdits,
   campValues,
   onStartFrom,
   onOpenAssumption,
+  onResumeScenario,
   stepDetails,
   referenceLines,
   snapshotDate,
@@ -139,7 +153,8 @@ export function CompareStep({
           , on the same people, Forbes data as of {snapshotDate}, net present
           value as of 2026. Each bar is one assumption&apos;s worth, averaged
           over every order the assumptions could be applied in, so the bars sum
-          exactly to the gap. Hover over a bar to see what it compares.
+          exactly to the gap.
+          <span className="max-[640px]:hidden"> Hover over a bar to see what it compares.</span>
         </p>
       </div>
 
@@ -153,26 +168,61 @@ export function CompareStep({
           different endpoints.
         </p>
       ) : (
-        <WaterfallChart
-          waterfall={waterfallSteps(bridge, BRIDGE_ENDPOINTS[from])}
-          totalLabel={BRIDGE_ENDPOINTS[to]}
-          height={380}
-          onBarClick={onOpenAssumption}
-          clickableIds={new Set(bridge.contributions.map((step) => step.id))}
-          referenceLines={referenceLines}
-          stepDetails={stepDetails}
-          clickHint={`Click to change it, starting from ${BRIDGE_ENDPOINTS[to]}`}
-        />
+        <>
+          <WaterfallChart
+            waterfall={waterfallSteps(bridge, BRIDGE_ENDPOINTS[from])}
+            totalLabel={BRIDGE_ENDPOINTS[to]}
+            height={380}
+            onBarClick={onOpenAssumption}
+            clickableIds={new Set(bridge.contributions.map((step) => step.id))}
+            referenceLines={referenceLines}
+            stepDetails={stepDetails}
+            clickHint={
+              hasEdits
+                ? "Click to change it in your scenario"
+                : `Click to change it, starting from ${BRIDGE_ENDPOINTS[to]}`
+            }
+          />
+          {/* A phone has no hover and no room for bar labels. */}
+          <div className="divide-y divide-[var(--gray-200)] overflow-hidden rounded-2xl border border-[var(--gray-200)] min-[641px]:hidden">
+            {bridge.contributions.map((step) => (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => onOpenAssumption(step.id)}
+                className="flex w-full items-center gap-3 bg-white px-4 py-2.5 text-left hover:bg-[var(--teal-50)]"
+              >
+                <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--gray-700)]">
+                  {step.label}
+                </span>
+                <StepValue value={step.value} />
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <div className="space-y-3 border-t border-[var(--gray-200)] pt-5">
-        <div>
-          <h3 className="text-base font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
-            Build your own
-          </h3>
-          <p className="mt-0.5 text-sm text-[var(--gray-500)]">
-            Pick a starting point, then change what you disagree with.
-          </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold tracking-[-0.01em] text-[var(--gray-700)]">
+              Build your own
+            </h3>
+            <p className="mt-0.5 text-sm text-[var(--gray-500)]">
+              {hasEdits
+                ? "Picking a starting point replaces your scenario."
+                : "Pick a starting point, then change what you disagree with."}
+            </p>
+          </div>
+          {hasEdits && (
+            <button
+              type="button"
+              onClick={onResumeScenario}
+              className="text-sm font-medium text-[var(--teal-700)] hover:underline"
+            >
+              Back to your scenario
+            </button>
+          )}
         </div>
         <StartFrom campValues={campValues} onSelect={onStartFrom} />
       </div>
@@ -194,11 +244,13 @@ export function BuildStep({
   onSelectGroup,
   stepDetails,
   referenceLines,
+  focusOnArrival,
   readout,
   panel,
   footer,
 }) {
   const stepRef = useRef(null);
+  const headingRef = useRef(null);
   const rowRefs = useRef(new Map());
   const scrollPending = useRef(true);
 
@@ -206,6 +258,14 @@ export function BuildStep({
     scrollPending.current = Boolean(id);
     onSelectGroup(id);
   };
+
+  // Leaving step one from inside it unmounts the focused control.
+  useEffect(() => {
+    if (!focusOnArrival) return;
+    const row = rowRefs.current.get(activeGroup);
+    (row?.querySelector("button") ?? headingRef.current).focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   // Arriving from further down the page lands on the step, or on the assumption
   // that brought you here. An opened assumption has to land on screen beside
@@ -224,7 +284,11 @@ export function BuildStep({
   return (
     <div ref={stepRef} className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)] outline-none"
+        >
           Build your own estimate
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
@@ -271,6 +335,11 @@ export function BuildStep({
               hideTotal={bridge.contributions.length === 0}
             />
           )}
+          {hasEdits && bridge.finite !== false && bridge.contributions.length === 0 && (
+            <p className="text-sm text-[var(--gray-500)]">
+              That change does not move the estimate from this starting point.
+            </p>
+          )}
           {readout}
         </div>
 
@@ -309,15 +378,7 @@ export function BuildStep({
                     <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--gray-700)]">
                       {group.label}
                     </span>
-                    {step && (
-                      <span
-                        className={`shrink-0 text-sm font-semibold tabular-nums ${
-                          step.value >= 0 ? "text-[var(--teal-700)]" : "text-[var(--red-600)]"
-                        }`}
-                      >
-                        {formatBillions(step.value, { showPlus: true })}
-                      </span>
-                    )}
+                    {step && <StepValue value={step.value} />}
                     <svg
                       aria-hidden="true"
                       viewBox="0 0 16 16"
