@@ -3,22 +3,19 @@
 import { useDeferredValue, useEffect, useMemo, useReducer, useState } from "react";
 import AssumptionPanel from "@/app/components/AssumptionPanels";
 import BillionaireTable from "@/app/components/BillionaireTable";
-import Heatmap from "@/app/components/Heatmap";
-import LiveBridge, { BRIDGE_ENDPOINTS } from "@/app/components/LiveBridge";
+import { BRIDGE_ENDPOINTS, BuildStep, CompareStep, StepTabs } from "@/app/components/LiveBridge";
 import RelatedWork from "@/app/components/RelatedWork";
 import ResultStrip, { ResultNotes, ScenarioActions } from "@/app/components/ResultStrip";
 import {
   ASSUMPTION_GROUPS,
   ASSUMPTION_GROUP_BY_ID,
-  bridgeOriginFor,
-  resolveBridge,
+  closestSet,
   scenarioBridge,
 } from "@/lib/bridge";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS, snapshotSourceDate } from "@/lib/microModel";
-import { formatBillions } from "@/lib/format";
-import { heatmapCaption, heatmapEvaluator } from "@/lib/heatmap";
+import { formatBillions, longDate } from "@/lib/format";
 import { loadSnapshot, selectSnapshotRows, snapshotReducer } from "@/lib/snapshot";
 import {
   BASELINE_ASSUMPTIONS,
@@ -26,7 +23,6 @@ import {
   HOOVER_ASSUMPTIONS,
 } from "@/lib/presets";
 import {
-  DEPARTURE_CLAIM_IDS,
   normalizeResidencyExclusionIds,
   RESIDENCY_ADJUSTMENTS,
   RESIDENCY_ROSTER_DATE,
@@ -80,23 +76,7 @@ const SET_LABELS = {
   berkeley: "Berkeley",
   hoover: "Hoover",
 };
-// Settings the two heatmaps override, so a change to them alone must not
-// recompute the grids.
-const HEATMAP_OVERRIDDEN_KEYS = new Set([
-  "includeIncomeTaxEffects",
-  "departureResponseMode",
-  "unannouncedDepartureShare",
-  "migrationSemiElasticity",
-  "incomeTaxMethod",
-  "cohortIncomeTaxB",
-  "incomeYieldRate",
-]);
-
 const DEFAULT_PARAMS = { snapshotDate: LIVE_DATE, ...BASELINE_ASSUMPTIONS };
-// The grids cover every value the sliders and links allow, so the user's
-// scenario always has a cell.
-const HEATMAP_SHARES = Array.from({ length: 21 }, (_, i) => i * 0.05);
-const HEATMAP_COHORT_TAX_B = Array.from({ length: 15 }, (_, i) => 1 + i * 0.5);
 const FOUR_LARGEST = ["Larry Page", "Sergey Brin", "Mark Zuckerberg", "Jensen Huang"];
 
 function sameValue(a, b) {
@@ -151,12 +131,6 @@ function groupMatchesSet(group, assumptions, set) {
   return group.keys.every((key) => sameValue(assumptions[key], set[key]));
 }
 
-const HEATMAP_BASES = {
-  baseline: "the statutory score",
-  berkeley: "the Berkeley assumptions",
-  hoover: "the Hoover assumptions",
-};
-
 function matchingSetKey(assumptions) {
   return (
     Object.keys(ASSUMPTION_SETS).find((key) =>
@@ -187,7 +161,7 @@ function summarizeGroup(group, assumptions, context) {
           : `${(assumptions.unannouncedDepartureShare * 100).toFixed(0)}% of the reachable base left unannounced (${formatBillions(assumptions.unannouncedDepartureShare * context.remainingResidentWealthB)})`;
     case "incomeTax":
       return assumptions.includeIncomeTaxEffects
-        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
+        ? `Counted: ${(assumptions.incomeTaxDepartureShare ?? 0) > 0 ? `at least ${((assumptions.incomeTaxDepartureShare) * 100).toFixed(0)}% of the cohort's income tax lost, ` : ""}${(assumptions.incomeTaxAttributionRate * 100).toFixed(0)}% attributed, ${assumptions.horizonYears === Infinity ? "in perpetuity" : `${assumptions.horizonYears} years`}${assumptions.incomeGrowthRate !== 0 ? `, ${assumptions.incomeGrowthRate > 0 ? "+" : ""}${(assumptions.incomeGrowthRate * 100).toFixed(1)}% real growth` : ""}${assumptions.annualReturnRate > 0 ? `, ${(assumptions.annualReturnRate * 100).toFixed(0)}% return a year` : ""}`
         : "Wealth tax only";
     case "incomeAllocation":
       return assumptions.incomeTaxMethod === INCOME_TAX_METHODS.YIELD
@@ -297,7 +271,9 @@ export default function Home() {
   const [activeGroup, setActiveGroup] = useState(null);
   const [bridgeFrom, setBridgeFrom] = useState("berkeley");
   const [bridgeTo, setBridgeTo] = useState("hoover");
-  const [displacedBridgeTo, setDisplacedBridgeTo] = useState("hoover");
+  const [step, setStep] = useState("compare");
+  const [focusOnArrival, setFocusOnArrival] = useState(false);
+  const [scenarioBase, setScenarioBase] = useState("baseline");
   const [copyStatus, setCopyStatus] = useState("idle");
   const [loadedSnapshot, dispatchSnapshot] = useReducer(snapshotReducer, {
     date: LIVE_DATE,
@@ -320,15 +296,11 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from the URL after mount; window is unavailable during render
     setParams(parsed);
     setHasSyncedUrlState(true);
-    if (searchParams.toString().length > 0) {
-      // A link that equals a set bridges to that set, never to itself.
-      const linkedSet = matchingSetKey(assumptionsOf(parsed));
-      if (linkedSet && linkedSet !== "baseline") {
-        setBridgeFrom((from) => bridgeOriginFor(linkedSet, from));
-        setBridgeTo(linkedSet);
-      } else if (!linkedSet) {
-        setBridgeTo("your");
-      }
+    // A link that carries assumptions opens where assumptions change.
+    const linked = assumptionsOf(parsed);
+    if (matchingSetKey(linked) !== "baseline") {
+      setScenarioBase(closestSet(linked, ASSUMPTION_SETS));
+      setStep("build");
     }
   }, []);
 
@@ -408,16 +380,19 @@ export default function Home() {
       ),
     [score]
   );
-  const endpointAssumptions = (key) =>
-    key === "your" ? deferredAssumptions : ASSUMPTION_SETS[key];
   const activeSet = matchingSetKey(assumptions);
-  const { from: bridgeStart, to: bridgeEnd } = resolveBridge(
-    bridgeFrom,
-    bridgeTo,
-    activeSet,
-    displacedBridgeTo
-  );
-  const bridgeUsesYourScenario = bridgeStart === "your" || bridgeEnd === "your";
+  // A jump to a named set lands at once, so the chart never pairs the new
+  // origin with the old assumptions. Only the sliders wait.
+  const yourAssumptions = activeSet ? ASSUMPTION_SETS[activeSet] : deferredAssumptions;
+  const endpointAssumptions = (key) =>
+    key === "your" ? yourAssumptions : ASSUMPTION_SETS[key];
+  const hasEdits = activeSet !== scenarioBase;
+  // Step one compares published sets and never moves with the sliders; step
+  // two measures the sliders against the set they started from.
+  const building = step === "build";
+  const bridgeStart = building ? scenarioBase : bridgeFrom;
+  const bridgeEnd = building ? "your" : bridgeTo;
+  const bridgeEndLabel = BRIDGE_ENDPOINTS[building && activeSet ? activeSet : bridgeEnd];
   const bridge = useMemo(
     () =>
       scenarioBridge({
@@ -426,7 +401,7 @@ export default function Home() {
         score,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bridgeStart, bridgeEnd, bridgeUsesYourScenario ? deferredAssumptions : null, score]
+    [bridgeStart, bridgeEnd, building ? yourAssumptions : null, score]
   );
   // What each bar compares: its assumption at the two ends of the bridge.
   const stepDetails = useMemo(() => {
@@ -446,7 +421,7 @@ export default function Home() {
         {
           title: group.label,
           endpoints: endpoints.map(({ key, set, context }) => ({
-            label: BRIDGE_ENDPOINTS[key],
+            label: key === "your" ? bridgeEndLabel : BRIDGE_ENDPOINTS[key],
             setting: summarizeGroup(group, set, context),
             matches:
               key === "your"
@@ -459,7 +434,7 @@ export default function Home() {
       ])
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeStart, bridgeEnd, bridgeUsesYourScenario ? deferredAssumptions : null, score]);
+  }, [bridgeStart, bridgeEnd, bridgeEndLabel, building ? yourAssumptions : null, score]);
   const remainingResidentWealthB = residentWealthB(current);
   const summaryContext = { remainingResidentWealthB };
   const groupMatches = Object.fromEntries(
@@ -473,117 +448,11 @@ export default function Home() {
   const referenceLines = [];
   if (bridgeStart !== "baseline" && bridgeEnd !== "baseline") {
     referenceLines.push({
-      label: "Statutory, no behavior",
+      label: "Statutory score, no behavior",
       value: campValues.baseline,
       stroke: "var(--gray-400)",
     });
   }
-  // The user's line appears only where it says something the chart does not:
-  // a finite value that is not already an endpoint or the statutory line.
-  const yourValue = current.result.netFiscalImpact;
-  const alreadyShown = [
-    bridge.startValue,
-    bridge.endValue,
-    ...referenceLines.map((line) => line.value),
-  ];
-  if (
-    !activeSet &&
-    !bridgeUsesYourScenario &&
-    Number.isFinite(yourValue) &&
-    alreadyShown.every((value) => Math.abs(value - yourValue) >= 0.05)
-  ) {
-    referenceLines.push({ label: "Yours", value: yourValue, stroke: "var(--gray-700)" });
-  }
-  const heatmapBaseKey = JSON.stringify(
-    Object.fromEntries(
-      Object.entries(deferredAssumptions).filter(([key]) => !HEATMAP_OVERRIDDEN_KEYS.has(key))
-    )
-  );
-  const heatmapEvaluators = useMemo(
-    () =>
-      Object.fromEntries(
-        [INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].map((method) => [
-          method,
-          heatmapEvaluator(
-            (share, cohortIncomeTaxB, incomeTaxDepartureShare) => {
-              const { result } = score({
-                ...deferredAssumptions,
-                includeIncomeTaxEffects: true,
-                departureResponseMode: DEPARTURE_RESPONSE_MODES.SHARE,
-                unannouncedDepartureShare: share,
-                incomeTaxMethod: method,
-                cohortIncomeTaxB,
-                incomeTaxDepartureShare,
-              });
-              return { npv: result.netFiscalImpact, pvReceipts: result.pvWealthTaxReceipts };
-            },
-            HEATMAP_SHARES,
-            HEATMAP_COHORT_TAX_B,
-            deferredAssumptions.incomeTaxDepartureShare ?? 0
-          ),
-        ])
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [score, heatmapBaseKey]
-  );
-  // With no documented departure applied, the modeled response takes the same
-  // proportional slice of everyone's income tax under either division, so the
-  // two grids coincide to display precision (they differ by a few million
-  // through cohort members outside the reachable base); the division only
-  // changes what leaves with named movers.
-  const heatmapAgreement = useMemo(() => {
-    const agrees = (share, tax) =>
-      Math.abs(
-        heatmapEvaluators[INCOME_TAX_METHODS.WEALTH](share, tax) -
-          heatmapEvaluators[INCOME_TAX_METHODS.FILINGS](share, tax)
-      ) < 0.05;
-    return {
-      coincide: HEATMAP_SHARES.every((share) =>
-        HEATMAP_COHORT_TAX_B.every((tax) => agrees(share, tax))
-      ),
-      // At a 100% unannounced share everyone has left under either division.
-      agreesShortOfAll: HEATMAP_SHARES.filter((share) => share < 1).some((share) =>
-        HEATMAP_COHORT_TAX_B.some((tax) => agrees(share, tax))
-      ),
-    };
-  }, [heatmapEvaluators]);
-  const heatmapsCoincide = heatmapAgreement.coincide;
-  const heatmapExtent = useMemo(
-    () =>
-      Math.max(
-        1,
-        // Every cell: with a total departure share the surface is a minimum
-        // of two bilinear ones and can peak inside the grid.
-        ...[INCOME_TAX_METHODS.WEALTH, INCOME_TAX_METHODS.FILINGS].flatMap((method) =>
-          HEATMAP_SHARES.flatMap((share) =>
-            HEATMAP_COHORT_TAX_B
-              .map((tax) => Math.abs(heatmapEvaluators[method](share, tax)))
-              // A divergent present value is painted neutral, not scaled to.
-              .filter((value) => Number.isFinite(value))
-          )
-        )
-      ),
-    [heatmapEvaluators]
-  );
-  // The mark is drawn only where the scenario lies on the grid; the grids
-  // cover the sliders' and links' ranges, so it is off only for a hand-edited
-  // link.
-  const heatmapMarksFor = (method) => {
-    const x = current.modeledAdditionalDepartureShare;
-    const y = assumptions.cohortIncomeTaxB;
-    const onGrid =
-      x >= HEATMAP_SHARES[0] &&
-      x <= HEATMAP_SHARES.at(-1) &&
-      y >= HEATMAP_COHORT_TAX_B[0] &&
-      y <= HEATMAP_COHORT_TAX_B.at(-1);
-
-    return !activeSet &&
-      assumptions.includeIncomeTaxEffects &&
-      assumptions.incomeTaxMethod === method &&
-      onGrid
-      ? [{ label: "Your scenario", x, y }]
-      : [];
-  };
   const allocationComparison = useMemo(() => {
     const byMethod = (method) =>
       score({ ...deferredAssumptions, incomeTaxMethod: method }).micro.rows;
@@ -610,8 +479,7 @@ export default function Home() {
           ]
         : [];
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [score, heatmapBaseKey, deferredAssumptions.cohortIncomeTaxB]);
+  }, [score, deferredAssumptions]);
 
   const loadedSnapshotLabel = loadedDate === LIVE_DATE
     ? LIVE_SNAPSHOT_TIMESTAMP_LABEL ? `Forbes as of ${LIVE_SNAPSHOT_TIMESTAMP_LABEL}` : `Forbes as of ${LIVE_DATE}`
@@ -629,35 +497,43 @@ export default function Home() {
   const paperWebHref = `${embedBasePath}/papers/web/index.html`;
   const paperPdfHref = `${embedBasePath}/papers/california-wealth-tax-ssrn-draft.pdf`;
 
-  function markEdited() {
-    if (bridgeTo !== "your" && bridgeFrom !== "your") {
-      setDisplacedBridgeTo(bridgeTo);
-      setBridgeTo("your");
-    }
-  }
-
-  // The selects show the resolved endpoints, so a choice builds on those rather
-  // than on the raw state an undo left behind.
-  function chooseBridge(from, to) {
-    setBridgeFrom(from);
-    setBridgeTo(to);
-    if (to !== "your") setDisplacedBridgeTo(to);
-  }
-
   function update(key, value) {
     setParams((prev) => normalizeParams({ ...prev, [key]: value }));
-    markEdited();
   }
 
   function updateParams(updater) {
     setParams((prev) => normalizeParams(updater(prev)));
-    markEdited();
   }
 
-  function applySet(key) {
+  function startFrom(key) {
     setParams((prev) => normalizeParams({ ...prev, ...ASSUMPTION_SETS[key] }));
-    setBridgeFrom((from) => bridgeOriginFor(key, from));
-    setBridgeTo(key);
+    setScenarioBase(key);
+  }
+
+  function showStep(next) {
+    setFocusOnArrival(false);
+    setStep(next);
+  }
+
+  function enterBuild() {
+    setFocusOnArrival(true);
+    setStep("build");
+  }
+
+  function buildFrom(key) {
+    startFrom(key);
+    setActiveGroup(null);
+    enterBuild();
+  }
+
+  // A bar opens at the comparison's destination, so the first change moves one
+  // bar. Changes already under way stay.
+  function openFromComparison(groupId) {
+    if (!hasEdits) {
+      startFrom(bridgeTo);
+    }
+    setActiveGroup(groupId);
+    enterBuild();
   }
 
   function applyGroupFrom(groupId, setKey) {
@@ -669,7 +545,6 @@ export default function Home() {
         ...Object.fromEntries(group.keys.map((key) => [key, ASSUMPTION_SETS[setKey][key]])),
       })
     );
-    markEdited();
   }
 
   async function copyScenarioLink() {
@@ -706,8 +581,8 @@ export default function Home() {
         }}
         className="min-w-0 max-w-full rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
-        <option value="live">Latest Forbes data ({LIVE_DATE})</option>
-        <option value="paper">October 17, 2025 Forbes snapshot (Rauh asset data)</option>
+        <option value="live">Latest Forbes data ({longDate(LIVE_DATE)})</option>
+        <option value="paper">October 17, 2025 (Rauh asset data)</option>
         <option value="other">Another stored date</option>
       </select>
       {params.snapshotDate !== LIVE_DATE && params.snapshotDate !== PAPER_DATE && (
@@ -826,226 +701,194 @@ export default function Home() {
             </section>
           ) : (
             <>
-              <LiveBridge
-                bridge={bridge}
-                from={bridgeStart}
-                to={bridgeEnd}
-                hasScenario={!activeSet}
-                onChangeFrom={(from) => chooseBridge(from, bridgeEnd)}
-                onChangeTo={(to) => chooseBridge(bridgeStart, to)}
-                groups={ASSUMPTION_GROUPS}
-                activeGroup={activeGroup}
-                onSelectGroup={setActiveGroup}
-                stepDetails={stepDetails}
-                referenceLines={referenceLines}
-                snapshotDate={loadedDate}
-                readout={
-                  <ResultStrip
-                    headlineValue={current.result.headlineValue}
-                    headlineLabel={
-                      pitEffectsEnabled
-                        ? "Net fiscal impact, present value as of 2026"
-                        : "One-time wealth-tax revenue"
-                    }
-                    presentValue={current.result.netFiscalImpact}
+              <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
+                <StepTabs step={step} onChange={showStep} />
+                {building ? (
+                  <BuildStep
+                    bridge={bridge}
+                    from={scenarioBase}
+                    endLabel={bridgeEndLabel}
+                    hasEdits={hasEdits}
+                    focusOnArrival={focusOnArrival}
                     campValues={campValues}
-                    activeSet={activeSet}
-                    onApplySet={applySet}
-                  />
-                }
-                panel={
-                  activeGroupConfig && (
-                    <AssumptionPanel
-                        key={activeGroupConfig.id}
-                        group={activeGroupConfig}
-                        params={params}
-                        update={update}
-                        setParams={updateParams}
-                        campSummaries={Object.fromEntries(
-                          Object.entries(ASSUMPTION_SETS).map(([key, set]) => [
-                            key,
-                            summarizeGroup(activeGroupConfig, set, summaryContext),
-                          ])
-                        )}
-                        matches={groupMatches[activeGroupConfig.id]}
-                        onApplyFrom={(setKey) => applyGroupFrom(activeGroupConfig.id, setKey)}
-                        context={{
-                          residencyAdjustments: RESIDENCY_ADJUSTMENTS,
-                          remainingResidentWealthB,
-                          modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
-                          snapshotDate: loadedDate,
-                          allocationComparison,
-                          incomeTaxDepartureFloorShare:
-                            current.micro.cohortIncomeTaxTotalB > 0
-                              ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
-                                current.micro.cohortIncomeTaxTotalB
-                              : 0,
-                          modeledLaterDepartureShare: current.modeledLaterDepartureShare,
-                          nonCitizenCount: current.micro.nonCitizenCount,
-                          nonCitizenWealthB: current.micro.nonCitizenWealthB,
-                        }}
+                    onStartFrom={startFrom}
+                    groups={ASSUMPTION_GROUPS}
+                    activeGroup={activeGroup}
+                    onSelectGroup={setActiveGroup}
+                    stepDetails={stepDetails}
+                    referenceLines={referenceLines}
+                    readout={
+                      <ResultStrip
+                        headlineValue={current.result.headlineValue}
+                        headlineLabel={
+                          pitEffectsEnabled
+                            ? "Net fiscal impact, present value as of 2026"
+                            : "One-time wealth-tax revenue"
+                        }
+                        presentValue={current.result.netFiscalImpact}
+                        activeSet={activeSet}
                       />
-                  )
-                }
-                footer={
-                  <ScenarioActions
-                    dataControl={dataControl}
-                    copyStatus={copyStatus}
-                    onCopyLink={copyScenarioLink}
+                    }
+                    panel={
+                      activeGroupConfig && (
+                        <AssumptionPanel
+                            key={activeGroupConfig.id}
+                            group={activeGroupConfig}
+                            params={params}
+                            update={update}
+                            setParams={updateParams}
+                            campSummaries={Object.fromEntries(
+                              Object.entries(ASSUMPTION_SETS).map(([key, set]) => [
+                                key,
+                                summarizeGroup(activeGroupConfig, set, summaryContext),
+                              ])
+                            )}
+                            matches={groupMatches[activeGroupConfig.id]}
+                            onApplyFrom={(setKey) => applyGroupFrom(activeGroupConfig.id, setKey)}
+                            context={{
+                              residencyAdjustments: RESIDENCY_ADJUSTMENTS,
+                              remainingResidentWealthB,
+                              modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
+                              snapshotDate: loadedDate,
+                              allocationComparison,
+                              incomeTaxDepartureFloorShare:
+                                current.micro.cohortIncomeTaxTotalB > 0
+                                  ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
+                                    current.micro.cohortIncomeTaxTotalB
+                                  : 0,
+                              modeledLaterDepartureShare: current.modeledLaterDepartureShare,
+                              nonCitizenCount: current.micro.nonCitizenCount,
+                              nonCitizenWealthB: current.micro.nonCitizenWealthB,
+                            }}
+                        />
+                      )
+                    }
+                    footer={
+                      <ScenarioActions
+                        dataControl={dataControl}
+                        copyStatus={copyStatus}
+                        onCopyLink={copyScenarioLink}
+                      />
+                    }
                   />
-                }
-              />
+                ) : (
+                  <CompareStep
+                    bridge={bridge}
+                    from={bridgeFrom}
+                    to={bridgeTo}
+                    onChangeFrom={setBridgeFrom}
+                    onChangeTo={setBridgeTo}
+                    hasEdits={hasEdits}
+                    campValues={campValues}
+                    onStartFrom={buildFrom}
+                    onOpenAssumption={openFromComparison}
+                    onResumeScenario={enterBuild}
+                    stepDetails={stepDetails}
+                    referenceLines={referenceLines}
+                    snapshotDate={loadedDate}
+                    dataControl={dataControl}
+                  />
+                )}
+              </section>
 
               <ResultNotes
                 headlineNote={
-                  pitEffectsEnabled
-                    ? `Wealth-tax receipts less attributed future California income-tax losses, in 2026 dollars; ${(params.inflationRate * 100).toFixed(1)}% annual inflation assumed. Receipts go to a reserve fund that is legally separate from the General Fund, where income tax is collected. ${snapshotLabel}.${loadFailureNote}`
-                    : `Nominal receipts, first due with 2026 returns in 2027. Excludes future California income-tax losses. ${snapshotLabel}.${loadFailureNote}`
+                  building
+                    ? pitEffectsEnabled
+                        ? `Wealth-tax receipts less attributed future California income-tax losses, in 2026 dollars; ${(params.inflationRate * 100).toFixed(1)}% annual inflation assumed. Receipts go to a reserve fund that is legally separate from the General Fund, where income tax is collected. ${snapshotLabel}.${loadFailureNote}`
+                        : `Nominal receipts, first due with 2026 returns in 2027. Excludes future California income-tax losses. ${snapshotLabel}.${loadFailureNote}`
+                    : loadFailureNote.trim()
                 }
               />
 
 
-              <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
-                <div className="max-w-3xl">
-                  <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
-                    Who pays the income tax matters when the largest fortunes are the movers
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-                    Net present value as of 2026 with income-tax effects
-                    counted, across how much of the reachable base left before
-                    January 1 without public notice and how much California
-                    income tax the cohort pays in total. Same axes, same colors,
-                    two ways of dividing that total among people. Other
-                    assumptions follow {activeSet ? HEATMAP_BASES[activeSet] : "your scenario"}.
-                    {heatmapCaption({
-                      coincide: heatmapsCoincide,
-                      // The grids follow the deferred assumptions; so does
-                      // what the caption says about them.
-                      departureClaimApplied: deferredAssumptions.residencyExclusionIds.some((id) =>
-                        DEPARTURE_CLAIM_IDS.includes(id)
-                      ),
-                      targetShare: deferredAssumptions.incomeTaxDepartureShare,
-                      agreesWhereTargetBinds: heatmapAgreement.agreesShortOfAll,
-                    })}
-                  </p>
-                </div>
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {[
-                    {
-                      method: INCOME_TAX_METHODS.WEALTH,
-                      title: "Divided by wealth (Rauh et al.)",
-                    },
-                    {
-                      method: INCOME_TAX_METHODS.FILINGS,
-                      title: "Filings for the four largest fortunes, the rest by wealth",
-                    },
-                  ].map((panel) => (
-                    <div key={panel.method} className="space-y-2">
-                      <p className="text-sm font-semibold text-[var(--gray-700)]">{panel.title}</p>
-                      <Heatmap
-                        evaluate={heatmapEvaluators[panel.method]}
-                        xs={HEATMAP_SHARES}
-                        ys={HEATMAP_COHORT_TAX_B}
-                        marks={heatmapMarksFor(panel.method)}
-                        extent={heatmapExtent}
-                        cellW={26}
-                        cellH={20}
-                        xLabel="Unannounced departures before January 1 (share of the reachable base)"
-                        yLabel="Cohort income tax, $B a year"
-                        formatX={(value) => `${(value * 100).toFixed(0)}%`}
-                        formatY={(value) => `$${value.toFixed(1)}B`}
-                        ariaLabel={`Net present value by unannounced-departure share and cohort income tax: ${panel.title}`}
-                      />
+              {building && (
+                <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="max-w-3xl">
+                      <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
+                        Who pays
+                      </h2>
+                      <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
+                        {loadedDate === PAPER_DATE
+                          ? "Everyone in the October 17, 2025 California Forbes snapshot, valued that day, with Rauh et al.'s real-estate data and the stated exclusions."
+                          : loadedDate > RESIDENCY_ROSTER_DATE
+                            ? `Everyone Forbes listed in California on January 1, 2026, valued at their Forbes worth on ${loadedDate} wherever Forbes lists them, plus everyone Forbes has added to its California list since.`
+                            : `Everyone Forbes listed in California on ${loadedDate}, valued that day.`}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
+                        Known separately listed spouses (Jay-Z and Beyoncé; Lynda and Stewart Resnick)
+                        share one wealth-tax threshold and rate, including both spouses&apos; observed
+                        assets if either remains a resident. The table allocates joint liability to
+                        their asset shares; income tax stays person-based. Other unobserved spouse
+                        and minor-child assets are not available in Forbes data.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="max-w-3xl">
-                    <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--gray-700)]">
-                      Who pays
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-                      {loadedDate === PAPER_DATE
-                        ? "Everyone in the October 17, 2025 California Forbes snapshot, valued that day, with Rauh et al.'s real-estate data and the stated exclusions."
-                        : loadedDate > RESIDENCY_ROSTER_DATE
-                          ? `Everyone Forbes listed in California on January 1, 2026, valued at their Forbes worth on ${loadedDate} wherever Forbes lists them, plus everyone Forbes has added to its California list since.`
-                          : `Everyone Forbes listed in California on ${loadedDate}, valued that day.`}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--gray-500)]">
-                      Known separately listed spouses (Jay-Z and Beyoncé; Lynda and Stewart Resnick)
-                      share one wealth-tax threshold and rate, including both spouses&apos; observed
-                      assets if either remains a resident. The table allocates joint liability to
-                      their asset shares; income tax stays person-based. Other unobserved spouse
-                      and minor-child assets are not available in Forbes data.
-                    </p>
+                    <details className="w-full max-w-md text-sm text-[var(--gray-600)] lg:w-auto">
+                      <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
+                        Derivation
+                      </summary>
+                      <div className="mt-2 divide-y divide-[var(--gray-100)]">
+                        <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB + current.micro.legallyExcludedGrossWealthTaxB)} />
+                        {current.micro.legallyExcludedGrossWealthTaxB > 0 && (
+                          <DerivationRow label="Less people left out on legal assumptions" value={`−${formatBillions(current.micro.legallyExcludedGrossWealthTaxB)}`} />
+                        )}
+                        {current.micro.unannouncedWealthTaxLossB > 0 && (
+                          <DerivationRow label="Less modeled further departures" value={`−${formatBillions(current.micro.unannouncedWealthTaxLossB)}`} />
+                        )}
+                        <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxAfterHaircutB)} />
+                        {current.result.litigationSurvivalRate < 1 && (
+                          <DerivationRow
+                            label={`Expected, at a ${(current.result.litigationSurvivalRate * 100).toFixed(0)}% chance it survives challenge`}
+                            value={formatBillions(current.result.wealthTaxCollected)}
+                          />
+                        )}
+                        {current.result.wealthTaxDeferralChargeB > 0 && (
+                          <DerivationRow label="Installment deferral charges" value={formatBillions(current.result.wealthTaxDeferralChargeB)} />
+                        )}
+                        <DerivationRow label="Nominal receipts" value={formatBillions(current.result.wealthTaxNominalReceiptsB)} />
+                        <DerivationRow label="Present value of receipts (2026)" value={formatBillions(current.result.pvWealthTaxReceipts)} />
+                        {pitEffectsEnabled && (
+                          <>
+                            <DerivationRow label="Movers' income tax lost, attributed" value={`$${current.result.annualIncomeTaxLost.toFixed(2)}B a year`} />
+                            {current.micro.laterDepartureIncomeTaxB > 0 && (
+                              <DerivationRow
+                                label="of which people leaving after January 1 (income tax only)"
+                                value={`$${(current.micro.laterDepartureIncomeTaxB * current.result.incomeTaxAttributionRate).toFixed(2)}B a year`}
+                              />
+                            )}
+                            <DerivationRow label="Present value of lost income tax" value={formatBillions(current.result.pvLostIncomeTax)} />
+                          </>
+                        )}
+                        <DerivationRow label="Net present value" value={formatBillions(current.result.netFiscalImpact, { showPlus: true })} />
+                      </div>
+                    </details>
                   </div>
-                  <details className="w-full max-w-md text-sm text-[var(--gray-600)] lg:w-auto">
-                    <summary className="cursor-pointer text-xs font-semibold text-[var(--gray-500)] hover:text-[var(--teal-700)]">
-                      Derivation
-                    </summary>
-                    <div className="mt-2 divide-y divide-[var(--gray-100)]">
-                      <DerivationRow label="Statutory wealth tax, everyone in the base" value={formatBillions(current.micro.grossWealthTaxBeforeAdditionalDeparturesB + current.micro.legallyExcludedGrossWealthTaxB)} />
-                      {current.micro.legallyExcludedGrossWealthTaxB > 0 && (
-                        <DerivationRow label="Less people left out on legal assumptions" value={`−${formatBillions(current.micro.legallyExcludedGrossWealthTaxB)}`} />
-                      )}
-                      {current.micro.unannouncedWealthTaxLossB > 0 && (
-                        <DerivationRow label="Less modeled further departures" value={`−${formatBillions(current.micro.unannouncedWealthTaxLossB)}`} />
-                      )}
-                      <DerivationRow label="After haircut" value={formatBillions(current.result.wealthTaxAfterHaircutB)} />
-                      {current.result.litigationSurvivalRate < 1 && (
-                        <DerivationRow
-                          label={`Expected, at a ${(current.result.litigationSurvivalRate * 100).toFixed(0)}% chance it survives challenge`}
-                          value={formatBillions(current.result.wealthTaxCollected)}
-                        />
-                      )}
-                      {current.result.wealthTaxDeferralChargeB > 0 && (
-                        <DerivationRow label="Installment deferral charges" value={formatBillions(current.result.wealthTaxDeferralChargeB)} />
-                      )}
-                      <DerivationRow label="Nominal receipts" value={formatBillions(current.result.wealthTaxNominalReceiptsB)} />
-                      <DerivationRow label="Present value of receipts (2026)" value={formatBillions(current.result.pvWealthTaxReceipts)} />
-                      {pitEffectsEnabled && (
-                        <>
-                          <DerivationRow label="Movers' income tax lost, attributed" value={`$${current.result.annualIncomeTaxLost.toFixed(2)}B a year`} />
-                          {current.micro.laterDepartureIncomeTaxB > 0 && (
-                            <DerivationRow
-                              label="of which people leaving after January 1 (income tax only)"
-                              value={`$${(current.micro.laterDepartureIncomeTaxB * current.result.incomeTaxAttributionRate).toFixed(2)}B a year`}
-                            />
-                          )}
-                          <DerivationRow label="Present value of lost income tax" value={formatBillions(current.result.pvLostIncomeTax)} />
-                        </>
-                      )}
-                      <DerivationRow label="Net present value" value={formatBillions(current.result.netFiscalImpact, { showPlus: true })} />
-                    </div>
-                  </details>
-                </div>
-                <BaseNotes
-                  notes={current.micro.baseNotes}
-                  peopleInBase={current.micro.wealthTaxBaseRows.length}
-                  includeNonCitizens={params.includeNonCitizens}
-                  nonCitizenCount={current.micro.excludedNonCitizenCount}
-                  nonCitizenWealthB={current.micro.excludedNonCitizenWealthB}
-                />
-                <p className="text-xs leading-5 text-[var(--gray-500)]">
-                  The income-tax column is what each person pays a year. The
-                  derivation&apos;s lost income tax is the rows of people
-                  removed or marked as leaving, plus the modeled share of
-                  everyone else&apos;s, times the attribution rate.
-                </p>
-                <BillionaireTable
-                  rows={current.micro.rows}
-                  avoidanceRate={params.avoidanceRate}
-                  excludeRealEstate={params.excludeRealEstate}
-                  modeledDepartures={{
-                    share: current.modeledAdditionalDepartureShare,
-                    wealthTaxB: current.micro.unannouncedWealthTaxLossB,
-                    incomeTaxB: current.micro.unannouncedIncomeTaxB,
-                  }}
-                />
-              </section>
+                  <BaseNotes
+                    notes={current.micro.baseNotes}
+                    peopleInBase={current.micro.wealthTaxBaseRows.length}
+                    includeNonCitizens={params.includeNonCitizens}
+                    nonCitizenCount={current.micro.excludedNonCitizenCount}
+                    nonCitizenWealthB={current.micro.excludedNonCitizenWealthB}
+                  />
+                  <p className="text-xs leading-5 text-[var(--gray-500)]">
+                    The income-tax column is what each person pays a year. The
+                    derivation&apos;s lost income tax is the rows of people
+                    removed or marked as leaving, plus the modeled share of
+                    everyone else&apos;s, times the attribution rate.
+                  </p>
+                  <BillionaireTable
+                    rows={current.micro.rows}
+                    avoidanceRate={params.avoidanceRate}
+                    excludeRealEstate={params.excludeRealEstate}
+                    modeledDepartures={{
+                      share: current.modeledAdditionalDepartureShare,
+                      wealthTaxB: current.micro.unannouncedWealthTaxLossB,
+                      incomeTaxB: current.micro.unannouncedIncomeTaxB,
+                    }}
+                  />
+                </section>
+              )}
             </>
           )}
 

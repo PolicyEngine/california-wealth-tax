@@ -1,7 +1,7 @@
 "use client";
 
 import Slider from "@/app/components/Slider";
-import { formatBillions } from "@/lib/format";
+import { formatBillions, longDate } from "@/lib/format";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS } from "@/lib/microModel";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
@@ -60,7 +60,7 @@ function CampRow({ campSummaries, matches, onApplyFrom }) {
             }`}
           >
             <span className="font-medium">{label}</span>
-            <span className="text-[var(--gray-400)]">: {campSummaries[key]}</span>
+            <span className="text-[var(--gray-400)]"> · {campSummaries[key]}</span>
           </button>
         );
       })}
@@ -137,7 +137,7 @@ export default function AssumptionPanel({
               key: "post",
               title: "Reported or planned departures after January 1, 2026",
               category: "post_snapshot_departure",
-              note: "Rauh et al.'s March 2026 Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way (the legal panel can leave them out of collection); applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
+              note: "Rauh et al.'s March 2026 Table 7, which marks three of the four unconfirmed. They owe the wealth tax either way (Legal challenges to collection can leave them out); applying the claim counts their future California income tax as lost and keeps them out of the unannounced-departure response.",
             },
           ].map((section) => (
             <div key={section.key} className="space-y-2">
@@ -521,7 +521,7 @@ export default function AssumptionPanel({
             create future income-tax losses. Galle et al. apply 10%; Rauh et
             al. apply none and reduce the base through residency and migration
             instead. Boll, Saez and Zucman&apos;s 23% scenario is mostly four
-            departures, which belong in the residency panel. The measure&apos;s
+            departures, which belong under Residency: documented departures. The measure&apos;s
             valuation rules (no minority discounts, a funding-round floor, and a
             presumed value of book value plus 7.5 times three-year average
             profits for private businesses, rebuttable on clear and convincing
@@ -558,7 +558,7 @@ export default function AssumptionPanel({
           </p>
           <Field
             title="People who left after January 1, 2026"
-            note="The measure fixes residency on January 1, 2026, so people who left later still owe the tax (RTC §50301(a) and §50306(a) as proposed). Jaros and Rauh leave out Mark Zuckerberg, who announced his departure in February 2026: collecting from him depends on that date surviving challenge. This applies to the people marked as leaving after January 1 in the residency panel; their future income tax counts as lost either way."
+            note="The measure fixes residency on January 1, 2026, so people who left later still owe the tax (RTC §50301(a) and §50306(a) as proposed). Jaros and Rauh leave out Mark Zuckerberg, who announced his departure in February 2026: collecting from him depends on that date surviving challenge. This applies to the people marked as leaving after January 1 under Residency: documented departures; their future income tax counts as lost either way."
           >
             <div className="flex flex-wrap gap-2">
               <ToggleChip
@@ -615,7 +615,7 @@ export default function AssumptionPanel({
             </div>
           </Field>
           <Slider
-            label={`Wealth growth from the ${snapshotDate} snapshot to December 31, 2026 (annual, nominal)`}
+            label={`Wealth growth from the ${longDate(snapshotDate)} snapshot to December 31, 2026 (annual, nominal)`}
             value={params.wealthGrowthRate}
             onChange={(value) => update("wealthGrowthRate", value)}
             min={-0.3}

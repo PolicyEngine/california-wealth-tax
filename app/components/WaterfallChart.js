@@ -9,8 +9,12 @@ import {
   YAxis,
   Tooltip,
   Cell,
+  DefaultZIndexes,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
+  usePlotArea,
+  ZIndexLayer,
 } from "recharts";
 import { formatBillions } from "@/lib/format";
 import { buildWaterfallData } from "@/lib/waterfall";
@@ -20,7 +24,7 @@ const basePath =
     ? process.env.NEXT_PUBLIC_BASE_PATH
     : "/us/california-wealth-tax";
 
-function WaterfallTooltip({ active, payload }) {
+function WaterfallTooltip({ active, payload, clickHint }) {
   if (!active || !payload?.length) {
     return null;
   }
@@ -67,7 +71,7 @@ function WaterfallTooltip({ active, payload }) {
           </dl>
         )}
         {entry.clickable && (
-          <p className="pt-1 text-xs text-[var(--teal-700)]">Click to adjust</p>
+          <p className="pt-1 text-xs text-[var(--teal-700)]">{clickHint}</p>
         )}
       </div>
     </div>
@@ -90,6 +94,39 @@ function useIsNarrow(maxWidth = 640) {
   return isNarrow;
 }
 
+// Invisible targets over the bars and their labels, one category band wide, so
+// a click lands anywhere in a column: the smallest steps draw bars a pixel tall.
+function ColumnTargets({ data, onOpen }) {
+  const plotArea = usePlotArea();
+
+  if (!plotArea) {
+    return null;
+  }
+
+  const bandWidth = plotArea.width / data.length;
+
+  return (
+    <ZIndexLayer zIndex={DefaultZIndexes.label + 1}>
+      {data.map(
+        (entry, index) =>
+          entry.clickable && (
+            <rect
+              key={entry.id}
+              data-column={entry.id}
+              x={plotArea.x + index * bandWidth}
+              y={plotArea.y}
+              width={bandWidth}
+              height={plotArea.height}
+              fill="transparent"
+              className="cursor-pointer"
+              onClick={() => onOpen(entry.id)}
+            />
+          )
+      )}
+    </ZIndexLayer>
+  );
+}
+
 export default function WaterfallChart({
   waterfall,
   totalLabel,
@@ -99,21 +136,28 @@ export default function WaterfallChart({
   clickableIds = null,
   referenceLines = [],
   stepDetails = null,
+  clickHint = "Click to adjust",
+  hideTotal = false,
 }) {
   const isNarrow = useIsNarrow();
-  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {}).map(
-    (entry, index) => ({
+  // On a phone a tap shows the tooltip, and the list on the page opens the step.
+  const canClick = Boolean(onBarClick) && !isNarrow;
+  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {})
+    .map((entry, index) => ({
       ...entry,
       isStart: index === 0,
-      clickable: Boolean(onBarClick) && (clickableIds?.has(entry.id) ?? false),
+      clickable: canClick && (clickableIds?.has(entry.id) ?? false),
       detail: stepDetails?.[entry.id],
-    })
-  );
+    }))
+    .filter((entry) => !(hideTotal && entry.isTotal));
 
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} margin={{ top: 18, right: 16, left: 10, bottom: 5 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 18, right: 16, left: isNarrow ? 10 : 44, bottom: 5 }}
+        >
           <XAxis
             dataKey="label"
             tick={isNarrow ? false : { fontSize: 11 }}
@@ -126,7 +170,7 @@ export default function WaterfallChart({
             tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
             tick={{ fontSize: 11 }}
           />
-          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
+          <Tooltip content={<WaterfallTooltip clickHint={clickHint} />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
           <ReferenceLine y={0} stroke="var(--gray-400)" />
           {referenceLines.map((line) => (
             <ReferenceLine
@@ -144,22 +188,30 @@ export default function WaterfallChart({
             />
           ))}
           {/* Invisible base. Neither bar animates: the chart follows a dragged slider. */}
-          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
+          <Bar
+            dataKey="base"
+            stackId="waterfall"
+            fill="transparent"
+            isAnimationActive={false}
+            maxBarSize={96}
+          />
           {/* Visible bar */}
           <Bar
             dataKey="height"
             stackId="waterfall"
             isAnimationActive={false}
-            onClick={(item) => {
-              // recharts 3 passes the rectangle item; the data row is its payload.
-              const entry = item?.payload ?? item;
-
-              if (onBarClick && entry?.clickable) {
-                onBarClick(entry.id);
-              }
-            }}
-            className={onBarClick ? "cursor-pointer" : undefined}
+            maxBarSize={96}
           >
+            {!isNarrow && (
+              <LabelList
+                dataKey="value"
+                position="top"
+                formatter={(value) => formatBillions(value, { showPlus: true })}
+                fontSize={11}
+                fontWeight={600}
+                fill="var(--gray-600)"
+              />
+            )}
             {data.map((entry) => (
               <Cell
                 key={entry.id}
@@ -178,6 +230,7 @@ export default function WaterfallChart({
               />
             ))}
           </Bar>
+          <ColumnTargets data={data} onOpen={onBarClick} />
         </BarChart>
       </ResponsiveContainer>
       <Image
