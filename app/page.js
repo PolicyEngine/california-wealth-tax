@@ -4,10 +4,16 @@ import { useDeferredValue, useEffect, useMemo, useReducer, useState } from "reac
 import AssumptionPanel from "@/app/components/AssumptionPanels";
 import BillionaireTable from "@/app/components/BillionaireTable";
 import Heatmap from "@/app/components/Heatmap";
-import LiveBridge from "@/app/components/LiveBridge";
+import LiveBridge, { BRIDGE_ENDPOINTS } from "@/app/components/LiveBridge";
 import RelatedWork from "@/app/components/RelatedWork";
-import ResultStrip from "@/app/components/ResultStrip";
-import { ASSUMPTION_GROUPS, ASSUMPTION_GROUP_BY_ID, scenarioBridge } from "@/lib/bridge";
+import ResultStrip, { ResultNotes, ScenarioActions } from "@/app/components/ResultStrip";
+import {
+  ASSUMPTION_GROUPS,
+  ASSUMPTION_GROUP_BY_ID,
+  bridgeOriginFor,
+  resolveBridge,
+  scenarioBridge,
+} from "@/lib/bridge";
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS, snapshotSourceDate } from "@/lib/microModel";
@@ -145,16 +151,11 @@ function groupMatchesSet(group, assumptions, set) {
   return group.keys.every((key) => sameValue(assumptions[key], set[key]));
 }
 
-// When `key` becomes the bridge's destination, the origin moves if it would
-// otherwise carry the same assumptions: the set itself, or "your scenario",
-// which equals the set once it is applied.
-function bridgeOriginFor(key, from) {
-  return from === key || from === "your"
-    ? key === "berkeley"
-      ? "baseline"
-      : "berkeley"
-    : from;
-}
+const HEATMAP_BASES = {
+  baseline: "the statutory score",
+  berkeley: "the Berkeley assumptions",
+  hoover: "the Hoover assumptions",
+};
 
 function matchingSetKey(assumptions) {
   return (
@@ -164,6 +165,10 @@ function matchingSetKey(assumptions) {
       )
     ) ?? null
   );
+}
+
+function residentWealthB(scored) {
+  return scored.baseMicro.stayers.reduce((sum, row) => sum + row.netWorthB, 0);
 }
 
 function summarizeGroup(group, assumptions, context) {
@@ -292,6 +297,7 @@ export default function Home() {
   const [activeGroup, setActiveGroup] = useState(null);
   const [bridgeFrom, setBridgeFrom] = useState("berkeley");
   const [bridgeTo, setBridgeTo] = useState("hoover");
+  const [displacedBridgeTo, setDisplacedBridgeTo] = useState("hoover");
   const [copyStatus, setCopyStatus] = useState("idle");
   const [loadedSnapshot, dispatchSnapshot] = useReducer(snapshotReducer, {
     date: LIVE_DATE,
@@ -404,29 +410,58 @@ export default function Home() {
   );
   const endpointAssumptions = (key) =>
     key === "your" ? deferredAssumptions : ASSUMPTION_SETS[key];
-  const bridgeUsesYourScenario = bridgeFrom === "your" || bridgeTo === "your";
+  const activeSet = matchingSetKey(assumptions);
+  const { from: bridgeStart, to: bridgeEnd } = resolveBridge(
+    bridgeFrom,
+    bridgeTo,
+    activeSet,
+    displacedBridgeTo
+  );
+  const bridgeUsesYourScenario = bridgeStart === "your" || bridgeEnd === "your";
   const bridge = useMemo(
     () =>
       scenarioBridge({
-        start: endpointAssumptions(bridgeFrom),
-        end: endpointAssumptions(bridgeTo),
+        start: endpointAssumptions(bridgeStart),
+        end: endpointAssumptions(bridgeEnd),
         score,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bridgeFrom, bridgeTo, bridgeUsesYourScenario ? deferredAssumptions : null, score]
+    [bridgeStart, bridgeEnd, bridgeUsesYourScenario ? deferredAssumptions : null, score]
   );
-  const activeSet = matchingSetKey(assumptions);
-  const remainingResidentWealthB = current.baseMicro.stayers.reduce(
-    (sum, row) => sum + row.netWorthB,
-    0
-  );
+  // What each bar compares: its assumption at the two ends of the bridge.
+  const stepDetails = useMemo(() => {
+    const endpoints = [bridgeStart, bridgeEnd].map((key) => {
+      const set = endpointAssumptions(key);
+
+      return {
+        key,
+        set,
+        context: { remainingResidentWealthB: residentWealthB(score(set)) },
+      };
+    });
+
+    return Object.fromEntries(
+      ASSUMPTION_GROUPS.map((group) => [
+        group.id,
+        {
+          title: group.label,
+          endpoints: endpoints.map(({ key, set, context }) => ({
+            label: BRIDGE_ENDPOINTS[key],
+            setting: summarizeGroup(group, set, context),
+            matches:
+              key === "your"
+                ? Object.keys(ASSUMPTION_SETS)
+                    .filter((setKey) => groupMatchesSet(group, set, ASSUMPTION_SETS[setKey]))
+                    .map((setKey) => SET_LABELS[setKey])
+                : [],
+          })),
+        },
+      ])
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bridgeStart, bridgeEnd, bridgeUsesYourScenario ? deferredAssumptions : null, score]);
+  const remainingResidentWealthB = residentWealthB(current);
   const summaryContext = { remainingResidentWealthB };
-  const groupSummaries = Object.fromEntries(
-    ASSUMPTION_GROUPS.map((group) => [
-      group.id,
-      summarizeGroup(group, assumptions, summaryContext),
-    ])
-  );
   const groupMatches = Object.fromEntries(
     ASSUMPTION_GROUPS.map((group) => [
       group.id,
@@ -436,7 +471,7 @@ export default function Home() {
     ])
   );
   const referenceLines = [];
-  if (bridgeFrom !== "baseline" && bridgeTo !== "baseline") {
+  if (bridgeStart !== "baseline" && bridgeEnd !== "baseline") {
     referenceLines.push({
       label: "Statutory, no behavior",
       value: campValues.baseline,
@@ -452,6 +487,7 @@ export default function Home() {
     ...referenceLines.map((line) => line.value),
   ];
   if (
+    !activeSet &&
     !bridgeUsesYourScenario &&
     Number.isFinite(yourValue) &&
     alreadyShown.every((value) => Math.abs(value - yourValue) >= 0.05)
@@ -541,7 +577,8 @@ export default function Home() {
       y >= HEATMAP_COHORT_TAX_B[0] &&
       y <= HEATMAP_COHORT_TAX_B.at(-1);
 
-    return assumptions.includeIncomeTaxEffects &&
+    return !activeSet &&
+      assumptions.includeIncomeTaxEffects &&
       assumptions.incomeTaxMethod === method &&
       onGrid
       ? [{ label: "Your scenario", x, y }]
@@ -594,6 +631,7 @@ export default function Home() {
 
   function markEdited() {
     if (bridgeTo !== "your" && bridgeFrom !== "your") {
+      setDisplacedBridgeTo(bridgeTo);
       setBridgeTo("your");
     }
   }
@@ -782,78 +820,82 @@ export default function Home() {
             <>
               <LiveBridge
                 bridge={bridge}
-                from={bridgeFrom}
-                to={bridgeTo}
+                from={bridgeStart}
+                to={bridgeEnd}
+                hasScenario={!activeSet}
                 onChangeFrom={setBridgeFrom}
                 onChangeTo={setBridgeTo}
                 groups={ASSUMPTION_GROUPS}
                 activeGroup={activeGroup}
                 onSelectGroup={setActiveGroup}
-                groupSummaries={groupSummaries}
-                groupMatches={Object.fromEntries(
-                  Object.entries(groupMatches).map(([id, keys]) => [
-                    id,
-                    keys.map((key) => SET_LABELS[key]),
-                  ])
-                )}
+                stepDetails={stepDetails}
                 referenceLines={referenceLines}
                 snapshotDate={loadedDate}
+                readout={
+                  <ResultStrip
+                    headlineValue={current.result.headlineValue}
+                    headlineLabel={
+                      pitEffectsEnabled
+                        ? "Net fiscal impact, present value as of 2026"
+                        : "One-time wealth-tax revenue"
+                    }
+                    presentValue={current.result.netFiscalImpact}
+                    campValues={campValues}
+                    activeSet={activeSet}
+                    onApplySet={applySet}
+                  />
+                }
+                panel={
+                  activeGroupConfig && (
+                    <AssumptionPanel
+                        key={activeGroupConfig.id}
+                        group={activeGroupConfig}
+                        params={params}
+                        update={update}
+                        setParams={updateParams}
+                        campSummaries={Object.fromEntries(
+                          Object.entries(ASSUMPTION_SETS).map(([key, set]) => [
+                            key,
+                            summarizeGroup(activeGroupConfig, set, summaryContext),
+                          ])
+                        )}
+                        matches={groupMatches[activeGroupConfig.id]}
+                        onApplyFrom={(setKey) => applyGroupFrom(activeGroupConfig.id, setKey)}
+                        context={{
+                          residencyAdjustments: RESIDENCY_ADJUSTMENTS,
+                          remainingResidentWealthB,
+                          modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
+                          snapshotDate: loadedDate,
+                          allocationComparison,
+                          incomeTaxDepartureFloorShare:
+                            current.micro.cohortIncomeTaxTotalB > 0
+                              ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
+                                current.micro.cohortIncomeTaxTotalB
+                              : 0,
+                          modeledLaterDepartureShare: current.modeledLaterDepartureShare,
+                          nonCitizenCount: current.micro.nonCitizenCount,
+                          nonCitizenWealthB: current.micro.nonCitizenWealthB,
+                        }}
+                      />
+                  )
+                }
+                footer={
+                  <ScenarioActions
+                    dataControl={dataControl}
+                    copyStatus={copyStatus}
+                    onCopyLink={copyScenarioLink}
+                  />
+                }
               />
 
-              <ResultStrip
-                headlineValue={current.result.headlineValue}
-                headlineLabel={
-                  pitEffectsEnabled
-                    ? "Net fiscal impact, present value as of 2026"
-                    : "One-time wealth-tax revenue"
-                }
+              <ResultNotes
                 headlineNote={
                   pitEffectsEnabled
                     ? `Wealth-tax receipts less attributed future California income-tax losses, in 2026 dollars; ${(params.inflationRate * 100).toFixed(1)}% annual inflation assumed. Receipts go to a reserve fund that is legally separate from the General Fund, where income tax is collected. ${snapshotLabel}.${loadFailureNote}`
                     : `Nominal receipts, first due with 2026 returns in 2027. Excludes future California income-tax losses. ${snapshotLabel}.${loadFailureNote}`
                 }
-                presentValue={current.result.netFiscalImpact}
-                campValues={campValues}
-                activeSet={activeSet}
-                onApplySet={applySet}
-                copyStatus={copyStatus}
-                onCopyLink={copyScenarioLink}
-                dataControl={dataControl}
               />
 
-              {activeGroupConfig && (
-                <AssumptionPanel
-                  key={activeGroupConfig.id}
-                  group={activeGroupConfig}
-                  params={params}
-                  update={update}
-                  setParams={updateParams}
-                  campSummaries={Object.fromEntries(
-                    Object.entries(ASSUMPTION_SETS).map(([key, set]) => [
-                      key,
-                      summarizeGroup(activeGroupConfig, set, summaryContext),
-                    ])
-                  )}
-                  matches={groupMatches[activeGroupConfig.id]}
-                  onApplyFrom={(setKey) => applyGroupFrom(activeGroupConfig.id, setKey)}
-                  context={{
-                    residencyAdjustments: RESIDENCY_ADJUSTMENTS,
-                    remainingResidentWealthB,
-                    modeledAdditionalDepartureShare: current.modeledAdditionalDepartureShare,
-                    snapshotDate: loadedDate,
-                    allocationComparison,
-                    incomeTaxDepartureFloorShare:
-                      current.micro.cohortIncomeTaxTotalB > 0
-                        ? (current.micro.knownDepartureIncomeTaxB + current.micro.unannouncedIncomeTaxB) /
-                          current.micro.cohortIncomeTaxTotalB
-                        : 0,
-                    modeledLaterDepartureShare: current.modeledLaterDepartureShare,
-                    nonCitizenCount: current.micro.nonCitizenCount,
-                    nonCitizenWealthB: current.micro.nonCitizenWealthB,
-                  }}
-                  onClose={() => setActiveGroup(null)}
-                />
-              )}
 
               <section className="space-y-5 rounded-[30px] border border-[var(--gray-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]">
                 <div className="max-w-3xl">
@@ -866,7 +908,7 @@ export default function Home() {
                     January 1 without public notice and how much California
                     income tax the cohort pays in total. Same axes, same colors,
                     two ways of dividing that total among people. Other
-                    assumptions as in your scenario.
+                    assumptions follow {activeSet ? HEATMAP_BASES[activeSet] : "your scenario"}.
                     {heatmapCaption({
                       coincide: heatmapsCoincide,
                       // The grids follow the deferred assumptions; so does

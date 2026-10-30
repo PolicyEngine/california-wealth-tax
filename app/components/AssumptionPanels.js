@@ -79,7 +79,6 @@ export default function AssumptionPanel({
   matches,
   onApplyFrom,
   context,
-  onClose,
 }) {
   const {
     residencyAdjustments,
@@ -708,24 +707,12 @@ export default function AssumptionPanel({
   }
 
   return (
-    <section
+    <div
       id={`panel-${group.id}`}
-      className="space-y-5 rounded-[30px] border border-[var(--teal-200)] bg-white p-6 shadow-[0_24px_70px_-52px_rgba(40,94,97,0.45)]"
+      className="space-y-5 border-t border-[var(--teal-100)] bg-white px-4 pb-5 pt-4"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <h3 className="text-xl font-semibold tracking-[-0.02em] text-[var(--gray-700)]">
-          {group.label}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--gray-600)] hover:border-[var(--teal-200)] hover:bg-[var(--teal-50)] hover:text-[var(--teal-700)]"
-        >
-          Close
-        </button>
-      </div>
       <CampRow campSummaries={campSummaries} matches={matches} onApplyFrom={onApplyFrom} />
       {body}
-    </section>
+    </div>
   );
 }
