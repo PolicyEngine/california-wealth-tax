@@ -116,8 +116,8 @@ export default function LiveBridge({
       </div>
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-        {/* On a short screen a pinned chart would trap its own lower half. */}
-        <div className="min-w-0 space-y-4 md:self-start md:[@media(min-height:720px)]:sticky md:[@media(min-height:720px)]:top-20">
+        {/* Below 640px of height a pinned chart would trap its own lower half. */}
+        <div className="min-w-0 space-y-4 md:self-start md:[@media(min-height:640px)]:sticky md:[@media(min-height:640px)]:top-20">
           {bridge.finite === false ? (
             <p className="rounded-2xl border border-dashed border-[var(--gray-300)] px-5 py-6 text-sm text-[var(--gray-500)]">
               One of these scenarios has an unbounded present value: the lost
