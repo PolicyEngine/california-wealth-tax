@@ -201,9 +201,10 @@ the Hoover set follows Jaros and Rauh's NBER version. To move the paper to a
 newer snapshot, copy `public/roster_valuations/<date>.json` to
 `paper/data/roster_valuations_<date>.json`, copy the `byKey` table from
 `data/citizenship_by_name.json` into `paper/data/citizenship_by_name.json`, set
-`PAPER_SNAPSHOT_DATE`, rerun the script below, and rewrite the text until the
-test passes. The script reads the real table and the tests read the frozen
-copy, so refresh the copy whenever you rerun the script.
+`PAPER_SNAPSHOT_DATE`, update the dated imports in `lib/paperNumbers.test.js`,
+rerun the script below, and rewrite the text until the test passes. The script
+reads the real table and the tests read the frozen copy, so refresh the copy
+whenever you rerun the script.
 
 ```bash
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json
