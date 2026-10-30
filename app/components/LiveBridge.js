@@ -56,7 +56,7 @@ export function StepTabs({ step, onChange }) {
   );
 }
 
-function EndpointSelect({ value, onChange, exclude, id, label }) {
+function EndpointSelect({ value, onChange, exclude, includeScenario, id, label }) {
   return (
     <label className="inline-flex items-center gap-2 text-sm text-[var(--gray-600)]">
       <span className="sr-only">{label}</span>
@@ -67,7 +67,7 @@ function EndpointSelect({ value, onChange, exclude, id, label }) {
         className="rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
         {Object.entries(BRIDGE_ENDPOINTS)
-          .filter(([key]) => key !== exclude && key !== "your")
+          .filter(([key]) => key !== exclude && (key !== "your" || includeScenario))
           .map(([key, name]) => (
             <option key={key} value={key}>
               {name}
@@ -139,9 +139,9 @@ export function CompareStep({
           </h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--gray-600)]">
             <span>From</span>
-            <EndpointSelect id="bridge-from" label="Bridge from" value={from} onChange={onChangeFrom} exclude={to} />
+            <EndpointSelect id="bridge-from" label="Bridge from" value={from} onChange={onChangeFrom} exclude={to} includeScenario={hasEdits} />
             <span>to</span>
-            <EndpointSelect id="bridge-to" label="Bridge to" value={to} onChange={onChangeTo} exclude={from} />
+            <EndpointSelect id="bridge-to" label="Bridge to" value={to} onChange={onChangeTo} exclude={from} includeScenario={hasEdits} />
           </div>
         </div>
         <p className="text-sm leading-6 text-[var(--gray-500)]">
@@ -210,7 +210,7 @@ export function CompareStep({
             </h3>
             <p className="mt-0.5 text-sm text-[var(--gray-500)]">
               {hasEdits
-                ? "Picking a starting point replaces your scenario."
+                ? "Pick Your scenario in the From or To menu to compare it. Picking a starting point replaces it."
                 : "Pick a starting point, then change what you disagree with."}
             </p>
           </div>

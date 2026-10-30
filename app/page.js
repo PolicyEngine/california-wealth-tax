@@ -387,11 +387,18 @@ export default function Home() {
   const endpointAssumptions = (key) =>
     key === "your" ? yourAssumptions : ASSUMPTION_SETS[key];
   const hasEdits = activeSet !== scenarioBase;
-  // Step one compares published sets and never moves with the sliders; step
-  // two measures the sliders against the set they started from.
+  // "Your scenario" joins step one's menus once it exists and leaves with its
+  // edits, so the comparison falls back to a published set.
+  const compareEndpoint = (key, other) =>
+    key === "your" && !hasEdits ? (other === "berkeley" ? "hoover" : "berkeley") : key;
+  const compareFrom = compareEndpoint(bridgeFrom, bridgeTo);
+  const compareTo = compareEndpoint(bridgeTo, bridgeFrom);
+  // Step one compares whichever two the menus name; step two measures the
+  // sliders against the set they started from.
   const building = step === "build";
-  const bridgeStart = building ? scenarioBase : bridgeFrom;
-  const bridgeEnd = building ? "your" : bridgeTo;
+  const bridgeStart = building ? scenarioBase : compareFrom;
+  const bridgeEnd = building ? "your" : compareTo;
+  const scenarioInBridge = bridgeStart === "your" || bridgeEnd === "your";
   const bridgeEndLabel = BRIDGE_ENDPOINTS[building && activeSet ? activeSet : bridgeEnd];
   const bridge = useMemo(
     () =>
@@ -401,7 +408,7 @@ export default function Home() {
         score,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bridgeStart, bridgeEnd, building ? yourAssumptions : null, score]
+    [bridgeStart, bridgeEnd, scenarioInBridge ? yourAssumptions : null, score]
   );
   // What each bar compares: its assumption at the two ends of the bridge.
   const stepDetails = useMemo(() => {
@@ -421,7 +428,7 @@ export default function Home() {
         {
           title: group.label,
           endpoints: endpoints.map(({ key, set, context }) => ({
-            label: key === "your" ? bridgeEndLabel : BRIDGE_ENDPOINTS[key],
+            label: key === "your" && building ? bridgeEndLabel : BRIDGE_ENDPOINTS[key],
             setting: summarizeGroup(group, set, context),
             matches:
               key === "your"
@@ -434,7 +441,7 @@ export default function Home() {
       ])
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeStart, bridgeEnd, bridgeEndLabel, building ? yourAssumptions : null, score]);
+  }, [bridgeStart, bridgeEnd, bridgeEndLabel, scenarioInBridge ? yourAssumptions : null, score]);
   const remainingResidentWealthB = residentWealthB(current);
   const summaryContext = { remainingResidentWealthB };
   const groupMatches = Object.fromEntries(
@@ -530,7 +537,7 @@ export default function Home() {
   // bar. Changes already under way stay.
   function openFromComparison(groupId) {
     if (!hasEdits) {
-      startFrom(bridgeTo);
+      startFrom(compareTo);
     }
     setActiveGroup(groupId);
     enterBuild();
@@ -774,8 +781,8 @@ export default function Home() {
                 ) : (
                   <CompareStep
                     bridge={bridge}
-                    from={bridgeFrom}
-                    to={bridgeTo}
+                    from={compareFrom}
+                    to={compareTo}
                     onChangeFrom={setBridgeFrom}
                     onChangeTo={setBridgeTo}
                     hasEdits={hasEdits}
