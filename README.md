@@ -200,13 +200,15 @@ October 23, 2026), and scores the calculator's current assumption sets on it:
 the Hoover set follows Jaros and Rauh's NBER version. To move the paper to a
 newer snapshot, copy `public/roster_valuations/<date>.json` to
 `paper/data/roster_valuations_<date>.json`, copy the `byKey` table from
-`data/citizenship_by_name.json` into `paper/data/citizenship_by_name.json`, set
-`PAPER_SNAPSHOT_DATE`, update the dated imports in `lib/paperNumbers.test.js`
-and the date in `lib/hooverVersions.test.js`, rerun the script below, and
-rewrite the text until the test passes. The script reads the real table and the
-tests read the frozen copy, so refresh the copy whenever you rerun the script. A
-refreshed copy can move the paper's figures and the tests' frozen figures, so
-update both.
+`data/citizenship_by_name.json` into `paper/data/citizenship_by_name.json` and
+update the date in its `note`, set `PAPER_SNAPSHOT_DATE`, update the dated
+imports in `lib/paperNumbers.test.js` and the date in
+`lib/hooverVersions.test.js`, rerun the script below, and rewrite the text until
+the test passes. The test pins only some of the paper's dates, so then replace
+every other mention of the old date, including the one above, and rerender. The
+script reads the real table and the tests read the frozen copy, so refresh the
+copy whenever you rerun the script. A moved snapshot or a refreshed copy can
+move the paper's figures and the tests' frozen figures, so update both.
 
 ```bash
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json
