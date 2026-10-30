@@ -162,6 +162,9 @@ describe("step one", () => {
 });
 
 describe("entering step two from a bar", () => {
+  // The 800x380 chart, less its margins and axes.
+  const PLOT = { x: 104, y: 18, width: 680, height: 297 };
+
   it("starts from the destination with that assumption open", async () => {
     await open();
 
@@ -178,12 +181,14 @@ describe("entering step two from a bar", () => {
 
     const targets = [...document.querySelectorAll("[data-column]")];
     const target = column("incomeTax");
-    const [first, second] = targets;
+    const bandWidth = PLOT.width / (targets.length + 2);
 
-    expect(new Set(targets.map((entry) => entry.getAttribute("height"))).size).toBe(1);
-    expect(Number(second.getAttribute("x")) - Number(first.getAttribute("x"))).toBeCloseTo(
-      Number(first.getAttribute("width")),
-    );
+    targets.forEach((entry, index) => {
+      expect(Number(entry.getAttribute("x"))).toBeCloseTo(PLOT.x + (index + 1) * bandWidth);
+      expect(Number(entry.getAttribute("width"))).toBeCloseTo(bandWidth);
+      expect(Number(entry.getAttribute("y"))).toBe(PLOT.y);
+      expect(Number(entry.getAttribute("height"))).toBe(PLOT.height);
+    });
     const label = document.querySelector(".recharts-label-list");
     expect(label.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
@@ -241,7 +246,7 @@ describe("building a scenario", () => {
   });
 
   const INERT_NOTE =
-    "Your change to \u201cWho pays the cohort's income tax\u201d has no effect in this scenario.";
+    "Your change to \u201cWho pays the cohort's income tax\u201d has no effect on the present value in this scenario.";
 
   it("names the change that moved nothing", async () => {
     await open("?cohortpit=5");
@@ -262,7 +267,7 @@ describe("building a scenario", () => {
     await click(column("legal"));
     await slideLegalTo("0.8");
 
-    expect(pageText()).not.toContain("no effect in this scenario");
+    expect(pageText()).not.toContain("no effect on the present value");
   });
 
   it("keeps focus on the step when a reset removes the button", async () => {

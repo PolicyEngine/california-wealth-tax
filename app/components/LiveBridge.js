@@ -343,7 +343,8 @@ export function BuildStep({
             <p className="text-sm text-[var(--gray-500)]">
               Your {bridge.inert.length > 1 ? "changes" : "change"} to{" "}
               {bridge.inert.map((label) => `\u201c${label}\u201d`).join(" and ")}{" "}
-              {bridge.inert.length > 1 ? "have" : "has"} no effect in this scenario.
+              {bridge.inert.length > 1 ? "have" : "has"} no effect on the present value in
+              this scenario.
             </p>
           )}
           {readout}
