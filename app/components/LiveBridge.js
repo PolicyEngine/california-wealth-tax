@@ -154,7 +154,7 @@ export function CompareStep({
           value as of 2026. Each bar is one assumption&apos;s worth, averaged
           over every order the assumptions could be applied in, so the bars sum
           exactly to the gap.
-          <span className="max-[640px]:hidden"> Hover over a bar to see what it compares.</span>
+          <span className="max-[641px]:hidden"> Hover over a bar to see what it compares.</span>
         </p>
       </div>
 
@@ -190,7 +190,7 @@ export function CompareStep({
                 key={step.id}
                 type="button"
                 onClick={() => onOpenAssumption(step.id)}
-                className="flex w-full items-center gap-3 bg-white px-4 py-2.5 text-left hover:bg-[var(--teal-50)]"
+                className="flex w-full items-center gap-3 bg-white px-4 py-2.5 text-left hover:bg-[var(--teal-50)] focus-visible:-outline-offset-2"
               >
                 <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--gray-700)]">
                   {step.label}
@@ -305,7 +305,11 @@ export function BuildStep({
           {hasEdits && (
             <button
               type="button"
-              onClick={() => onStartFrom(from)}
+              onClick={() => {
+                // The button goes once the edits do.
+                headingRef.current.focus({ preventScroll: true });
+                onStartFrom(from);
+              }}
               className="text-sm font-medium text-[var(--teal-700)] hover:underline"
             >
               Reset to {BRIDGE_ENDPOINTS[from]}
@@ -335,9 +339,11 @@ export function BuildStep({
               hideTotal={bridge.contributions.length === 0}
             />
           )}
-          {hasEdits && bridge.finite !== false && bridge.contributions.length === 0 && (
+          {bridge.finite !== false && bridge.inert.length > 0 && (
             <p className="text-sm text-[var(--gray-500)]">
-              That change does not move the estimate from this starting point.
+              Your {bridge.inert.length > 1 ? "changes" : "change"} to{" "}
+              {bridge.inert.map((label) => `\u201c${label}\u201d`).join(" and ")}{" "}
+              {bridge.inert.length > 1 ? "have" : "has"} no effect in this scenario.
             </p>
           )}
           {readout}

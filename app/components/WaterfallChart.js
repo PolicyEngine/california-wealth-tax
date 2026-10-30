@@ -9,9 +9,12 @@ import {
   YAxis,
   Tooltip,
   Cell,
+  DefaultZIndexes,
   LabelList,
   ReferenceLine,
   ResponsiveContainer,
+  usePlotArea,
+  ZIndexLayer,
 } from "recharts";
 import { formatBillions } from "@/lib/format";
 import { buildWaterfallData } from "@/lib/waterfall";
@@ -91,6 +94,39 @@ function useIsNarrow(maxWidth = 640) {
   return isNarrow;
 }
 
+// Invisible targets over the bars and their labels, one category band wide, so
+// a click lands anywhere in a column: the smallest steps draw bars a pixel tall.
+function ColumnTargets({ data, onOpen }) {
+  const plotArea = usePlotArea();
+
+  if (!plotArea) {
+    return null;
+  }
+
+  const bandWidth = plotArea.width / data.length;
+
+  return (
+    <ZIndexLayer zIndex={DefaultZIndexes.label + 1}>
+      {data.map(
+        (entry, index) =>
+          entry.clickable && (
+            <rect
+              key={entry.id}
+              data-column={entry.id}
+              x={plotArea.x + index * bandWidth}
+              y={plotArea.y}
+              width={bandWidth}
+              height={plotArea.height}
+              fill="transparent"
+              className="cursor-pointer"
+              onClick={() => onOpen(entry.id)}
+            />
+          )
+      )}
+    </ZIndexLayer>
+  );
+}
+
 export default function WaterfallChart({
   waterfall,
   totalLabel,
@@ -104,7 +140,6 @@ export default function WaterfallChart({
   hideTotal = false,
 }) {
   const isNarrow = useIsNarrow();
-  const [pointingAtStep, setPointingAtStep] = useState(false);
   // On a phone a tap shows the tooltip, and the list on the page opens the step.
   const canClick = Boolean(onBarClick) && !isNarrow;
   const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {})
@@ -115,16 +150,6 @@ export default function WaterfallChart({
       detail: stepDetails?.[entry.id],
     }))
     .filter((entry) => !(hideTotal && entry.isTotal));
-  const openStep = (item) => {
-    // recharts 3 passes the rectangle item; the data row is its payload.
-    const entry = item?.payload ?? item;
-
-    if (entry?.clickable) {
-      onBarClick(entry.id);
-    }
-  };
-  const isClickableIndex = (index) =>
-    index != null && Boolean(data[Number(index)]?.clickable);
 
   return (
     <div className="relative">
@@ -132,9 +157,6 @@ export default function WaterfallChart({
         <BarChart
           data={data}
           margin={{ top: 18, right: 16, left: isNarrow ? 10 : 44, bottom: 5 }}
-          onMouseMove={(state) => setPointingAtStep(isClickableIndex(state?.activeTooltipIndex))}
-          onMouseLeave={() => setPointingAtStep(false)}
-          style={pointingAtStep ? { cursor: "pointer" } : undefined}
         >
           <XAxis
             dataKey="label"
@@ -172,17 +194,13 @@ export default function WaterfallChart({
             fill="transparent"
             isAnimationActive={false}
             maxBarSize={96}
-            onClick={openStep}
           />
-          {/* Visible bar. The background makes the whole column a target: the
-              smallest steps draw bars a pixel tall. */}
+          {/* Visible bar */}
           <Bar
             dataKey="height"
             stackId="waterfall"
             isAnimationActive={false}
             maxBarSize={96}
-            background={{ fill: "transparent", stroke: "none" }}
-            onClick={openStep}
           >
             {!isNarrow && (
               <LabelList
@@ -212,6 +230,7 @@ export default function WaterfallChart({
               />
             ))}
           </Bar>
+          <ColumnTargets data={data} onOpen={onBarClick} />
         </BarChart>
       </ResponsiveContainer>
       <Image

@@ -15,7 +15,7 @@ import {
 import { WEALTH_TAX_PAYMENT_MODES } from "@/lib/calculator";
 import { DEPARTURE_RESPONSE_MODES } from "@/lib/departureResponse";
 import { INCOME_TAX_METHODS, snapshotSourceDate } from "@/lib/microModel";
-import { formatBillions } from "@/lib/format";
+import { formatBillions, longDate } from "@/lib/format";
 import { loadSnapshot, selectSnapshotRows, snapshotReducer } from "@/lib/snapshot";
 import {
   BASELINE_ASSUMPTIONS,
@@ -581,7 +581,7 @@ export default function Home() {
         }}
         className="min-w-0 max-w-full rounded-full border border-[var(--gray-300)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--gray-700)]"
       >
-        <option value="live">Latest Forbes data ({LIVE_DATE})</option>
+        <option value="live">Latest Forbes data ({longDate(LIVE_DATE)})</option>
         <option value="paper">October 17, 2025 (Rauh asset data)</option>
         <option value="other">Another stored date</option>
       </select>
