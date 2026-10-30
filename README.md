@@ -95,7 +95,9 @@ page lists them at the bottom, with summaries kept in `lib/relatedWork.js`:
   2026-09-17, which carry no citizenship field. The daily fetch only adds
   names to it, so for everyone already in it a stored snapshot scores the
   same whatever Forbes lists later. People not in it count as US citizens; a
-  wrong entry is corrected by hand.
+  wrong entry is corrected by hand. Tests score from a frozen copy,
+  `paper/data/citizenship_by_name.json`, so the daily additions cannot move
+  a tested figure.
 - `data/wealth_tax_households.json`: sourced, separately valued spouse groups.
 - `data/billionaires_rauh.json`: the October 17, 2025 list with Rauh et al.'s
   directly held real estate values (personal residences; a lower bound).
@@ -197,8 +199,16 @@ The paper is one version, dated to its snapshot (`PAPER_SNAPSHOT_DATE`, now
 October 23, 2026), and scores the calculator's current assumption sets on it:
 the Hoover set follows Jaros and Rauh's NBER version. To move the paper to a
 newer snapshot, copy `public/roster_valuations/<date>.json` to
-`paper/data/roster_valuations_<date>.json`, set `PAPER_SNAPSHOT_DATE`, rerun
-the script below, and rewrite the text until the test passes.
+`paper/data/roster_valuations_<date>.json`, copy the `byKey` table from
+`data/citizenship_by_name.json` into `paper/data/citizenship_by_name.json` and
+update the date in its `note`, set `PAPER_SNAPSHOT_DATE`, update the dated
+imports in `lib/paperNumbers.test.js` and the date in
+`lib/hooverVersions.test.js`, rerun the script below, and rewrite the text until
+the test passes. The test pins only some of the paper's dates, so then replace
+every other mention of the old date, including the one above, and rerender. The
+script reads the real table and the tests read the frozen copy, so refresh the
+copy whenever you rerun the script. A moved snapshot or a refreshed copy can
+move the paper's figures and the tests' frozen figures, so update both.
 
 ```bash
 bun scripts/paper_numbers.mjs   # regenerate paper/paper_numbers.json
@@ -215,8 +225,8 @@ Data from third-party sources keep their sources' terms:
 
 - Forbes-derived files: `public/snapshots/`, `data/billionaires_live*`, the
   roster valuations (`data/roster_valuations.json`, `public/roster_valuations/`
-  and `paper/data/roster_valuations_*.json`) and
-  `data/citizenship_by_name.json`;
+  and `paper/data/roster_valuations_*.json`) and the citizenship tables
+  (`data/citizenship_by_name.json` and `paper/data/citizenship_by_name.json`);
 - Boll, Saez and Zucman's filings-based estimates, in
   `data/income_tax_filings.json`;
 - Rauh et al.'s real estate values, in `data/billionaires_rauh.json`.

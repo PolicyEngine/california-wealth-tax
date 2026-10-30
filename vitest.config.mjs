@@ -12,7 +12,14 @@ const config = {
     exclude: [/node_modules/],
   },
   resolve: {
-    alias: [{ find: /^@\//, replacement: `${root}/` }],
+    alias: [
+      // The daily job adds to the real table, so the model scores tests from a frozen copy.
+      {
+        find: /^(.*\/)?data\/citizenship_by_name\.json$/,
+        replacement: `${root}/paper/data/citizenship_by_name.json`,
+      },
+      { find: /^@\//, replacement: `${root}/` },
+    ],
   },
 };
 
