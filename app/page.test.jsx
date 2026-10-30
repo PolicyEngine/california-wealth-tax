@@ -145,7 +145,9 @@ describe("step one", () => {
     await click(button(/^1\. Why the estimates differ/));
 
     expect(publishedGapSummary()).toBe(summary);
-    expect(pageText()).toContain("Picking a starting point replaces it.");
+    expect(pageText()).toContain(
+      "Pick Your scenario in the From or To menu to compare it. Picking a starting point replaces it."
+    );
   });
 
   const menuOptions = (id) =>
@@ -187,6 +189,8 @@ describe("step one", () => {
     await choose("bridge-from", "your");
     expect(pageText()).toMatch(/Your scenario -\$14\.\dB → Hoover assumptions -\$34\.\dB/);
     expect([...document.querySelectorAll("[data-column]")].map((entry) => entry.dataset.column)).toEqual(["legal"]);
+    expect(pageText()).not.toContain("Pick Your scenario");
+    expect(pageText()).toContain("Picking a starting point replaces your scenario.");
   });
 
   it("keeps the scenario when a bar in its comparison opens a step", async () => {
@@ -255,6 +259,7 @@ describe("step one", () => {
     await resetScenario();
 
     expect(document.getElementById("bridge-to").value).toBe("berkeley");
+    expect(pageText()).toMatch(/Statutory score, no behavior \+\$110\.8B → Berkeley assumptions \+\$100\.1B/);
   });
 
   it("leaves the other end alone when a menu changes after the scenario goes", async () => {
@@ -279,16 +284,50 @@ describe("step one", () => {
     expect(document.getElementById("bridge-to").value).toBe("baseline");
   });
 
+  // Both in one tick, so the deferred scenario lands after the step switch.
+  async function slideLegalAndCompare(value) {
+    await click(button(/^Back to your scenario/));
+    await act(async () => {
+      fireEvent.change(document.querySelector("#panel-legal input[type=range]"), { target: { value } });
+      fireEvent.click(button(/^1\. Why the estimates differ/));
+    });
+    await settle();
+  }
+
   it("recomputes the comparison when the scenario changes on the from end", async () => {
     await scenarioOn("bridge-from");
     expect(pageText()).toMatch(/Your scenario -\$14\.\dB → Hoover/);
 
-    await click(button(/^Back to your scenario/));
-    await slideLegalTo("1");
-    await click(button(/^1\. Why the estimates differ/));
+    await slideLegalAndCompare("0.4");
 
-    expect(pageText()).not.toMatch(/Your scenario -\$14\.\dB → Hoover/);
-    expect(pageText()).toMatch(/Your scenario [+-]\$[\d.]+B → Hoover assumptions -\$34\.\dB/);
+    expect(pageText()).toMatch(/Your scenario -\$41\.\dB → Hoover assumptions -\$34\.\dB/);
+  });
+
+  it("recomputes the comparison when the scenario changes on the to end", async () => {
+    await scenarioOn("bridge-to");
+    expect(pageText()).toMatch(/→ Your scenario -\$14\.\dB/);
+
+    await slideLegalAndCompare("0.4");
+
+    expect(pageText()).toMatch(/→ Your scenario -\$41\.\dB/);
+  });
+
+  it("names your scenario in the tooltip when it sits on the from end", async () => {
+    await scenarioOn("bridge-from");
+    const target = column("legal");
+
+    await act(async () => {
+      fireEvent.mouseMove(target, {
+        clientX: Number(target.getAttribute("x")) + Number(target.getAttribute("width")) / 2,
+        clientY: 100,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+    await settle();
+
+    const tooltip = document.querySelector(".recharts-tooltip-wrapper").textContent;
+    expect(tooltip).toContain("Your scenario");
+    expect(tooltip).toContain("Hoover assumptions");
   });
 
   it("goes back to the scenario with its edits intact", async () => {
@@ -431,14 +470,36 @@ describe("copying the scenario link", () => {
     document.execCommand = vi.fn(() => false);
     await open("?survive=0.8");
 
-    await click(button(/^Copy link to this scenario/));
+    const copy = button(/^Copy link to this scenario/);
+    copy.focus();
+
+    await click(copy);
 
     expect(button(/^Copy failed/)).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.activeElement).toBe(copy);
   });
 
   it("cleans up and says so when the selection copy throws", async () => {
     blockClipboard();
     document.execCommand = vi.fn(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    await open("?survive=0.8");
+    const copy = button(/^Copy link to this scenario/);
+    copy.focus();
+
+    await click(copy);
+
+    expect(button(/^Copy failed/)).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+    expect(document.activeElement).toBe(copy);
+  });
+
+  it("does the same when selecting the field throws", async () => {
+    blockClipboard();
+    document.execCommand = vi.fn();
+    vi.spyOn(HTMLTextAreaElement.prototype, "select").mockImplementation(() => {
       throw new DOMException("denied", "SecurityError");
     });
     await open("?survive=0.8");
