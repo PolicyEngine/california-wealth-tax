@@ -310,6 +310,41 @@ describe("entering step two from a bar", () => {
   });
 });
 
+describe("copying the scenario link", () => {
+  function blockClipboard() {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new DOMException("blocked", "NotAllowedError")) },
+    });
+  }
+
+  it("falls back to a selection copy where an embed blocks the clipboard", async () => {
+    blockClipboard();
+    let selected = "";
+    document.execCommand = vi.fn(() => {
+      selected = document.activeElement.value;
+      return true;
+    });
+    await open("?survive=0.8");
+
+    await click(button(/^Copy link to this scenario/));
+
+    expect(selected).toContain("survive=0.8");
+    expect(button(/^Copied link/)).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+  });
+
+  it("says so when neither copy works", async () => {
+    blockClipboard();
+    document.execCommand = vi.fn(() => false);
+    await open("?survive=0.8");
+
+    await click(button(/^Copy link to this scenario/));
+
+    expect(button(/^Copy failed/)).toBeTruthy();
+  });
+});
+
 describe("building a scenario", () => {
   it("says what the cohort loses in the income tax summary", async () => {
     await open();

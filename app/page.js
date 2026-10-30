@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useReducer, useState } from "reac
 import AssumptionPanel from "@/app/components/AssumptionPanels";
 import BillionaireTable from "@/app/components/BillionaireTable";
 import { BRIDGE_ENDPOINTS, BuildStep, CompareStep, StepTabs } from "@/app/components/LiveBridge";
+import { copyText } from "@/lib/copyText";
 import RelatedWork from "@/app/components/RelatedWork";
 import ResultStrip, { ResultNotes, ScenarioActions } from "@/app/components/ResultStrip";
 import {
@@ -555,14 +556,9 @@ export default function Home() {
   }
 
   async function copyScenarioLink() {
-    try {
-      const url = new URL(window.location.href);
-      url.pathname = canonicalScenarioPathname(url.pathname);
-      await navigator.clipboard.writeText(url.toString());
-      setCopyStatus("Copied link");
-    } catch {
-      setCopyStatus("Copy failed");
-    }
+    const url = new URL(window.location.href);
+    url.pathname = canonicalScenarioPathname(url.pathname);
+    setCopyStatus((await copyText(url.toString())) ? "Copied link" : "Copy failed");
   }
 
   const dataControl = (
