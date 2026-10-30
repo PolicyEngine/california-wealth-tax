@@ -20,7 +20,7 @@ const basePath =
     ? process.env.NEXT_PUBLIC_BASE_PATH
     : "/us/california-wealth-tax";
 
-function WaterfallTooltip({ active, payload }) {
+function WaterfallTooltip({ active, payload, clickHint }) {
   if (!active || !payload?.length) {
     return null;
   }
@@ -67,7 +67,7 @@ function WaterfallTooltip({ active, payload }) {
           </dl>
         )}
         {entry.clickable && (
-          <p className="pt-1 text-xs text-[var(--teal-700)]">Click to adjust</p>
+          <p className="pt-1 text-xs text-[var(--teal-700)]">{clickHint}</p>
         )}
       </div>
     </div>
@@ -99,16 +99,18 @@ export default function WaterfallChart({
   clickableIds = null,
   referenceLines = [],
   stepDetails = null,
+  clickHint = "Click to adjust",
+  hideTotal = false,
 }) {
   const isNarrow = useIsNarrow();
-  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {}).map(
-    (entry, index) => ({
+  const data = buildWaterfallData(waterfall, totalLabel ? { totalLabel } : {})
+    .map((entry, index) => ({
       ...entry,
       isStart: index === 0,
       clickable: Boolean(onBarClick) && (clickableIds?.has(entry.id) ?? false),
       detail: stepDetails?.[entry.id],
-    })
-  );
+    }))
+    .filter((entry) => !(hideTotal && entry.isTotal));
 
   return (
     <div className="relative">
@@ -126,7 +128,7 @@ export default function WaterfallChart({
             tickFormatter={(value) => formatBillions(value, { decimals: 0 })}
             tick={{ fontSize: 11 }}
           />
-          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
+          <Tooltip content={<WaterfallTooltip clickHint={clickHint} />} cursor={{ fill: "rgba(44, 122, 123, 0.05)" }} />
           <ReferenceLine y={0} stroke="var(--gray-400)" />
           {referenceLines.map((line) => (
             <ReferenceLine
@@ -144,12 +146,13 @@ export default function WaterfallChart({
             />
           ))}
           {/* Invisible base. Neither bar animates: the chart follows a dragged slider. */}
-          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
+          <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} maxBarSize={96} />
           {/* Visible bar */}
           <Bar
             dataKey="height"
             stackId="waterfall"
             isAnimationActive={false}
+            maxBarSize={96}
             onClick={(item) => {
               // recharts 3 passes the rectangle item; the data row is its payload.
               const entry = item?.payload ?? item;
