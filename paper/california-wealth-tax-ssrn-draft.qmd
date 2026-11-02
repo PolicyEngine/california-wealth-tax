@@ -34,6 +34,9 @@ abstract: |
   bears on how much of the cohort's income tax leaves with the movers. Every
   calculator figure in this paper is computed by its code from a dated
   snapshot.
+
+  The author wrote the calculator and this paper with an AI assistant,
+  Anthropic's Claude, which drafted much of the code and text.
 ---
 
 # Introduction
