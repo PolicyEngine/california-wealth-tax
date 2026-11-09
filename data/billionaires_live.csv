@@ -66,7 +66,7 @@ Brian Armstrong,6852037000.0,133000000.0,False,True,False,,brian-armstrong,Calif
 Jayshree Ullal,6614235000.0,7862000.0,False,True,False,,jayshree-ullal,California,Saratoga,,United States
 Jean (Gigi) Pritzker,6400179000.0,0,False,True,False,,jean-gigi-pritzker,California,Los Angeles,,United States
 Stephen Cohen,6227775000.0,1031715.0,False,True,False,,stephen-cohen,California,Palo Alto,,United States
-Rocco Basilico,6090894000.0,0,False,True,False,,rocco-basilico-1,California,Los Angeles,,Italy
+Rocco Basilico,6155016000.0,0,False,True,False,,rocco-basilico-1,California,Los Angeles,,Italy
 Archie Aldis Emmerson,6060478000.0,4101800.0,False,True,False,,archie-aldis-emmerson,California,Redding,,United States
 Palmer Luckey,5919867000.0,12500000.0,False,True,False,,palmer-luckey,California,Newport Beach,,United States
 Rupert Johnson Jr,5875712000.0,0,False,True,False,,rupert-johnson-jr,California,Burlingame,,United States
@@ -90,7 +90,7 @@ Anthony Pritzker,4962895000.0,195000000.0,False,True,False,,anthony-pritzker,Cal
 Vlad Tenev,4923188000.0,0,False,True,False,,vlad-tenev,California,Palo Alto,,United States
 Donald Sterling,4800712000.0,29825465.0,False,True,False,,donald-sterling,California,Beverly Hills,,United States
 Garrett Camp,4719652000.0,0,False,True,False,,garrett-camp,California,San Francisco,,Canada
-Jim Coulter,4649807000.0,0,False,True,False,,jim-coulter,California,San Francisco,,United States
+Jim Coulter,4628554000.0,0,False,True,False,,jim-coulter,California,San Francisco,,United States
 Sanjit Biswas,4603537000.0,0,False,True,False,,sanjit-biswas,California,San Francisco ,,United States
 Thomas Siebel,4567822000.0,0,False,True,False,,thomas-siebel,California,Woodside,,United States
 José E. Feliciano,4538400000.0,50000000.0,False,True,False,,jose-e-feliciano,California,Los Angeles,,United States
@@ -168,7 +168,7 @@ Nicholas Pritzker,2169982000.0,0,False,True,False,,nicholas-pritzker,California,
 Evan Spiegel,2161962000.0,120000000.0,False,True,False,,evan-spiegel,California,Los Angeles,,United States
 Bennett Rosenthal,2157339000.0,8683316.0,False,True,False,,bennett-rosenthal,California,Los Angeles,,United States
 Richard Saghian,2149000000.0,141000000.0,False,True,False,,richard-saghian,California,Los Angeles,,United States
-Walter Wang,2125946000.0,34000000.0,False,True,False,,walter-wang-1,California,Los Angeles,,United States
+Walter Wang,2138018999.9999998,34000000.0,False,True,False,,walter-wang-1,California,Los Angeles,,United States
 Steven Tisch,2119192000.0,15713764.0,False,True,False,,steven-tisch,California,Beverly Hills,,United States
 Andy Konwinski,2100000000.0,0,False,True,False,,andy-konwinski,California,Berkeley,,United States
 Aravind Srinivas,2100000000.0,0,False,True,False,,aravind-srinivas,California,San Francisco,,India
@@ -194,8 +194,8 @@ Kim Kardashian,1885000000.0,115000000.0,False,True,False,,kim-kardashian,Califor
 Alex Shevchenko,1869000000.0,0,False,True,False,,alex-shevchenko,California,San Francisco,,Canada
 Max Lytvyn,1869000000.0,0,False,True,False,,max-lytvyn,California,San Francisco,,Canada
 Robert Fisher,1851322000.0,0,False,True,False,,robert-fisher,California,San Francisco,,United States
-Jon Winkelried,1835365000.0,5512000.0,False,True,False,,jon-winkelried,California,San Francisco,,United States
 Jeff Tangney,1831708000.0,13339211.0,False,True,False,,jeff-tangney,California,Palo Alto,,United States
+Jon Winkelried,1825425000.0,5512000.0,False,True,False,,jon-winkelried,California,San Francisco,,United States
 Thomas Reyes,1804000000.0,0,False,True,False,,thomas-reyes,California,Irvine,,United States
 Thierry Cruanes,1776125000.0,2648000.0,False,True,False,,thierry-cruanes,California,San Mateo,,United States
 Gary Michelson,1764100000.0,23900000.0,False,True,False,,gary-michelson,California,Los Angeles,,United States
