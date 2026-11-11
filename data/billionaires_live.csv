@@ -1,263 +1,266 @@
 name,netWorth,realEstate,moved,includeInRawForbes,excludeFromCorrectedBase,departureTiming,forbesUri,forbesState,forbesCity,forbesCountry,citizenship
-Larry Page,239017313000.0,101500000.0,True,False,False,pre_snapshot,larry-page,Florida,Miami,,United States
-Mark Zuckerberg,220307753000.0,300000000.0,True,True,False,post_snapshot,mark-zuckerberg,California,Palo Alto,,United States
-Sergey Brin,220043677000.0,35000000.0,True,False,False,pre_snapshot,sergey-brin,Nevada,Crystal Bay,,United States
-Jensen Huang,155373088000.0,52400000.0,False,True,False,,jensen-huang,California,Los Altos,,United States
-Andreas von Bechtolsheim & family,37534682000.0,0,False,True,False,,andreas-von-bechtolsheim,California,Palo Alto,,Germany
-Peter Thiel,34487533000.0,77200000.0,True,False,False,pre_snapshot,peter-thiel,,Buenos Aires,,United States
-Eric Schmidt,33596610000.0,600000000.0,False,True,False,,eric-schmidt,California,Atherton,,United States
-Henry Samueli,30612979000.0,20150000.0,False,True,False,,henry-samueli,California,Newport Beach,,United States
+Larry Page,238291437000.0,101500000.0,True,False,False,pre_snapshot,larry-page,Florida,Miami,,United States
+Mark Zuckerberg,220314520000.0,300000000.0,True,True,False,post_snapshot,mark-zuckerberg,California,Palo Alto,,United States
+Sergey Brin,219377083000.0,35000000.0,True,False,False,pre_snapshot,sergey-brin,Nevada,Crystal Bay,,United States
+Jensen Huang,147042777000.0,52400000.0,False,True,False,,jensen-huang,California,Los Altos,,United States
+Andreas von Bechtolsheim & family,37319388000.0,0,False,True,False,,andreas-von-bechtolsheim,California,Palo Alto,,Germany
+Peter Thiel,34531680000.0,77200000.0,True,False,False,pre_snapshot,peter-thiel,,Buenos Aires,,United States
+Eric Schmidt,33519286999.999996,600000000.0,False,True,False,,eric-schmidt,California,Atherton,,United States
+Henry Samueli,31655075000.0,20150000.0,False,True,False,,henry-samueli,California,Newport Beach,,United States
 Robert Pera,29624850000.0,21550000.0,False,True,False,,robert-pera,California,San Jose,,United States
 Greg Brockman,25486000000.0,0,False,True,False,,greg-brockman,California,San Francisco,,United States
-Brett Adcock,23392844000.0,0,False,True,False,,brett-adcock,California,Palo Alto,,United States
-John Tu,23058115000.0,7250000.0,False,True,False,,john-tu,California,Rolling Hills,,United States
-David Sun,23037637000.0,0,False,True,False,,david-sun,California,Irvine,,United States
-John Doerr,20744786000.0,0,False,True,False,,john-doerr,California,Woodside,,United States
-Henry Nicholas III,20511205000.0,19777777.0,False,True,False,,henry-nicholas-iii,California,Newport Coast,,United States
+John Tu,24723016000.0,7250000.0,False,True,False,,john-tu,California,Rolling Hills,,United States
+David Sun,24702538000.0,0,False,True,False,,david-sun,California,Irvine,,United States
+Brett Adcock,23391762000.0,0,False,True,False,,brett-adcock,California,Palo Alto,,United States
+Henry Nicholas III,20938990000.0,19777777.0,False,True,False,,henry-nicholas-iii,California,Newport Coast,,United States
+John Doerr,20755194000.0,0,False,True,False,,john-doerr,California,Woodside,,United States
 Donald Bren,19797499000.0,0,False,True,False,,donald-bren,California,Newport Beach,,United States
-Jan Koum,18568522000.0,400000000.0,True,True,False,unconfirmed,jan-koum,California,Atherton,,United States
-Marc Andreessen,18539053000.0,177000000.0,False,True,False,,marc-andreessen,California,Malibu,,United States
+Jan Koum,18568588000.0,400000000.0,True,True,False,unconfirmed,jan-koum,California,Atherton,,United States
+Marc Andreessen,18532886000.0,177000000.0,False,True,False,,marc-andreessen,California,Malibu,,United States
 Eric Smidt,17755500000.0,54000000.0,False,True,False,,eric-smidt,California,Beverly Hills,,United States
 John Collison,17490000000.0,0,False,True,False,,john-collison,California,San Francisco ,,Ireland
 Patrick Collison,17490000000.0,0,False,True,False,,patrick-collison,California,San Francisco ,,Ireland
-Laurene Powell Jobs,16093758000.0,242000000.0,False,True,False,,laurene-powell-jobs,California,Palo Alto,,United States
-Adam Foroughi,14908503000.0,0,False,True,False,,adam-foroughi,California,Truckee,,United States
-George Roberts,14165714000.0,29084160.0,False,True,False,,george-roberts,California,Atherton,,United States
+Laurene Powell Jobs,16031407000.0,242000000.0,False,True,False,,laurene-powell-jobs,California,Palo Alto,,United States
+George Roberts,14393864000.0,29084160.0,False,True,False,,george-roberts,California,Atherton,,United States
+Adam Foroughi,14393560000.0,0,False,True,False,,adam-foroughi,California,Truckee,,United States
 Christopher Olah,13800000000.0,0,False,True,False,,christopher-olah,California,San Francisco,,Canada
 Tom Brown,13800000000.0,2572000.0,False,True,False,,tom-brown,California,San Francisco,,United States
 Daniela Amodei,13700000000.0,0,False,True,False,,daniela-amodei,California,San Francisco,,United States
 Jack Clark,13700000000.0,0,False,True,False,,jack-clark,California,San Francisco,,United States
 Jared Kaplan,13700000000.0,0,False,True,False,,jared-kaplan,California,Pacifica,,United States
 Dario Amodei,13600000000.0,0,False,True,False,,dario-amodei,California,San Francisco,,United States
-Charles Schwab,13310654000.0,0,False,True,False,,charles-schwab,California,Woodside,,United States
-Brian Chesky,13134351000.0,0,False,True,False,,brian-chesky,California,San Francisco,,United States
+Charles Schwab,13338819000.0,0,False,True,False,,charles-schwab,California,Woodside,,United States
 Sam McCandlish,13100000000.0,4831145.0,False,True,False,,sam-mccandlish,California,San Francisco,,United States
+Brian Chesky,12911652000.0,0,False,True,False,,brian-chesky,California,San Francisco,,United States
 Marijke Mars,12593000000.0,0,False,True,False,,marijke-mars,California,Los Angeles,,United States
-Nathan Blecharczyk,12383305000.0,0,False,True,False,,nathan-blecharczyk,California,San Francisco,,United States
-Antony Ressler,11784772000.0,100000000.0,False,True,False,,antony-ressler,California,Los Angeles,,United States
-Douglas Leone,11294648000.0,80000000.0,False,True,False,,douglas-leone,California,Menlo Park,,United States
+Nathan Blecharczyk,12176047000.0,0,False,True,False,,nathan-blecharczyk,California,San Francisco,,United States
+Antony Ressler,11775841000.0,100000000.0,False,True,False,,antony-ressler,California,Los Angeles,,United States
+Douglas Leone,11247598000.0,80000000.0,False,True,False,,douglas-leone,California,Menlo Park,,United States
 Tom Gores,10642700000.0,138000000.0,False,True,False,,tom-gores,California,Beverly Hills,,United States
 Don Hankey,10455000000.0,51300000.0,True,False,False,pre_snapshot,don-hankey,Nevada,Las Vegas,,United States
-David Cheriton,10338275000.0,0,False,True,False,,david-cheriton,California,Palo Alto,,Canada
-Vinod Khosla,10321484000.0,17100579.0,False,True,False,,vinod-khosla,California,Portola Valley,,United States
-David Geffen,9686600000.0,132000000.0,False,True,False,,david-geffen,California,Beverly Hills,,United States
-Patrick Soon-Shiong,9639068000.0,162500000.0,False,True,False,,patrick-soon-shiong,California,Los Angeles,,United States
-Steven Rales,9509375000.0,0,False,True,False,,steven-rales,California,Santa Barbara,,United States
+David Cheriton,10327271000.0,0,False,True,False,,david-cheriton,California,Palo Alto,,Canada
+Vinod Khosla,10302537000.0,17100579.0,False,True,False,,vinod-khosla,California,Portola Valley,,United States
+David Geffen,9689120000.0,132000000.0,False,True,False,,david-geffen,California,Beverly Hills,,United States
+Steven Rales,9525864000.0,0,False,True,False,,steven-rales,California,Santa Barbara,,United States
+Patrick Soon-Shiong,9407148000.0,162500000.0,False,True,False,,patrick-soon-shiong,California,Los Angeles,,United States
 Jack Dangermond,9402460000.0,0,False,True,False,,jack-dangermond,California,Redlands,,United States
-Dustin Moskovitz,8796400000.0,800000.0,False,True,False,,dustin-moskovitz,California,San Francisco,,United States
+Dustin Moskovitz,8740648000.0,800000.0,False,True,False,,dustin-moskovitz,California,San Francisco,,United States
 Yuri Milner,8689600000.0,0,False,True,False,,yuri-milner,California,Los Altos,,Israel
-Marc Benioff,8676277000.0,18000000.0,False,True,False,,marc-benioff,California,San Francisco,,United States
+Marc Benioff,8643484000.0,18000000.0,False,True,False,,marc-benioff,California,San Francisco,,United States
 Michael Milken,8560500000.0,179750000.0,False,True,False,,michael-milken,California,Los Angeles,,United States
+Ken Xie & family,8445737999.999999,14340561.0,False,True,False,,ken-xie,California,Los Altos Hills,,United States
 Chris Larsen,8439744000.000001,13500000.0,False,True,False,,chris-larsen,California,San Francisco,,United States
-Ken Xie & family,8377400000.0,14340561.0,False,True,False,,ken-xie,California,Los Altos Hills,,United States
 Steven Spielberg,7921900000.0,250000000.0,True,False,False,pre_snapshot,steven-spielberg,New York,New York,,United States
-Jack Dorsey,7898735000.0,31900000.0,False,True,False,,jack-dorsey,California,San Francisco,,United States
+Jack Dorsey,7773202000.0,31900000.0,False,True,False,,jack-dorsey,California,San Francisco,,United States
+Edward Roski Jr,7764331000.0,8107000.0,False,True,False,,edward-roski-jr,California,Los Angeles,,United States
 Ali Ghodsi,7585000000.0,0,False,True,False,,ali-ghodsi,California,San Francisco,,United States
-Edward Roski Jr,7549534000.0,8107000.0,False,True,False,,edward-roski-jr,California,Los Angeles,,United States
-Tench Coxe,7544990000.0,8683775.0,False,True,False,,tench-coxe,California,Palo Alto,,United States
-Michael Xie,7176484000.0,25671792.0,False,True,False,,michael-xie,California,Los Altos Hills,,United States
+Tench Coxe,7267663000.0,8683775.0,False,True,False,,tench-coxe,California,Palo Alto,,United States
+Michael Xie,7238605000.0,25671792.0,False,True,False,,michael-xie,California,Los Altos Hills,,United States
 Neal Blue & family,7140942000.0,0,False,True,False,,neal-blue,California,San Diego,,United States
 Rick Caruso,7081651000.0,86500000.0,False,True,False,,rick-caruso,California,Los Angeles,,United States
 Ion Stoica,7030000000.0,0,False,True,False,,ion-stoica,California,Berkeley,,United States
 Matei Zaharia,7030000000.0,0,False,True,False,,matei-zaharia,California,Berkeley,,United States
 Edythe Broad & family,7024350000.0,13283376.0,False,True,False,,edythe-broad,California,Los Angeles,,United States
-Jayshree Ullal,7013209000.0,7862000.0,False,True,False,,jayshree-ullal,California,Saratoga,,United States
-Michael Moritz,6956797000.0,10600000.0,False,True,False,,michael-moritz,California,San Francisco,,United States
-Brian Armstrong,6906633000.0,133000000.0,False,True,False,,brian-armstrong,California,San Francisco,,United States
-Stephen Cohen,6545861000.0,1031715.0,False,True,False,,stephen-cohen,California,Palo Alto,,United States
-Jean (Gigi) Pritzker,6424404000.0,0,False,True,False,,jean-gigi-pritzker,California,Los Angeles,,United States
-Rupert Johnson Jr,6096252000.0,0,False,True,False,,rupert-johnson-jr,California,Burlingame,,United States
-Rocco Basilico,6075950000.0,0,False,True,False,,rocco-basilico-1,California,Los Angeles,,Italy
-Archie Aldis Emmerson,6060478000.0,4101800.0,False,True,False,,archie-aldis-emmerson,California,Redding,,United States
-Palmer Luckey,5939997000.0,12500000.0,False,True,False,,palmer-luckey,California,Newport Beach,,United States
+Jayshree Ullal,6983689000.0,7862000.0,False,True,False,,jayshree-ullal,California,Saratoga,,United States
+Michael Moritz,6929826000.0,10600000.0,False,True,False,,michael-moritz,California,San Francisco,,United States
+Brian Armstrong,6744883000.0,133000000.0,False,True,False,,brian-armstrong,California,San Francisco,,United States
+Stephen Cohen,6532157000.0,1031715.0,False,True,False,,stephen-cohen,California,Palo Alto,,United States
+Jean (Gigi) Pritzker,6527095000.0,0,False,True,False,,jean-gigi-pritzker,California,Los Angeles,,United States
+Rupert Johnson Jr,6139535000.0,0,False,True,False,,rupert-johnson-jr,California,Burlingame,,United States
+Archie Aldis Emmerson,6115800000.0,4101800.0,False,True,False,,archie-aldis-emmerson,California,Redding,,United States
+Rocco Basilico,5960059000.0,0,False,True,False,,rocco-basilico-1,California,Los Angeles,,Italy
+Palmer Luckey,5940010000.0,12500000.0,False,True,False,,palmer-luckey,California,Newport Beach,,United States
 Romesh T. Wadhwani,5867000000.0,13169940.0,False,True,False,,romesh-t-wadhwani,California,Palo Alto,,United States
-Baiju Bhatt,5770979000.0,0,False,True,False,,baiju-bhatt,California,Palo Alto,,United States
 Gordon Getty & family,5754914000.0,29608760.0,False,True,False,,gordon-getty,California,San Francisco,,United States
+Baiju Bhatt,5668327000.0,0,False,True,False,,baiju-bhatt,California,Palo Alto,,United States
 Steven Hao,5600000000.0,0,False,True,False,,steven-hao,California,San Francisco,,United States
-George Lucas,5532444000.0,123000000.0,False,True,False,,george-lucas,California,San Anselmo,,United States
-Eric Yuan & family,5485734000.0,0,False,True,False,,eric-yuan,California,Santa Clara,,United States
+George Lucas,5533874000.0,123000000.0,False,True,False,,george-lucas,California,San Anselmo,,United States
+Eric Yuan & family,5458486000.0,0,False,True,False,,eric-yuan,California,Santa Clara,,United States
 Cai Haoyu,5400000000.0,0,False,True,False,,cai-haoyu,California,Mount View,,China
 Lynda Resnick,5393500000.0,17115689.0,False,True,False,,lynda-resnick,California,Beverly Hills,,United States
 Stewart Resnick,5393500000.0,17115689.0,False,True,False,,stewart-resnick,California,Beverly Hills,,United States
 Gwendolyn Sontheim Meyer,5349000000.0,0,False,True,False,,gwendolyn-sontheim-meyer,California,Rancho Santa Fe,,United States
-Dagmar Dolby & family,5311979000.0,90000000.0,False,True,False,,dagmar-dolby,California,San Francisco,,United States
+John A. Sobrato & family,5318652000.0,0,False,True,False,,john-a-sobrato,California,Atherton,,United States
+Dagmar Dolby & family,5307828000.0,90000000.0,False,True,False,,dagmar-dolby,California,San Francisco,,United States
 Marc Stad,5307391000.0,0,False,True,False,,marc-stad,California,San Francisco,,United States
-Scott Cook,5263559000.0,15830193.0,False,True,False,,scott-cook,California,Woodside,,United States
-John A. Sobrato & family,5225344000.0,0,False,True,False,,john-a-sobrato,California,Atherton,,United States
+Scott Cook,5276075000.0,15830193.0,False,True,False,,scott-cook,California,Woodside,,United States
 David Filo,5211500000.0,0,False,True,False,,david-filo,California,Palo Alto,,United States
-Peter Gassner,5201388000.0,1977425.0,False,True,False,,peter-gassner,California,Pleasanton,,United States
-Vlad Tenev,5053032000.0,0,False,True,False,,vlad-tenev,California,Palo Alto,,United States
+Peter Gassner,5187670000.0,1977425.0,False,True,False,,peter-gassner,California,Pleasanton,,United States
 Anthony Pritzker,4962895000.0,195000000.0,False,True,False,,anthony-pritzker,California,Los Angeles,,United States
-Garrett Camp,4807808000.0,0,False,True,False,,garrett-camp,California,San Francisco,,Canada
+Vlad Tenev,4945816000.0,0,False,True,False,,vlad-tenev,California,Palo Alto,,United States
 Donald Sterling,4800712000.0,29825465.0,False,True,False,,donald-sterling,California,Beverly Hills,,United States
-Jim Coulter,4749500000.0,0,False,True,False,,jim-coulter,California,San Francisco,,United States
-Sanjit Biswas,4727372000.0,0,False,True,False,,sanjit-biswas,California,San Francisco ,,United States
-Thomas Siebel,4575758000.0,0,False,True,False,,thomas-siebel,California,Woodside,,United States
-John Bicket,4547254000.0,0,False,True,False,,john-bicket,California,San Francisco ,,United States
+Garrett Camp,4769538000.0,0,False,True,False,,garrett-camp,California,San Francisco,,Canada
+Jim Coulter,4738294000.0,0,False,True,False,,jim-coulter,California,San Francisco,,United States
+Sanjit Biswas,4650099000.0,0,False,True,False,,sanjit-biswas,California,San Francisco ,,United States
+Thomas Siebel,4571662000.0,0,False,True,False,,thomas-siebel,California,Woodside,,United States
 José E. Feliciano,4538400000.0,50000000.0,False,True,False,,jose-e-feliciano,California,Los Angeles,,United States
 Behdad Eghbali,4535800000.0,21000000.0,False,True,False,,behdad-eghbali,California,Los Angeles,,United States
-Andrew Karam,4447000000.0,0,False,True,False,,andrew-karam,California,Menlo Park,,United States
-Hilton Schlosberg & family,4250045000.0,0,False,True,False,,hilton-schlosberg,California,Irvine,,United Kingdom
-Reed Hastings,4178066000.0,3250000.0,True,True,False,unconfirmed,reed-hastings,California,Santa Cruz,,United States
+John Bicket,4473640000.0,0,False,True,False,,john-bicket,California,San Francisco ,,United States
+Andrew Karam,4316590000.0,0,False,True,False,,andrew-karam,California,Menlo Park,,United States
+Hilton Schlosberg & family,4224346999.9999995,0,False,True,False,,hilton-schlosberg,California,Irvine,,United Kingdom
+Reed Hastings,4151843000.0,3250000.0,True,True,False,unconfirmed,reed-hastings,California,Santa Cruz,,United States
 Jed McCaleb,3945000000.0,0,False,True,False,,jed-mccaleb,California,Berkeley,,United States
 Scott Crabill,3906957000.0,59322762.0,False,True,False,,scott-crabill,California,San Francisco,,United States
 Holden Spaht,3906022000.0,6849000.0,False,True,False,,holden-spaht,California,San Francisco,,United States
 Seth Boro,3868978000.0,5884000.0,False,True,False,,seth-boro,California,San Francisco,,United States
-Kavitark Ram Shriram,3849857000.0,0,False,True,False,,kavitark-ram-shriram,California,Menlo Park,,United States
+Kavitark Ram Shriram,3845239000.0,0,False,True,False,,kavitark-ram-shriram,California,Menlo Park,,United States
 Danny Harris,3728711000.0,30000000.0,False,True,False,,danny-harris,California,Los Angeles,,United States
 Marco DeGeorge,3692499000.0,12982483.0,False,True,False,,marco-degeorge,California,Los Angeles,,United States
 Hemant Taneja,3632000000.0,13784748.0,False,True,False,,hemant-taneja,California,San Francisco,,United States
-David Baszucki,3614636000.0,0,False,True,False,,david-baszucki,California,San Francisco,,United States
 Walden Yan,3600000000.0,0,False,True,False,,walden-yan,California,San Francisco,,United States
-John Fisher,3583668000.0,29250000.0,False,True,False,,john-fisher,California,San Francisco,,United States
+David Baszucki,3594850000.0,0,False,True,False,,david-baszucki,California,San Francisco,,United States
+James Packer,3582219000.0,0,False,True,False,,james-packer,California,Los Angeles,,Australia
 Brian Acton,3581000000.0,86000000.0,False,True,False,,brian-acton,California,Palo Alto,,United States
-Jeff Rothschild,3568404000.0,0,False,True,False,,jeff-rothschild,California,Palo Alto,,United States
-James Packer,3563174000.0,0,False,True,False,,james-packer,California,Los Angeles,,Australia
+John Fisher,3572947000.0,29250000.0,False,True,False,,john-fisher,California,San Francisco,,United States
+Jeff Rothschild,3568312000.0,0,False,True,False,,jeff-rothschild,California,Palo Alto,,United States
 Travis Kalanick,3562000000.0,43300000.0,True,False,False,pre_snapshot,travis-kalanick,Texas,Austin,,United States
-Frank Slootman,3521499000.0,10243300.0,False,True,False,,frank-slootman,California,Pleasanton,,United States
+Frank Slootman,3542724000.0,10243300.0,False,True,False,,frank-slootman,California,Pleasanton,,United States
 Anthony Wood,3518565000.0,0,False,True,False,,anthony-wood,California,Palo Alto,,United States
+Richard Peery,3446836000.0,0,False,True,False,,richard-peery,California,Palo Alto,,United States
 Oprah Winfrey,3423225000.0,150000000.0,False,True,False,,oprah-winfrey,California,Montecito,,United States
-Richard Peery,3409279000.0,0,False,True,False,,richard-peery,California,Palo Alto,,United States
-Rodney Sacks & family,3404172000.0,0,False,True,False,,rodney-sacks,California,Laguna Beach,,United States
 Parker Conrad,3400000000.0,0,False,True,False,,parker-conrad,California,San Francisco,,United States
+Rodney Sacks & family,3381155000.0,0,False,True,False,,rodney-sacks,California,Laguna Beach,,United States
 Sean Parker,3355789000.0,55000000.0,False,True,False,,sean-parker,California,Los Angeles,,United States
 William Hockey,3332000000.0,0,False,True,False,,william-hockey,California,San Francisco,,United States
 Jay Paul,3267006000.0,28250000.0,False,True,False,,jay-paul,California,San Francisco,,United States
 Haim Saban,3250106000.0,57500000.0,False,True,False,,haim-saban,California,Beverly Hills,,United States
-Eduardo Vivas,3222543000.0,0,False,True,False,,eduardo-vivas,California,Palo Alto,,United States
+Michelle Zatlyn,3220313000.0,0,False,True,False,,michelle-zatlyn,California,San Francisco,,Canada
 Alexandr Wang,3215000000.0,0,False,True,False,,alexandr-wang,California,San Francisco,,United States
 John Pritzker,3204514000.0,0,False,True,False,,john-pritzker,California,San Francisco,,United States
-Daniel Pritzker,3187410000.0,0,False,True,False,,daniel-pritzker,California,Marin County,,United States
+Daniel Pritzker,3187422000.0,0,False,True,False,,daniel-pritzker,California,Marin County,,United States
 William Chisholm,3179200000.0,15563106.0,False,True,False,,william-chisholm,California,Atherton,,United States
-Sam Altman,3122769000.0,27000000.0,False,True,False,,sam-altman,California,San Francisco,,United States
-Tim Cook,3114451000.0,10000000.0,False,True,False,,tim-cook,California,Cupertino,,United States
-Michelle Zatlyn,3112346000.0,0,False,True,False,,michelle-zatlyn,California,San Francisco,,Canada
-George Argyros & family,3095784000.0,42000000.0,False,True,False,,george-argyros,California,Newport Beach,,United States
-Jerry Yang,3083385000.0,0,False,True,False,,jerry-yang,California,Los Altos Hills,,United States
+George Argyros & family,3144848000.0,42000000.0,False,True,False,,george-argyros,California,Newport Beach,,United States
+Eduardo Vivas,3120950000.0,0,False,True,False,,eduardo-vivas,California,Palo Alto,,United States
+Sam Altman,3108326000.0,27000000.0,False,True,False,,sam-altman,California,San Francisco,,United States
+Tim Cook,3107173000.0,10000000.0,False,True,False,,tim-cook,California,Cupertino,,United States
+Jerry Yang,3081361000.0,0,False,True,False,,jerry-yang,California,Los Altos Hills,,United States
 Nicolas Berggruen,2934939000.0,63100000.0,False,True,False,,nicolas-berggruen,California,Beverly Hills,,United States
-Jay-Z,2806155000.0,0,False,True,False,,jay-z,California,Los Angeles,,United States
-Aneel Bhusri,2683921000.0,12072842.0,False,True,False,,aneel-bhusri,California,San Francisco,,United States
-Reid Hoffman,2642552000.0,0,False,True,False,,reid-hoffman,California,Palo Alto,,United States
+Jay-Z,2804689000.0,0,False,True,False,,jay-z,California,Los Angeles,,United States
+Aneel Bhusri,2672665000.0,12072842.0,False,True,False,,aneel-bhusri,California,San Francisco,,United States
+Reid Hoffman,2638358000.0,0,False,True,False,,reid-hoffman,California,Palo Alto,,United States
 Scott Wu,2600000000.0,0,False,True,False,,scott-wu,California,San Francisco,,United States
 Bruce Karsh,2580000000.0,68820000.0,False,True,False,,bruce-karsh,California,Los Angeles,,United States
 Tom Ford,2522735000.0,38750000.0,False,True,False,,tom-ford-1,California,Los Angeles,,United States
 Bret Taylor,2500000000.0,0,False,True,False,,bret-taylor,California,San Francisco,,United States
 Clay Bavor,2500000000.0,0,False,True,False,,clay-bavor,California,San Francisco,,United States
 Chen Tei-fu,2472000000.0,0,False,True,False,,chen-tei-fu,California,Los Angeles,,Taiwan
+Aman Sanger,2471482000.0,0,False,True,False,,aman-sanger,California,San Francisco,,United States
+Arvid Lunnemark,2471482000.0,0,False,True,False,,arvid-lunnemark,California,San Francisco,,Sweden
+Michael Truell,2471482000.0,0,False,True,False,,michael-truell,California,San Francisco,,United States
+Sualeh Asif,2471482000.0,0,False,True,False,,sualeh-asif,California,San Francisco,,Pakistan
 Egon Durban,2454000000.0,54062200.0,False,True,False,,egon-durban,California,Atherton,,United States
 Kenneth Hao,2454000000.0,9411000.0,False,True,False,,kenneth-hao,California,Hillsborough,,United States
-Aman Sanger,2453864000.0,0,False,True,False,,aman-sanger,California,San Francisco,,United States
-Arvid Lunnemark,2453864000.0,0,False,True,False,,arvid-lunnemark,California,San Francisco,,Sweden
-Michael Truell,2453864000.0,0,False,True,False,,michael-truell,California,San Francisco,,United States
-Sualeh Asif,2453864000.0,0,False,True,False,,sualeh-asif,California,San Francisco,,Pakistan
 Riaz Valani,2446300000.0,110000000.0,False,True,False,,riaz-valani,California,Malibu,,United States
 Thomas Steyer,2436100000.0,4000000.0,False,True,False,,thomas-steyer,California,San Francisco,,United States
-Sheryl Sandberg,2419478000.0,11000000.0,False,True,False,,sheryl-sandberg,California,Menlo Park,,United States
-Drew Houston,2417791000.0,0,True,True,True,,drew-houston,California,San Francisco,,United States
-Alec Gores,2404842000.0,17000000.0,False,True,False,,alec-gores,California,Beverly Hills,,United States
+Sheryl Sandberg,2419503000.0,11000000.0,False,True,False,,sheryl-sandberg,California,Menlo Park,,United States
+Drew Houston,2405537000.0,0,True,True,True,,drew-houston,California,San Francisco,,United States
+Alec Gores,2403187000.0,17000000.0,False,True,False,,alec-gores,California,Beverly Hills,,United States
 Joe Lacob,2344000000.0,19800000.0,False,True,False,,joe-lacob,California,Atherton,,United States
-Kevin Systrom,2328906000.0,0,False,True,False,,kevin-systrom,California,San Francisco,,United States
+Kevin Systrom,2328923000.0,0,False,True,False,,kevin-systrom,California,San Francisco,,United States
 Tim Draper,2291889000.0,17197000.0,False,True,False,,tim-draper,California,Atherton,,United States
 Sarah MacMillan,2290000000.0,12482485.0,False,True,False,,sarah-macmillan,California,Los Angeles,,United States
 Jyoti Bansal,2277000000.0,0,False,True,False,,jyoti-bansal,California,San Francisco,,United States
 Irving Grousbeck & family,2229000000.0,6490000.0,False,True,False,,irving-grousbeck,California,Portola Valley,,United States
-Bennett Rosenthal,2209344000.0,8683316.0,False,True,False,,bennett-rosenthal,California,Los Angeles,,United States
+Bennett Rosenthal,2207765000.0,8683316.0,False,True,False,,bennett-rosenthal,California,Los Angeles,,United States
 Adarsh Hiremath,2200000000.0,3526000.0,False,True,False,,adarsh-hiremath,California,San Francisco,,United States
 Brendan Foody,2200000000.0,5328000.0,False,True,False,,brendan-foody,California,San Francisco,,United States
 Surya Midha,2200000000.0,0,False,True,False,,surya-midha,California,San Francisco,,United States
-Nicholas Pritzker,2178548000.0,0,False,True,False,,nicholas-pritzker,California,Nicasio,,United States
-Evan Spiegel,2175915000.0,120000000.0,False,True,False,,evan-spiegel,California,Los Angeles,,United States
+Nicholas Pritzker,2177556000.0,0,False,True,False,,nicholas-pritzker,California,Nicasio,,United States
+Evan Spiegel,2168164000.0,120000000.0,False,True,False,,evan-spiegel,California,Los Angeles,,United States
 Richard Saghian,2149000000.0,141000000.0,False,True,False,,richard-saghian,California,Los Angeles,,United States
-Walter Wang,2139966000.0,34000000.0,False,True,False,,walter-wang-1,California,Los Angeles,,United States
-Steven Tisch,2119308000.0,15713764.0,False,True,False,,steven-tisch,California,Beverly Hills,,United States
+Walter Wang,2139574999.9999998,34000000.0,False,True,False,,walter-wang-1,California,Los Angeles,,United States
+Steven Tisch,2119806000.0,15713764.0,False,True,False,,steven-tisch,California,Beverly Hills,,United States
+Thomas Mueller,2108062000.0,0,False,True,False,,thomas-mueller,California,Los Angeles,,United States
 Andy Konwinski,2100000000.0,0,False,True,False,,andy-konwinski,California,Berkeley,,United States
 Aravind Srinivas,2100000000.0,0,False,True,False,,aravind-srinivas,California,San Francisco,,India
 Guillermo Rauch,2100000000.0,0,False,True,False,,guillermo-rauch,California,San Francisco,,United States
-Thomas Mueller,2099451000.0,0,False,True,False,,thomas-mueller,California,Los Angeles,,United States
-Fred Ehrsam,2091400000.0,0,False,True,False,,fred-ehrsam,California,San Francisco,,United States
-Vasily Shikin,2060891000.0,0,False,True,False,,vasily-shikin,California,San Francisco,,United States
 Barbara Banke & family,2059060000.0,9918000.0,False,True,False,,barbara-banke-1,California,Geyserville,,United States
+Fred Ehrsam,2057726999.9999998,0,False,True,False,,fred-ehrsam,California,San Francisco,,United States
 Tom Werner,2036430000.0,15315861.0,False,True,False,,tom-werner-1,California,Los Angeles,,United States
-David Kaplan,2026962000.0,0,False,True,False,,david-kaplan,California,Los Angeles,,United States
+David Kaplan,2025380000.0,0,False,True,False,,david-kaplan,California,Los Angeles,,United States
 Edward Glazer,2011000000.0,7167000.0,False,True,False,,edward-glazer,California,Beverly Hills,,United States
 Bill Gross,2009470000.0,35820000.0,False,True,False,,bill-gross,California,Laguna Beach,,United States
-Art Levinson,2008378000.0,0,False,True,False,,art-levinson,California,Hillsborough,,United States
 Oren Zeev,2000000000.0,0,False,True,False,,oren-zeev,California,Los Altos,,Israel
 Paul Bloch,2000000000.0,0,False,True,False,,paul-bloch,California,Mammoth Lakes,,United States
-Max Levchin,1990905000.0,0,False,True,False,,max-levchin,California,San Francisco,,United States
+Vasily Shikin,1998947000.0,0,False,True,False,,vasily-shikin,California,San Francisco,,United States
+Art Levinson,1998121000.0,0,False,True,False,,art-levinson,California,Hillsborough,,United States
 Amjad Masad,1980000000.0,0,False,True,False,,amjad-masad,California,San Francisco,,United States
 Geoffrey Palmer,1952451000.0,14281449.0,False,True,False,,geoffrey-palmer,California,Beverly Hills,,United States
 Evan Williams,1952000000.0,0,False,True,False,,evan-williams,California,San Francisco,,United States
 Sue Gross,1937372000.0,8030000.0,False,True,False,,sue-gross,California,Laguna Beach,,United States
+Max Levchin,1930125000.0,0,False,True,False,,max-levchin,California,San Francisco,,United States
 Mark Attanasio,1922900000.0,29405106.0,False,True,False,,mark-attanasio,California,Los Angeles,,United States
 Kim Kardashian,1885000000.0,115000000.0,False,True,False,,kim-kardashian,California,Los Angeles,,United States
-Jon Winkelried,1881992000.0,5512000.0,False,True,False,,jon-winkelried,California,San Francisco,,United States
-Robert Fisher,1879290000.0,0,False,True,False,,robert-fisher,California,San Francisco,,United States
+Jon Winkelried,1876751000.0,5512000.0,False,True,False,,jon-winkelried,California,San Francisco,,United States
+Robert Fisher,1869594000.0,0,False,True,False,,robert-fisher,California,San Francisco,,United States
 Alex Shevchenko,1869000000.0,0,False,True,False,,alex-shevchenko,California,San Francisco,,Canada
 Max Lytvyn,1869000000.0,0,False,True,False,,max-lytvyn,California,San Francisco,,Canada
-Jeff Tangney,1851450000.0,13339211.0,False,True,False,,jeff-tangney,California,Palo Alto,,United States
-Thierry Cruanes,1838172000.0,2648000.0,False,True,False,,thierry-cruanes,California,San Mateo,,United States
+Thierry Cruanes,1856957000.0,2648000.0,False,True,False,,thierry-cruanes,California,San Mateo,,United States
+Jeff Tangney,1826772000.0,13339211.0,False,True,False,,jeff-tangney,California,Palo Alto,,United States
+Benoit Dageville,1806905000.0,0,False,True,False,,benoit-dageville,California,San Carlos,,United States
 Thomas Reyes,1804000000.0,0,False,True,False,,thomas-reyes,California,Irvine,,United States
-Benoit Dageville,1782738000.0,0,False,True,False,,benoit-dageville,California,San Carlos,,United States
 Gary Michelson,1764100000.0,23900000.0,False,True,False,,gary-michelson,California,Los Angeles,,United States
 Donald Friese,1750000000.0,21637069.0,False,True,False,,donald-friese,California,Los Angeles,,United States
-Sanjay Gajendra,1738017000.0,8089000.0,False,True,False,,sanjay-gajendra,California,Santa Clara,,United States
+Sanjay Gajendra,1732913000.0,8089000.0,False,True,False,,sanjay-gajendra,California,Santa Clara,,United States
 James Scapa,1732767000.0,30000000.0,False,True,False,,james-scapa,California,Atherton,,United States
-Jitendra Mohan,1722284000.0,14634965.0,False,True,False,,jitendra-mohan,California,Santa Clara,,United States
-Tony Xu,1712894000.0,0,False,True,False,,tony-xu,California,San Francisco,,United States
-Patrick Hanrahan,1710386000.0,7322885.0,False,True,False,,patrick-hanrahan,California,Portola Valley,,United States
+Jitendra Mohan,1717364000.0,14634965.0,False,True,False,,jitendra-mohan,California,Santa Clara,,United States
+Mike Speiser,1704654000.0,0,False,True,False,,mike-speiser,California,San Francisco,,United States
+Patrick Hanrahan,1700439000.0,7322885.0,False,True,False,,patrick-hanrahan,California,Portola Valley,,United States
 Ivan Zhao,1700000000.0,0,False,True,False,,ivan-zhao,California,San Francisco,,Canada
-Nikesh Arora,1694147000.0,0,False,True,False,,nikesh-arora,California,Atherton,,United States
-Mike Speiser,1693382000.0,0,False,True,False,,mike-speiser,California,San Francisco,,United States
+Tony Xu,1692537000.0,0,False,True,False,,tony-xu,California,San Francisco,,United States
+Nikesh Arora,1685438000.0,0,False,True,False,,nikesh-arora,California,Atherton,,United States
+Jeff T. Green,1651816000.0,12300000.0,False,True,False,,jeff-t-green,California,Newbury Park,,United States
 Jeffrey Gundlach,1643800000.0,15000000.0,False,True,False,,jeffrey-gundlach,California,Los Angeles,,United States
-Jeff T. Green,1630924000.0,12300000.0,False,True,False,,jeff-t-green,California,Newbury Park,,United States
-Jeff Lawson,1581443000.0,0,False,True,False,,jeff-lawson,California,San Francisco,,United States
-Bobby Murphy,1569622000.0,47500000.0,False,True,False,,bobby-murphy,California,Venice,,United States
-William Fisher,1567128000.0,0,False,True,False,,william-fisher,California,San Francisco,,United States
+Jeff Lawson,1632446000.0,0,False,True,False,,jeff-lawson,California,San Francisco,,United States
+Bobby Murphy,1561101000.0,47500000.0,False,True,False,,bobby-murphy,California,Venice,,United States
+Gloria Joseph,1558364000.0,0,False,True,False,,gloria-joseph,California,Los Angeles,,United States
+William Fisher,1556167000.0,0,False,True,False,,william-fisher,California,San Francisco,,United States
 Magic Johnson,1551725000.0,19420738.0,False,True,False,,magic-johnson,California,Los Angeles,,United States
-Bipul Sinha,1550270000.0,0,False,True,False,,bipul-sinha,California,Palo Alto,,United States
-Gloria Joseph,1544898000.0,0,False,True,False,,gloria-joseph,California,Los Angeles,,United States
-Pantas Sutardja,1543491000.0,0,False,True,False,,pantas-sutardja,California,Saratoga,,United States
 Peter Guber,1543100000.0,0,False,True,False,,peter-guber,California,Los Angeles,,United States
 Dick Wolf,1539000000.0,0,False,True,False,,dick-wolf-1,California,Montecito,,United States
-Charles Liang,1521723000.0,0,False,True,False,,charles-liang,California,San Jose,,United States
+Pantas Sutardja,1525273000.0,0,False,True,False,,pantas-sutardja,California,Saratoga,,United States
+Bipul Sinha,1523716000.0,0,False,True,False,,bipul-sinha,California,Palo Alto,,United States
 Michael Teel,1506900000.0,31118167.0,False,True,False,,michael-teel,California,Sacramento,,United States
-Andy Fang,1506065000.0,0,True,True,False,unconfirmed,andy-fang,California,Monte Vista,,United States
 Peter Ludwig,1500000000.0,0,False,True,False,,peter-ludwig,California,San Francisco,,United States
 Qasar Younis,1500000000.0,0,False,True,False,,qasar-younis,California,San Francisco,,United States
-George Marcus,1492434000.0,7271292.0,False,True,False,,george-marcus,California,Los Altos Hills,,United States
+Andy Fang,1489932000.0,0,True,True,False,unconfirmed,andy-fang,California,Monte Vista,,United States
+Charles Liang,1478581000.0,0,False,True,False,,charles-liang,California,San Jose,,United States
 Brian Schimpf,1475578000.0,0,False,True,False,,brian-schimpf,California,Costa Mesa,,United States
+George Marcus,1469239000.0,7271292.0,False,True,False,,george-marcus,California,Los Altos Hills,,United States
 Lucy Guo,1450400000.0,29500000.0,False,True,False,,lucy-guo,California,Los Angeles,,United States
-Sundar Pichai,1444517000.0,8195833.0,False,True,False,,sundar-pichai,California,Los Altos Hills,,United States
+Sundar Pichai,1441384000.0,8195833.0,False,True,False,,sundar-pichai,California,Los Altos Hills,,United States
+Mark Pincus,1423069000.0,8904500.0,False,True,False,,mark-pincus,California,San Francisco,,United States
 LeBron James,1422000000.0,70000000.0,False,True,False,,lebron-james,California,Los Angeles,,United States
-Mark Pincus,1417056000.0,8904500.0,False,True,False,,mark-pincus,California,San Francisco,,United States
 Todd Park,1400000000.0,0,False,True,False,,todd-park,California,Los Altos Hills,,United States
-Todd McKinnon,1378642000.0,0,False,True,False,,todd-mckinnon,California,San Francisco,,United States
-John Colgrove,1322107000.0,0,False,True,False,,john-colgrove,California,Los Altos,,United States
+Todd McKinnon,1383888000.0,0,False,True,False,,todd-mckinnon,California,San Francisco,,United States
 Richard Kayne,1315000000.0,16047864.0,False,True,False,,richard-kayne,California,Santa Monica ,,United States
-Frederic Luddy,1312722000.0,13000000.0,False,True,False,,frederic-luddy,California,San Diego,,United States
+John Colgrove,1311177000.0,0,False,True,False,,john-colgrove,California,Los Altos,,United States
+Frederic Luddy,1310186000.0,13000000.0,False,True,False,,frederic-luddy,California,San Diego,,United States
 Chris Wanstrath,1310000000.0,0,False,True,False,,chris-wanstrath,California,San Francisco,,United States
-Marissa Mayer,1307966000.0,35000000.0,False,True,False,,marissa-mayer,California,Palo Alto,,United States
-Apoorva Mehta,1295061000.0,0,False,True,False,,apoorva-mehta,California,San Francisco ,,Canada
-Nicole Shanahan,1293880000.0,0,False,True,False,,nicole-shanahan,California,Portolo Valley,,United States
-Tianqiao Chen,1256592000.0,0,False,True,False,,tianqiao-chen,California,Atherton,,China
-Joe Kiani,1253364000.0,28090701.0,False,True,False,,joe-kiani,California,Irvine,,United States
-Arvind Jain,1243035000.0,0,False,True,False,,arvind-jain,California,Los Altos,,United States
-Ben Silbermann,1225839000.0,6016000.0,False,True,False,,ben-silbermann,California,San Francisco,,United States
-Shyam Sankar,1220360000.0,6797000.0,False,True,False,,shyam-sankar,California,Palo Alto,,United States
+Marissa Mayer,1306420000.0,35000000.0,False,True,False,,marissa-mayer,California,Palo Alto,,United States
+Apoorva Mehta,1295284000.0,0,False,True,False,,apoorva-mehta,California,San Francisco ,,Canada
+Nicole Shanahan,1290070000.0,0,False,True,False,,nicole-shanahan,California,Portolo Valley,,United States
+Joe Kiani,1252535000.0,28090701.0,False,True,False,,joe-kiani,California,Irvine,,United States
+Tianqiao Chen,1245992000.0,0,False,True,False,,tianqiao-chen,California,Atherton,,China
+Arvind Jain,1222024000.0,0,False,True,False,,arvind-jain,California,Los Altos,,United States
+Ben Silbermann,1220669000.0,6016000.0,False,True,False,,ben-silbermann,California,San Francisco,,United States
+Shyam Sankar,1218351000.0,6797000.0,False,True,False,,shyam-sankar,California,Palo Alto,,United States
 Jean-Marc Chapus,1206500000.0,43371212.0,False,True,False,,jean-marc-chapus,California,Pacific Palisades,,United States
-Arvind Nithrakashyap,1183354000.0,0,False,True,False,,arvind-nithrakashyap,California,San Francisco,,United States
-Sytse 'Sid' Sijbrandij,1179124000.0,0,False,True,False,,sytse-sid-sijbrandij,California,San Francisco,,Netherlands
-Arnold Schwarzenegger,1173833000.0,10887000.0,False,True,False,,arnold-schwarzenegger,California,Los Angeles,,United States
-Shay Banon,1165359000.0,0,False,True,False,,shay-banon,California,Palo Alto,,Israel
-Theresia Gouw,1160172000.0,13122419.0,False,True,False,,theresia-gouw,California,Palo Alto,,United States
-Paul Sciarra,1142332000.0,0,False,True,False,,paul-sciarra,California,San Francisco,,United States
-Dylan Field,1096393000.0,0,False,True,False,,dylan-field,California,San Francisco,,United States
-Stanley Tang,1065916999.9999999,0,False,True,False,,stanley-tang,California,San Francisco,,United States
+Arnold Schwarzenegger,1184395000.0,10887000.0,False,True,False,,arnold-schwarzenegger,California,Los Angeles,,United States
+Sytse 'Sid' Sijbrandij,1172085000.0,0,False,True,False,,sytse-sid-sijbrandij,California,San Francisco,,Netherlands
+Arvind Nithrakashyap,1164230000.0,0,False,True,False,,arvind-nithrakashyap,California,San Francisco,,United States
+Theresia Gouw,1160188000.0,13122419.0,False,True,False,,theresia-gouw,California,Palo Alto,,United States
+Shay Banon,1145674000.0,0,False,True,False,,shay-banon,California,Palo Alto,,Israel
+Paul Sciarra,1124032000.0,0,False,True,False,,paul-sciarra,California,San Francisco,,United States
+KR Sridhar,1067615000.0,0,False,True,False,,kr-sridhar,California,San Jose,,United States
+Stanley Tang,1055955999.9999999,0,False,True,False,,stanley-tang,California,San Francisco,,United States
+Dylan Field,1055893000.0,0,False,True,False,,dylan-field,California,San Francisco,,United States
+Chi Fung Cheng,1052165000.0,0,False,True,False,,chi-fung-cheng,California,San Jose,,United States
 Beyoncé Knowles-Carter,1037599999.9999999,0,False,True,False,,beyonce-knowles-carter,California,Los Angeles,,United States
 Rihanna,1028109999.9999999,0,False,True,False,,rihanna,California,Los Angeles,,Barbados
-Colette Kress,1016447000.0,0,False,True,False,,colette-kress,California,Saratoga,,United States
+Sanjay Mehrotra,1024314000.0000001,0,False,True,False,,sanjay-mehrotra,California,Los Altos Hills,,United States
 Dr. Dre,1000000000.0,0,False,True,False,,dr-dre,California,Los Angeles,,United States
 Trae Stephens,1000000000.0,6317072.0,False,True,False,,trae-stephens,California,San Francisco,,United States
+Colette Kress,972085000.0,0,False,True,False,,colette-kress,California,Saratoga,,United States
 Kanye West,400000000.0,0,False,True,False,,kanye-west,California,Los Angeles,,United States
 Elizabeth Holmes,0.0,0,False,True,False,,elizabeth-holmes,California,,,United States
